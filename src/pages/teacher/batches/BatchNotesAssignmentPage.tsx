@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { SchedulePagination } from '@/components/schedule/SchedulePagination'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 import { mockNotesData } from '@/data/mockNotesAssignments'
 import { NotesAssignmentItem } from '@/types/batch'
 
@@ -290,7 +290,7 @@ export default function BatchNotesAssignmentPage() {
 
             {/* Pagination */}
             {filteredNotes.length > 0 && (
-              <SchedulePagination
+              <PaginationControls
                 currentPage={currentPage}
                 pageSize={pageSize}
                 totalPages={totalPages}

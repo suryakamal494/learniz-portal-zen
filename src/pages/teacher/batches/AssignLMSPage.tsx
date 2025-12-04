@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { SchedulePagination } from '@/components/schedule/SchedulePagination'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 import { mockLMSAssignments } from '@/data/mockLMSAssignments'
 import { LMSAssignmentItem } from '@/types/batch'
 
@@ -277,7 +277,7 @@ export default function AssignLMSPage() {
 
         {/* Pagination */}
         {filteredAssignments.length > 0 && (
-          <SchedulePagination
+          <PaginationControls
             currentPage={currentPage}
             pageSize={pageSize}
             totalPages={totalPages}

@@ -1,20 +1,8 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
-
-// Student pages
-import SubjectPage from './pages/SubjectPage';
-import ExamPage from './pages/ExamPage';
-import ExamInstructionsPage from './pages/ExamInstructionsPage';
-import ExamResultsPage from './pages/ExamResultsPage';
-import AnalysisPage from './pages/AnalysisPage';
-import SchedulePage from './pages/SchedulePage';
-import MessagesPage from './pages/MessagesPage';
-import NotificationsPage from './pages/NotificationsPage';
-import LiveQuizPage from './pages/LiveQuizPage';
 
 // Teacher pages
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -72,16 +60,6 @@ import NotesPage from './pages/teacher/lms/NotesPage';
 import LMSDirectoryPage from './pages/teacher/lms/LMSDirectoryPage';
 import CreateNotesPage from './pages/teacher/lms/notes/CreateNotesPage';
 
-import { AppLayout } from './components/layout/AppLayout';
-
-function StudentLayoutWrapper() {
-  return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
-  );
-}
-
 function TeacherLayoutWrapper() {
   return (
     <TeacherLayout>
@@ -96,20 +74,6 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        
-        {/* Student Routes */}
-        <Route path="/" element={<StudentLayoutWrapper />}>
-          <Route path="dashboard" element={<Index />} />
-          <Route path="subject/:subjectId" element={<SubjectPage />} />
-          <Route path="exam/:examId" element={<ExamPage />} />
-          <Route path="exam/:examId/instructions" element={<ExamInstructionsPage />} />
-          <Route path="exam/:examId/results" element={<ExamResultsPage />} />
-          <Route path="analysis" element={<AnalysisPage />} />
-          <Route path="schedule" element={<SchedulePage />} />
-          <Route path="messages" element={<MessagesPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="live-quiz/:quizId" element={<LiveQuizPage />} />
-        </Route>
 
         {/* Teacher Routes */}
         <Route path="/teacher" element={<TeacherLayoutWrapper />}>
