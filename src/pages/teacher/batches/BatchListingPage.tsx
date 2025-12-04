@@ -31,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { SchedulePagination } from '@/components/schedule/SchedulePagination'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 import { mockBatches } from '@/data/mockBatches'
 import { Batch } from '@/types/batch'
 
@@ -200,7 +200,7 @@ export default function BatchListingPage() {
         </div>
 
         {/* Pagination */}
-        <SchedulePagination
+        <PaginationControls
           currentPage={currentPage}
           pageSize={pageSize}
           totalPages={totalPages}

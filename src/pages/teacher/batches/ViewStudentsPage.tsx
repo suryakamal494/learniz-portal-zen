@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SchedulePagination } from '@/components/schedule/SchedulePagination'
+import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/hooks/use-toast'
 import { mockStudents, getStudentsAssignedToBatch, getAvailableClasses, updateBatchAssignments } from '@/data/mockStudents'
 import { mockBatches } from '@/data/mockBatches'
@@ -367,7 +367,7 @@ export default function ViewStudentsPage() {
         </div>
 
         {/* Pagination */}
-        <SchedulePagination
+        <PaginationControls
           currentPage={currentPage}
           pageSize={pageSize}
           totalPages={totalPages}

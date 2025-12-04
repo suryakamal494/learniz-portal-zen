@@ -11,7 +11,12 @@ import { toast } from 'sonner';
 import { mockTeacherScheduleClasses } from '@/data/mockTeacherSchedule';
 import { mockLMSSeries } from '@/data/mockLMSSeries';
 import { mockNotesData } from '@/data/mockNotesAssignments';
-import { mockLiveQuizData } from '@/data/mockLiveQuizzes';
+// Mock live quiz data for teacher schedule
+const mockLiveQuizData = [
+  { id: '1', title: 'Math Quick Quiz', subject: 'Mathematics', duration: '15 mins' },
+  { id: '2', title: 'Physics Quiz', subject: 'Physics', duration: '20 mins' },
+  { id: '3', title: 'Chemistry Quiz', subject: 'Chemistry', duration: '15 mins' }
+];
 
 export default function AssignLMSNotesPage() {
   const { scheduleId } = useParams();
@@ -180,7 +185,7 @@ export default function AssignLMSNotesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None Selected</SelectItem>
-                    {mockLiveQuizData.quizzes.map((quiz) => (
+                    {mockLiveQuizData.map((quiz) => (
                       <SelectItem key={quiz.id} value={quiz.id}>
                         {quiz.title}
                       </SelectItem>
