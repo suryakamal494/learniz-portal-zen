@@ -143,7 +143,7 @@ const CreateNotesPage = () => {
       console.log('Creating notes:', { ...data, image: selectedImage })
       
       // Navigate back to notes list
-      navigate('/teacher/lms/notes')
+      navigate('/teacher/classroom/notes')
     } catch (error) {
       console.error('Error creating notes:', error)
     } finally {
@@ -157,11 +157,11 @@ const CreateNotesPage = () => {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => navigate('/teacher/lms')}>LMS</BreadcrumbLink>
+            <BreadcrumbLink onClick={() => navigate('/teacher/classroom/schedule')}>Classroom</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => navigate('/teacher/lms/notes')}>Notes</BreadcrumbLink>
+            <BreadcrumbLink onClick={() => navigate('/teacher/classroom/notes')}>Notes</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -175,7 +175,7 @@ const CreateNotesPage = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/teacher/lms/notes')}
+          onClick={() => navigate('/teacher/classroom/notes')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Notes
@@ -347,7 +347,7 @@ const CreateNotesPage = () => {
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={() => navigate('/teacher/lms/notes')}
+                  onClick={() => navigate('/teacher/classroom/notes')}
                   className="flex-1 sm:flex-none"
                 >
                   <X className="h-4 w-4 mr-2" />
