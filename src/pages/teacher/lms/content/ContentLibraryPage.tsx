@@ -87,13 +87,21 @@ const ContentLibraryPage = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Content Library</h1>
           <p className="text-muted-foreground mt-1">Browse and manage your learning content</p>
         </div>
-        <Button 
-          onClick={() => navigate('/teacher/lms/content/create')}
-          className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Content
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button 
+            onClick={() => navigate('/teacher/lms/content/create')}
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Content
+          </Button>
+          <Button 
+            variant="outline"
+            className="w-full sm:w-auto bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
+          >
+            ✨ AI PPT Generator
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
