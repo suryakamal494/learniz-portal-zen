@@ -26,14 +26,6 @@ export default function LMSMainPage() {
       count: '8 series'
     },
     {
-      id: 'notes',
-      title: 'Notes Management',
-      description: 'Manage and distribute study notes',
-      icon: <FileText className="h-8 w-8 text-green-500" />,
-      path: '/teacher/lms/notes',
-      count: '156 notes'
-    },
-    {
       id: 'library',
       title: 'Content Library',
       description: 'Browse and organize all resources',
@@ -87,7 +79,7 @@ export default function LMSMainPage() {
           <CardTitle>LMS Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">24</div>
               <div className="text-sm text-muted-foreground">Content Items</div>
@@ -95,10 +87,6 @@ export default function LMSMainPage() {
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">8</div>
               <div className="text-sm text-muted-foreground">Learning Series</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">156</div>
-              <div className="text-sm text-muted-foreground">Study Notes</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-amber-600">340</div>

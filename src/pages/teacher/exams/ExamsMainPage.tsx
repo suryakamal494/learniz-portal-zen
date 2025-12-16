@@ -88,10 +88,18 @@ const ExamsMainPage: React.FC = () => {
             Create and manage all your exams
           </p>
         </div>
-        <Button onClick={handleCreateExam} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Exam
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCreateExam} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Exam
+          </Button>
+          <Button 
+            variant="outline"
+            className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
+          >
+            ✨ AI Test Generator
+          </Button>
+        </div>
       </div>
 
       {/* Search and Stats */}

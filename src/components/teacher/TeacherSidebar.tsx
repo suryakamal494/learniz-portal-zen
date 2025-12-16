@@ -57,12 +57,12 @@ const submenuItems = {
   "Classroom": [
     { title: "Academic Schedule", url: "/teacher/classroom/schedule", emoji: "📅" },
     { title: "Live Quizzes", url: "/teacher/classroom/live-quizzes", emoji: "⚡" },
+    { title: "Notes", url: "/teacher/classroom/notes", emoji: "📝" },
   ],
   "LMS": [
     { title: "Series", url: "/teacher/lms/series", emoji: "📖" },
     { title: "Content Library", url: "/teacher/lms/library", emoji: "🗂️" },
     { title: "Directory", url: "/teacher/lms/directory", emoji: "📁" },
-    { title: "Notes", url: "/teacher/lms/notes", emoji: "📝" },
   ],
   "Reports": [
     { title: "Attendance", url: "/teacher/reports/attendance", emoji: "📊" },

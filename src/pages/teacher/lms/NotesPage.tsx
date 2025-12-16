@@ -287,13 +287,13 @@ export default function NotesPage() {
           <p className="text-muted-foreground">Create, organize, and distribute study notes</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/teacher/lms')}>
-            Back to LMS
+          <Button onClick={() => navigate('/teacher/classroom/schedule')}>
+            Back to Classroom
           </Button>
           <Button 
             variant="default" 
             className="bg-primary hover:bg-primary/90"
-            onClick={() => navigate('/teacher/lms/notes/create')}
+            onClick={() => navigate('/teacher/classroom/notes/create')}
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Notes

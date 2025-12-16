@@ -84,6 +84,8 @@ function App() {
           <Route path="classroom/schedule/assign/:scheduleId" element={<AssignLMSNotesPage />} />
           <Route path="classroom/schedule/edit/:scheduleId" element={<EditSchedulePage />} />
           <Route path="classroom/live-quizzes" element={<ExamsMainPage />} />
+          <Route path="classroom/notes" element={<NotesPage />} />
+          <Route path="classroom/notes/create" element={<CreateNotesPage />} />
           <Route path="messages" element={<TeacherMessagesPage />} />
           <Route path="notifications" element={<TeacherNotificationsPage />} />
           
@@ -131,8 +133,6 @@ function App() {
           <Route path="lms/series/:seriesId/update" element={<UpdateLMSSeriesPage />} />
           <Route path="lms/series/:seriesId/update-order" element={<UpdateExamOrderPage />} />
           <Route path="lms/series/:seriesId/preview" element={<LMSSeriesPreviewPage />} />
-          <Route path="lms/notes" element={<NotesPage />} />
-          <Route path="lms/notes/create" element={<CreateNotesPage />} />
           <Route path="lms/directory" element={<LMSDirectoryPage />} />
         </Route>
 
