@@ -30,11 +30,11 @@ export function TeacherDesktopScheduleTable({
   };
 
   const handleAssignmentClick = (type: string, classItem: TeacherScheduleClass) => {
-    navigate(`/teacher/schedule/assign/${classItem.id}`);
+    navigate(`/teacher/classroom/schedule/assign/${classItem.id}`);
   };
 
   const handleEditClick = (classItem: TeacherScheduleClass) => {
-    navigate(`/teacher/schedule/edit/${classItem.id}`);
+    navigate(`/teacher/classroom/schedule/edit/${classItem.id}`);
   };
 
   const handleDeleteClick = (classItem: TeacherScheduleClass) => {

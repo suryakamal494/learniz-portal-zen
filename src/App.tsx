@@ -78,10 +78,12 @@ function App() {
         {/* Teacher Routes */}
         <Route path="/teacher" element={<TeacherLayoutWrapper />}>
           <Route index element={<TeacherDashboard />} />
-          <Route path="schedule" element={<TeacherSchedulePage />} />
-          <Route path="schedule/create" element={<CreateClassPage />} />
-          <Route path="schedule/assign/:scheduleId" element={<AssignLMSNotesPage />} />
-          <Route path="schedule/edit/:scheduleId" element={<EditSchedulePage />} />
+          {/* Classroom Routes */}
+          <Route path="classroom/schedule" element={<TeacherSchedulePage />} />
+          <Route path="classroom/schedule/create" element={<CreateClassPage />} />
+          <Route path="classroom/schedule/assign/:scheduleId" element={<AssignLMSNotesPage />} />
+          <Route path="classroom/schedule/edit/:scheduleId" element={<EditSchedulePage />} />
+          <Route path="classroom/live-quizzes" element={<ExamsMainPage />} />
           <Route path="messages" element={<TeacherMessagesPage />} />
           <Route path="notifications" element={<TeacherNotificationsPage />} />
           

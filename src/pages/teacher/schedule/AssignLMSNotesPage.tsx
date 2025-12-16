@@ -42,7 +42,7 @@ export default function AssignLMSNotesPage() {
     setTimeout(() => {
       toast.success('Assignments updated successfully!');
       setIsLoading(false);
-      navigate('/teacher/schedule');
+      navigate('/teacher/classroom/schedule');
     }, 1000);
   };
 
@@ -61,7 +61,7 @@ export default function AssignLMSNotesPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/teacher/schedule')}
+          onClick={() => navigate('/teacher/classroom/schedule')}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />

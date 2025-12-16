@@ -71,11 +71,11 @@ export default function CreateClassPage() {
   const onSubmit = (data: CreateClassFormData) => {
     console.log('Creating class:', data);
     toast.success('Class created successfully!');
-    navigate('/teacher/schedule');
+    navigate('/teacher/classroom/schedule');
   };
 
   const handleCancel = () => {
-    navigate('/teacher/schedule');
+    navigate('/teacher/classroom/schedule');
   };
 
   return (
