@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronRight, ChevronDown, Folder, FolderOpen, Eye, ExpandIcon, ShrinkIcon, BookOpen, Video, FileText, PenTool, GraduationCap } from 'lucide-react'
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Eye, ExpandIcon, ShrinkIcon, BookOpen, Video, FileText, PenTool, GraduationCap, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { mockLMSSeries } from '@/data/mockLMSSeries'
 import { LMSSeries } from '@/types/lmsSeries'
@@ -250,9 +250,18 @@ export default function LMSDirectoryPage() {
           <h1 className="text-3xl font-bold text-foreground">LMS Directory</h1>
           <p className="text-muted-foreground">Browse learning content series by subject hierarchy</p>
         </div>
-        <Button onClick={() => navigate('/teacher/lms')}>
-          Back to LMS
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => navigate('/teacher/lms/series/create')}
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Series
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/teacher/lms')}>
+            Back to LMS
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
