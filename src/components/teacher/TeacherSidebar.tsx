@@ -36,7 +36,8 @@ import { SidebarHoverMenu } from "./sidebar/SidebarHoverMenu"
 const navigationItems = [
   { title: "Dashboard", url: "/teacher", icon: LayoutDashboard, badge: null },
   { title: "Student Batches", url: "/teacher/batches", icon: Users, badge: "8" },
-  { title: "Exams", url: "/teacher/exams", icon: FileText, badge: null, hasSubmenu: true },
+  { title: "Question Bank", url: "/teacher/question-bank", icon: FileText, badge: null, hasSubmenu: true },
+  { title: "Exams", url: "/teacher/exams", icon: Calendar, badge: null, hasSubmenu: true },
   { title: "Classroom", url: "/teacher/classroom", icon: GraduationCap, badge: "2", hasSubmenu: true },
   { title: "LMS", url: "/teacher/lms", icon: BookOpen, badge: null, hasSubmenu: true },
   { title: "Reports", url: "/teacher/reports", icon: Presentation, badge: null, hasSubmenu: true },
@@ -45,9 +46,11 @@ const navigationItems = [
 ]
 
 const submenuItems = {
+  "Question Bank": [
+    { title: "Questions", url: "/teacher/question-bank", emoji: "❓" },
+    { title: "Directory", url: "/teacher/question-bank/directory", emoji: "🔀" },
+  ],
   "Exams": [
-    { title: "Question Bank", url: "/teacher/question-bank", emoji: "❓" },
-    { title: "Directory", url: "/teacher/directory", emoji: "🔀" },
     { title: "Exams", url: "/teacher/exams", emoji: "⏱️" },
     { title: "Instructions", url: "/teacher/instructions", emoji: "📂" },
   ],

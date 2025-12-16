@@ -91,9 +91,7 @@ function App() {
           <Route path="question-bank" element={<QuestionBankPage />} />
           <Route path="question-bank/add" element={<QuestionBankAddPage />} />
           <Route path="question-bank/:subjectId" element={<QuestionBankViewPage />} />
-
-          {/* Directory Route - Fixed */}
-          <Route path="directory" element={<DirectoryPage />} />
+          <Route path="question-bank/directory" element={<DirectoryPage />} />
 
           {/* Instructions Route - Alias for convenience */}
           <Route path="instructions" element={<Navigate to="/teacher/exams/instructions" replace />} />
