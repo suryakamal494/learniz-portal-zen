@@ -151,10 +151,16 @@ const UpdateLMSSeriesPage = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
             {selectedItems.length} items selected
           </span>
+          <Button
+            onClick={() => navigate('/teacher/lms/content')}
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
+          >
+            + Create LMS Content
+          </Button>
         </div>
       </div>
 
