@@ -59,7 +59,6 @@ const submenuItems = {
     { title: "Live Quizzes", url: "/teacher/classroom/live-quizzes", emoji: "⚡" },
   ],
   "LMS": [
-    { title: "Content", url: "/teacher/lms/content", emoji: "📚" },
     { title: "Series", url: "/teacher/lms/series", emoji: "📖" },
     { title: "Content Library", url: "/teacher/lms/library", emoji: "🗂️" },
     { title: "Directory", url: "/teacher/lms/directory", emoji: "📁" },
