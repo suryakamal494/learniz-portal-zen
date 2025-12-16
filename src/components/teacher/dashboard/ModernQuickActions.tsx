@@ -20,7 +20,7 @@ const quickActions = [
     title: "Schedule Class", 
     subtitle: "Plan sessions",
     icon: Calendar,
-    path: "/teacher/schedule/create",
+    path: "/teacher/classroom/schedule/create",
     gradient: "bg-gradient-to-br from-emerald-50 to-teal-100",
     iconBg: "bg-emerald-500",
     hoverGradient: "hover:from-emerald-100 hover:to-teal-200",

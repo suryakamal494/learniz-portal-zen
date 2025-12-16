@@ -69,12 +69,12 @@ export default function EditSchedulePage() {
     setTimeout(() => {
       toast.success('Schedule updated successfully!');
       setIsLoading(false);
-      navigate('/teacher/schedule');
+      navigate('/teacher/classroom/schedule');
     }, 1000);
   };
 
   const handleCancel = () => {
-    navigate('/teacher/schedule');
+    navigate('/teacher/classroom/schedule');
   };
 
   return (
@@ -84,7 +84,7 @@ export default function EditSchedulePage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/teacher/schedule')}
+          onClick={() => navigate('/teacher/classroom/schedule')}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />

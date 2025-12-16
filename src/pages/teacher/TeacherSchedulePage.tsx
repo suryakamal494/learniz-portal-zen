@@ -32,7 +32,7 @@ export default function TeacherSchedulePage() {
   };
 
   const handleCreateClick = () => {
-    navigate('/teacher/schedule/create');
+    navigate('/teacher/classroom/schedule/create');
   };
 
   const handleImportClick = () => {

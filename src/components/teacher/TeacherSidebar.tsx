@@ -37,9 +37,8 @@ const navigationItems = [
   { title: "Dashboard", url: "/teacher", icon: LayoutDashboard, badge: null },
   { title: "Student Batches", url: "/teacher/batches", icon: Users, badge: "8" },
   { title: "Exams", url: "/teacher/exams", icon: FileText, badge: null, hasSubmenu: true },
-  { title: "Live Quizzes", url: "/teacher/exams", icon: Zap, badge: null },
+  { title: "Classroom", url: "/teacher/classroom", icon: GraduationCap, badge: "2", hasSubmenu: true },
   { title: "LMS", url: "/teacher/lms", icon: BookOpen, badge: null, hasSubmenu: true },
-  { title: "Academic Schedule", url: "/teacher/schedule", icon: Calendar, badge: "2" },
   { title: "Reports", url: "/teacher/reports", icon: Presentation, badge: null, hasSubmenu: true },
   { title: "Notifications", url: "/teacher/notifications", icon: Bell, badge: "3" },
   { title: "Messages", url: "/teacher/messages", icon: MessageCircle, badge: "7" },
@@ -51,6 +50,10 @@ const submenuItems = {
     { title: "Directory", url: "/teacher/directory", emoji: "🔀" },
     { title: "Exams", url: "/teacher/exams", emoji: "⏱️" },
     { title: "Instructions", url: "/teacher/instructions", emoji: "📂" },
+  ],
+  "Classroom": [
+    { title: "Academic Schedule", url: "/teacher/classroom/schedule", emoji: "📅" },
+    { title: "Live Quizzes", url: "/teacher/classroom/live-quizzes", emoji: "⚡" },
   ],
   "LMS": [
     { title: "Content", url: "/teacher/lms/content", emoji: "📚" },
