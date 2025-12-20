@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
 
@@ -61,6 +61,108 @@ import LMSMainPage from './pages/teacher/lms/LMSMainPage';
 import NotesPage from './pages/teacher/lms/NotesPage';
 import LMSDirectoryPage from './pages/teacher/lms/LMSDirectoryPage';
 import CreateNotesPage from './pages/teacher/lms/notes/CreateNotesPage';
+
+// Institute Analytics Pages
+import InstituteSnapshotPage from './pages/institute/InstituteSnapshotPage';
+import TeacherPerformancePage from './pages/institute/TeacherPerformancePage';
+import TeacherDetailPage from './pages/institute/TeacherDetailPage';
+import SubjectHealthPage from './pages/institute/SubjectHealthPage';
+import ClassOverviewPage from './pages/institute/ClassOverviewPage';
+
+// Institute Layout with Navigation
+function InstituteLayout() {
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname.startsWith(path);
+  
+  return (
+    <div className="min-h-screen bg-background">
+      <nav className="bg-card border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-6">
+              <Link to="/institute" className="text-xl font-bold text-primary">
+                Academic Insights
+              </Link>
+              <div className="hidden md:flex items-center gap-1">
+                <Link 
+                  to="/institute" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname === '/institute' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Snapshot
+                </Link>
+                <Link 
+                  to="/institute/teachers" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institute/teachers') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Teachers
+                </Link>
+                <Link 
+                  to="/institute/subjects" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institute/subjects') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Subjects
+                </Link>
+                <Link 
+                  to="/institute/classes" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institute/classes') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Classes
+                </Link>
+              </div>
+            </div>
+            <Link to="/teacher" className="text-sm text-muted-foreground hover:text-foreground">
+              ← Back to Teacher Panel
+            </Link>
+          </div>
+          {/* Mobile nav */}
+          <div className="flex md:hidden items-center gap-1 pb-3 overflow-x-auto">
+            <Link 
+              to="/institute" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                location.pathname === '/institute' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Snapshot
+            </Link>
+            <Link 
+              to="/institute/teachers" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                isActive('/institute/teachers') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Teachers
+            </Link>
+            <Link 
+              to="/institute/subjects" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                isActive('/institute/subjects') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Subjects
+            </Link>
+            <Link 
+              to="/institute/classes" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                isActive('/institute/classes') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Classes
+            </Link>
+          </div>
+        </div>
+      </nav>
+      <Outlet />
+    </div>
+  );
+}
 
 function TeacherLayoutWrapper() {
   return (
@@ -138,6 +240,15 @@ function App() {
           <Route path="lms/series/:seriesId/update-order" element={<UpdateExamOrderPage />} />
           <Route path="lms/series/:seriesId/preview" element={<LMSSeriesPreviewPage />} />
           <Route path="lms/directory" element={<LMSDirectoryPage />} />
+        </Route>
+
+        {/* Institute Analytics Routes */}
+        <Route path="/institute" element={<InstituteLayout />}>
+          <Route index element={<InstituteSnapshotPage />} />
+          <Route path="teachers" element={<TeacherPerformancePage />} />
+          <Route path="teachers/:teacherId" element={<TeacherDetailPage />} />
+          <Route path="subjects" element={<SubjectHealthPage />} />
+          <Route path="classes" element={<ClassOverviewPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

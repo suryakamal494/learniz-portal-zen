@@ -1,9 +1,16 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Bell, Settings, Calendar } from "lucide-react"
+import { Bell, Settings, Calendar, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TeacherProfileDropdown } from "./TeacherProfileDropdown"
+import { Link } from "react-router-dom"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export function TeacherDashboardHeader() {
   return (
@@ -21,6 +28,25 @@ export function TeacherDashboardHeader() {
         <div className="flex items-center gap-3">
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link to="/institute">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative hover:bg-emerald-50 transition-colors group"
+                    >
+                      <BarChart3 className="h-5 w-5 text-emerald-600 transition-transform group-hover:scale-110" />
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Academic Insights</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
             <Button
               variant="ghost"
               size="icon"
