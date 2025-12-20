@@ -52,6 +52,8 @@ import LMSSeriesPreviewPage from './pages/teacher/lms/LMSSeriesPreviewPage';
 import ReportsMainPage from './pages/teacher/reports/ReportsMainPage';
 import AttendancePage from './pages/teacher/reports/AttendancePage';
 import BatchReportsPage from './pages/teacher/reports/BatchReportsPage';
+import ChapterAnalyticsListPage from './pages/teacher/reports/ChapterAnalyticsListPage';
+import ChapterAnalyticsPage from './pages/teacher/reports/ChapterAnalyticsPage';
 import DetailedExamReportPage from './pages/teacher/reports/DetailedExamReportPage';
 
 // Teacher LMS Additional Pages
@@ -103,6 +105,8 @@ function App() {
           <Route path="reports/attendance" element={<AttendancePage />} />
           <Route path="reports/batch" element={<BatchReportsPage />} />
           <Route path="reports/batch/:batchId/exam/:examId" element={<DetailedExamReportPage />} />
+          <Route path="reports/chapter-analytics" element={<ChapterAnalyticsListPage />} />
+          <Route path="reports/chapter-analytics/:chapterId" element={<ChapterAnalyticsPage />} />
 
           {/* Batches */}
           <Route path="batches" element={<BatchListingPage />} />
