@@ -118,7 +118,10 @@ function InstituteLayout() {
                 </Link>
               </div>
             </div>
-            <Link to="/teacher" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link 
+              to="/teacher" 
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+            >
               ← Back to Teacher Panel
             </Link>
           </div>

@@ -82,7 +82,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
         batches: ['10-A', '10-B', '11-A'],
         chapters: [
           {
-            chapterId: 'math-ch1',
+            chapterId: 'ch-linear-eq',
             chapterName: 'Linear Equations',
             accuracy: 78.2,
             engagement: 92.1,
@@ -99,7 +99,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'math-ch2',
+            chapterId: 'ch-quadratic-eq',
             chapterName: 'Quadratic Equations',
             accuracy: 68.4,
             engagement: 85.6,
@@ -116,7 +116,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'math-ch3',
+            chapterId: 'ch-trigonometry',
             chapterName: 'Trigonometry',
             accuracy: 62.1,
             engagement: 79.4,
@@ -133,7 +133,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'math-ch4',
+            chapterId: 'ch-coordinate-geometry',
             chapterName: 'Coordinate Geometry',
             accuracy: 75.8,
             engagement: 91.2,
@@ -174,7 +174,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
         batches: ['11-A', '11-B', '12-A'],
         chapters: [
           {
-            chapterId: 'phy-ch1',
+            chapterId: 'ch-motion',
             chapterName: 'Laws of Motion',
             accuracy: 71.5,
             engagement: 87.2,
@@ -191,7 +191,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'phy-ch2',
+            chapterId: 'ch-thermodynamics',
             chapterName: 'Thermodynamics',
             accuracy: 58.7,
             engagement: 78.4,
@@ -208,7 +208,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'phy-ch3',
+            chapterId: 'ch-electrostatics',
             chapterName: 'Electrostatics',
             accuracy: 65.4,
             engagement: 82.1,
@@ -249,7 +249,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
         batches: ['10-A', '11-A', '11-B', '12-A', '12-B'],
         chapters: [
           {
-            chapterId: 'chem-ch1',
+            chapterId: 'ch-atomic-structure',
             chapterName: 'Atomic Structure',
             accuracy: 79.3,
             engagement: 92.4,
@@ -268,7 +268,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'chem-ch2',
+            chapterId: 'ch-chemical-bonding',
             chapterName: 'Chemical Bonding',
             accuracy: 72.6,
             engagement: 87.8,
@@ -285,7 +285,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'chem-ch3',
+            chapterId: 'ch-chemical-reactions',
             chapterName: 'Organic Chemistry Basics',
             accuracy: 68.4,
             engagement: 83.6,
@@ -327,7 +327,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
         batches: ['12-A', '12-B'],
         chapters: [
           {
-            chapterId: 'math-ch5',
+            chapterId: 'ch-calculus-diff',
             chapterName: 'Calculus - Differentiation',
             accuracy: 64.5,
             engagement: 80.2,
@@ -343,7 +343,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
             ],
           },
           {
-            chapterId: 'math-ch6',
+            chapterId: 'ch-calculus-int',
             chapterName: 'Calculus - Integration',
             accuracy: 58.3,
             engagement: 76.5,
@@ -370,7 +370,7 @@ export const mockTeacherPerformance: TeacherPerformanceData[] = [
         batches: ['12-A', '12-B'],
         chapters: [
           {
-            chapterId: 'phy-ch4',
+            chapterId: 'ch-modern-physics',
             chapterName: 'Modern Physics',
             accuracy: 62.6,
             engagement: 80.2,
@@ -407,7 +407,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
     classCount: 3,
     chapters: [
       {
-        id: 'math-ch1',
+        id: 'ch-linear-eq',
         name: 'Linear Equations',
         subjectId: 'mathematics',
         accuracy: 78.2,
@@ -423,7 +423,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-18',
       },
       {
-        id: 'math-ch2',
+        id: 'ch-quadratic-eq',
         name: 'Quadratic Equations',
         subjectId: 'mathematics',
         accuracy: 68.4,
@@ -439,7 +439,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-15',
       },
       {
-        id: 'math-ch3',
+        id: 'ch-trigonometry',
         name: 'Trigonometry',
         subjectId: 'mathematics',
         accuracy: 62.1,
@@ -455,7 +455,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-12',
       },
       {
-        id: 'math-ch4',
+        id: 'ch-coordinate-geometry',
         name: 'Coordinate Geometry',
         subjectId: 'mathematics',
         accuracy: 75.8,
@@ -471,7 +471,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-20',
       },
       {
-        id: 'math-ch5',
+        id: 'ch-calculus-diff',
         name: 'Calculus - Differentiation',
         subjectId: 'mathematics',
         accuracy: 64.5,
@@ -487,7 +487,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-18',
       },
       {
-        id: 'math-ch6',
+        id: 'ch-calculus-int',
         name: 'Calculus - Integration',
         subjectId: 'mathematics',
         accuracy: 58.3,
@@ -518,7 +518,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
     classCount: 2,
     chapters: [
       {
-        id: 'phy-ch1',
+        id: 'ch-motion',
         name: 'Laws of Motion',
         subjectId: 'physics',
         accuracy: 71.5,
@@ -534,7 +534,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-19',
       },
       {
-        id: 'phy-ch2',
+        id: 'ch-thermodynamics',
         name: 'Thermodynamics',
         subjectId: 'physics',
         accuracy: 58.7,
@@ -550,7 +550,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-16',
       },
       {
-        id: 'phy-ch3',
+        id: 'ch-electrostatics',
         name: 'Electrostatics',
         subjectId: 'physics',
         accuracy: 65.4,
@@ -566,7 +566,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-14',
       },
       {
-        id: 'phy-ch4',
+        id: 'ch-modern-physics',
         name: 'Modern Physics',
         subjectId: 'physics',
         accuracy: 62.6,
@@ -597,7 +597,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
     classCount: 3,
     chapters: [
       {
-        id: 'chem-ch1',
+        id: 'ch-atomic-structure',
         name: 'Atomic Structure',
         subjectId: 'chemistry',
         accuracy: 79.3,
@@ -613,7 +613,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-20',
       },
       {
-        id: 'chem-ch2',
+        id: 'ch-chemical-bonding',
         name: 'Chemical Bonding',
         subjectId: 'chemistry',
         accuracy: 72.6,
@@ -629,7 +629,7 @@ export const mockInstituteSubjects: InstituteSubject[] = [
         lastActivityDate: '2024-01-17',
       },
       {
-        id: 'chem-ch3',
+        id: 'ch-chemical-reactions',
         name: 'Organic Chemistry Basics',
         subjectId: 'chemistry',
         accuracy: 68.4,
