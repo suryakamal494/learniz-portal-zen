@@ -67,6 +67,7 @@ const submenuItems = {
   "Reports": [
     { title: "Attendance", url: "/teacher/reports/attendance", emoji: "📊" },
     { title: "Batch Reports", url: "/teacher/reports/batch", emoji: "📈" },
+    { title: "Chapter Analytics", url: "/teacher/reports/chapter-analytics", emoji: "📚" },
   ]
 }
 
