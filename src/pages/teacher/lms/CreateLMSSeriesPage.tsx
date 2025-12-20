@@ -86,18 +86,18 @@ const CreateLMSSeriesPage = () => {
           onClick={() => navigate('/teacher/lms/series')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Series
+          Back to Lesson Plans
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create New Series</h1>
-          <p className="text-muted-foreground mt-1">Create a new learning series for your students</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create New Lesson Plan</h1>
+          <p className="text-muted-foreground mt-1">Create a new lesson plan for your students</p>
         </div>
       </div>
 
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Series Details</CardTitle>
+          <CardTitle>Lesson Plan Details</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -108,9 +108,9 @@ const CreateLMSSeriesPage = () => {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Series Title *</FormLabel>
+                      <FormLabel>Lesson Plan Title *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter series title" {...field} />
+                        <Input placeholder="Enter lesson plan title" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -122,19 +122,19 @@ const CreateLMSSeriesPage = () => {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Series Type *</FormLabel>
+                      <FormLabel>Lesson Plan Type *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select series type" />
+                            <SelectValue placeholder="Select lesson plan type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="content-series">Content Series</SelectItem>
-                          <SelectItem value="video-series">Video Series</SelectItem>
-                          <SelectItem value="assignment-series">Assignment Series</SelectItem>
-                          <SelectItem value="quiz-series">Quiz Series</SelectItem>
-                          <SelectItem value="exam-series">Exam Series</SelectItem>
+                          <SelectItem value="content-series">Content Plan</SelectItem>
+                          <SelectItem value="video-series">Video Plan</SelectItem>
+                          <SelectItem value="assignment-series">Assignment Plan</SelectItem>
+                          <SelectItem value="quiz-series">Quiz Plan</SelectItem>
+                          <SelectItem value="exam-series">Exam Plan</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -285,7 +285,7 @@ const CreateLMSSeriesPage = () => {
                   className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting ? 'Creating...' : 'Create Series'}
+                  {isSubmitting ? 'Creating...' : 'Create Lesson Plan'}
                 </Button>
                 <Button 
                   type="button" 

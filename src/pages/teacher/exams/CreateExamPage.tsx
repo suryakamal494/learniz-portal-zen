@@ -99,9 +99,9 @@ const CreateExamPage: React.FC = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Exam</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Create New Assessment</h1>
           <p className="text-gray-600 mt-1">
-            Set up a new exam with detailed configuration
+            Set up a new assessment with detailed configuration
           </p>
         </div>
       </div>
@@ -112,7 +112,7 @@ const CreateExamPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-blue-600" />
-              Exam Configuration
+              Assessment Configuration
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -122,12 +122,12 @@ const CreateExamPage: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Exam Title *</Label>
+                  <Label htmlFor="title">Assessment Title *</Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Enter exam title"
+                    placeholder="Enter assessment title"
                   />
                 </div>
                 
@@ -302,7 +302,7 @@ const CreateExamPage: React.FC = () => {
                 disabled={isCreating}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                {isCreating ? 'Creating Exam...' : 'Create Exam'}
+                {isCreating ? 'Creating Assessment...' : 'Create Assessment'}
               </Button>
             </div>
           </CardContent>

@@ -73,7 +73,7 @@ export default function InstructionsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/teacher/exams')}>
-            Back to Exams
+            Back to Assessment
           </Button>
           <Button variant="default" className="bg-primary hover:bg-primary/90" onClick={handleCreateInstruction}>
             <Plus className="h-4 w-4 mr-2" />

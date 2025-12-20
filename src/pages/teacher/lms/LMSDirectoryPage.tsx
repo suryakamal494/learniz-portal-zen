@@ -247,8 +247,8 @@ export default function LMSDirectoryPage() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">LMS Directory</h1>
-          <p className="text-muted-foreground">Browse learning content series by subject hierarchy</p>
+          <h1 className="text-3xl font-bold text-foreground">Lesson Plan Library</h1>
+          <p className="text-muted-foreground">Browse lesson plans by subject hierarchy</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -256,10 +256,10 @@ export default function LMSDirectoryPage() {
             className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create New Series
+            Create New Lesson Plan
           </Button>
           <Button variant="outline" onClick={() => navigate('/teacher/lms')}>
-            Back to LMS
+            Back to Lessons
           </Button>
         </div>
       </div>
@@ -314,7 +314,7 @@ export default function LMSDirectoryPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Folder className="h-5 w-5" />
-              Series Directory
+              Lesson Plan Directory
             </CardTitle>
             <div className="flex gap-2">
               <Button
