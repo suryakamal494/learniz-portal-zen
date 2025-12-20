@@ -205,19 +205,19 @@ export const mockQuestionAnalysis: Record<string, QuestionAnalysis[]> = {
       questionId: 'q1',
       questionNumber: 1,
       questionText: 'A particle moves with constant acceleration. If its initial velocity is 5 m/s and acceleration is 2 m/s², what is its velocity after 3 seconds?',
-      correctCount: 20,
-      wrongCount: 4,
+      correctCount: 22,
+      wrongCount: 2,
       skippedCount: 1,
       totalStudents: 25,
-      correctPercentage: 80
+      correctPercentage: 88
     },
     {
       questionId: 'q2',
       questionNumber: 2,
       questionText: 'What is the force required to accelerate a 10 kg mass at 3 m/s²?',
       correctCount: 18,
-      wrongCount: 6,
-      skippedCount: 1,
+      wrongCount: 5,
+      skippedCount: 2,
       totalStudents: 25,
       correctPercentage: 72
     },
@@ -225,21 +225,61 @@ export const mockQuestionAnalysis: Record<string, QuestionAnalysis[]> = {
       questionId: 'q3',
       questionNumber: 3,
       questionText: 'A projectile is launched at 45° with initial velocity 20 m/s. What is the maximum height reached?',
-      correctCount: 15,
-      wrongCount: 7,
-      skippedCount: 3,
+      correctCount: 8,
+      wrongCount: 12,
+      skippedCount: 5,
       totalStudents: 25,
-      correctPercentage: 60
+      correctPercentage: 32
     },
     {
       questionId: 'q4',
       questionNumber: 4,
       questionText: 'Calculate the kinetic energy of a 5 kg object moving at 10 m/s.',
-      correctCount: 22,
-      wrongCount: 2,
+      correctCount: 21,
+      wrongCount: 3,
       skippedCount: 1,
       totalStudents: 25,
-      correctPercentage: 88
+      correctPercentage: 84
+    },
+    {
+      questionId: 'q5',
+      questionNumber: 5,
+      questionText: 'What is the momentum of a 2 kg ball traveling at 15 m/s?',
+      correctCount: 23,
+      wrongCount: 2,
+      skippedCount: 0,
+      totalStudents: 25,
+      correctPercentage: 92
+    },
+    {
+      questionId: 'q6',
+      questionNumber: 6,
+      questionText: 'Calculate the work done when a force of 50 N moves an object 10 m in the direction of force.',
+      correctCount: 16,
+      wrongCount: 6,
+      skippedCount: 3,
+      totalStudents: 25,
+      correctPercentage: 64
+    },
+    {
+      questionId: 'q7',
+      questionNumber: 7,
+      questionText: 'A car accelerates from rest to 20 m/s in 5 seconds. What is its acceleration?',
+      correctCount: 20,
+      wrongCount: 4,
+      skippedCount: 1,
+      totalStudents: 25,
+      correctPercentage: 80
+    },
+    {
+      questionId: 'q8',
+      questionNumber: 8,
+      questionText: 'Calculate the gravitational potential energy of a 10 kg mass at height 5 m (g=10 m/s²).',
+      correctCount: 7,
+      wrongCount: 10,
+      skippedCount: 8,
+      totalStudents: 25,
+      correctPercentage: 28
     }
   ],
   'exam-4': [
