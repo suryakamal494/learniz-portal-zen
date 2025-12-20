@@ -83,15 +83,15 @@ const ExamsMainPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exams Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Assessment Management</h1>
           <p className="text-gray-600 mt-1">
-            Create and manage all your exams
+            Create and manage all your assessments
           </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleCreateExam} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
-            Create Exam
+            Create Assessment
           </Button>
           <Button 
             variant="outline"
@@ -124,7 +124,7 @@ const ExamsMainPage: React.FC = () => {
               <BookOpen className="h-8 w-8 text-blue-600" />
               <div>
                 <p className="text-2xl font-bold">{exams.length}</p>
-                <p className="text-xs text-muted-foreground">Total Exams</p>
+                <p className="text-xs text-muted-foreground">Total Assessments</p>
               </div>
             </div>
           </CardContent>
@@ -159,10 +159,10 @@ const ExamsMainPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Exams Table */}
+      {/* Assessments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Exams</CardTitle>
+          <CardTitle>All Assessments</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -183,7 +183,7 @@ const ExamsMainPage: React.FC = () => {
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
                       <div className="text-gray-500">
-                        {searchTerm ? 'No exams found matching your search.' : 'No exams created yet.'}
+                        {searchTerm ? 'No assessments found matching your search.' : 'No assessments created yet.'}
                       </div>
                       {!searchTerm && (
                         <Button 
@@ -191,7 +191,7 @@ const ExamsMainPage: React.FC = () => {
                           onClick={handleCreateExam}
                           className="mt-2"
                         >
-                          Create Your First Exam
+                          Create Your First Assessment
                         </Button>
                       )}
                     </TableCell>

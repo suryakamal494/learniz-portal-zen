@@ -283,7 +283,7 @@ export default function NotesPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Notes Management</h1>
+          <h1 className="text-3xl font-bold text-foreground">Study Notes</h1>
           <p className="text-muted-foreground">Create, organize, and distribute study notes</p>
         </div>
         <div className="flex gap-2">
@@ -296,7 +296,7 @@ export default function NotesPage() {
             onClick={() => navigate('/teacher/classroom/notes/create')}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Notes
+            Create Study Notes
           </Button>
         </div>
       </div>
@@ -417,13 +417,13 @@ export default function NotesPage() {
       {/* Statistics Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Notes Statistics</CardTitle>
+          <CardTitle>Study Notes Statistics</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">156</div>
-              <div className="text-sm text-muted-foreground">Total Notes</div>
+              <div className="text-sm text-muted-foreground">Total Study Notes</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">1,245</div>

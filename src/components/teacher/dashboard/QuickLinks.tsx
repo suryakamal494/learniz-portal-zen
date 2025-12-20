@@ -6,7 +6,7 @@ import { Plus, BookOpen, Calendar, FileText, Video } from "lucide-react"
 
 const quickLinks = [
   {
-    title: "Exams",
+    title: "Assessment",
     icon: FileText,
     path: "/teacher/exams/create",
     color: "bg-gradient-to-br from-blue-500 to-blue-600"
@@ -18,13 +18,13 @@ const quickLinks = [
     color: "bg-gradient-to-br from-green-500 to-green-600"
   },
   {
-    title: "LMS Content",
+    title: "Lesson Material",
     icon: BookOpen,
     path: "/teacher/lms/content/create",
     color: "bg-gradient-to-br from-purple-500 to-purple-600"
   },
   {
-    title: "LMS Series",
+    title: "Lesson Plan",
     icon: Video,
     path: "/teacher/lms/series/create",
     color: "bg-gradient-to-br from-orange-500 to-orange-600"

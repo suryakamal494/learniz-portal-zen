@@ -161,11 +161,11 @@ const CreateNotesPage = () => {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => navigate('/teacher/classroom/notes')}>Notes</BreadcrumbLink>
+            <BreadcrumbLink onClick={() => navigate('/teacher/classroom/notes')}>Study Notes</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Create Notes</BreadcrumbPage>
+            <BreadcrumbPage>Create Study Notes</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -178,10 +178,10 @@ const CreateNotesPage = () => {
           onClick={() => navigate('/teacher/classroom/notes')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Notes
+          Back to Study Notes
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create Notes</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create Study Notes</h1>
           <p className="text-muted-foreground mt-1">Add new study notes to your library</p>
         </div>
       </div>
@@ -189,7 +189,7 @@ const CreateNotesPage = () => {
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Notes Details</CardTitle>
+          <CardTitle>Study Notes Details</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -342,7 +342,7 @@ const CreateNotesPage = () => {
                   className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting ? 'Creating...' : 'Create Notes'}
+                  {isSubmitting ? 'Creating...' : 'Create Study Notes'}
                 </Button>
                 <Button 
                   type="button" 

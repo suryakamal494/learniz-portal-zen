@@ -6,7 +6,7 @@ import { Plus, BookOpen, Calendar, FileText, Video } from "lucide-react"
 
 const quickActions = [
   {
-    title: "Create Exam",
+    title: "Create Assessment",
     subtitle: "Design assessments",
     icon: FileText,
     path: "/teacher/exams/create",
@@ -28,8 +28,8 @@ const quickActions = [
     subtitleColor: "text-emerald-700"
   },
   {
-    title: "Add Content",
-    subtitle: "Create materials",
+    title: "Add Material",
+    subtitle: "Create lesson materials",
     icon: BookOpen,
     path: "/teacher/lms/content/create",
     gradient: "bg-gradient-to-br from-purple-50 to-indigo-100",
@@ -39,8 +39,8 @@ const quickActions = [
     subtitleColor: "text-purple-700"
   },
   {
-    title: "Create Series",
-    subtitle: "Build courses",
+    title: "Create Lesson Plan",
+    subtitle: "Build lesson plans",
     icon: Video,
     path: "/teacher/lms/series/create",
     gradient: "bg-gradient-to-br from-orange-50 to-red-100",

@@ -54,8 +54,8 @@ export function ModernUpcomingClasses() {
                 <TableHead className="font-semibold text-slate-700">Topic</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Streaming</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Animations</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-center">Faculty Notes</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-center">Live Quiz</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Study Notes</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Live Assessment</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

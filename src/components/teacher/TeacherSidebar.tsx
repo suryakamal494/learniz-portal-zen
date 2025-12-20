@@ -37,9 +37,9 @@ const navigationItems = [
   { title: "Dashboard", url: "/teacher", icon: LayoutDashboard, badge: null },
   { title: "Student Batches", url: "/teacher/batches", icon: Users, badge: "8" },
   { title: "Question Bank", url: "/teacher/question-bank", icon: FileText, badge: null, hasSubmenu: true },
-  { title: "Exams", url: "/teacher/exams", icon: Calendar, badge: null, hasSubmenu: true },
+  { title: "Assessment", url: "/teacher/exams", icon: Calendar, badge: null, hasSubmenu: true },
   { title: "Classroom", url: "/teacher/classroom", icon: GraduationCap, badge: "2", hasSubmenu: true },
-  { title: "LMS", url: "/teacher/lms", icon: BookOpen, badge: null, hasSubmenu: true },
+  { title: "Lessons", url: "/teacher/lms", icon: BookOpen, badge: null, hasSubmenu: true },
   { title: "Reports", url: "/teacher/reports", icon: Presentation, badge: null, hasSubmenu: true },
   { title: "Notifications", url: "/teacher/notifications", icon: Bell, badge: "3" },
   { title: "Messages", url: "/teacher/messages", icon: MessageCircle, badge: "7" },
@@ -50,19 +50,19 @@ const submenuItems = {
     { title: "Questions", url: "/teacher/question-bank", emoji: "❓" },
     { title: "Directory", url: "/teacher/question-bank/directory", emoji: "🔀" },
   ],
-  "Exams": [
-    { title: "Exams", url: "/teacher/exams", emoji: "⏱️" },
+  "Assessment": [
+    { title: "Assessments", url: "/teacher/exams", emoji: "⏱️" },
     { title: "Instructions", url: "/teacher/instructions", emoji: "📂" },
   ],
   "Classroom": [
     { title: "Academic Schedule", url: "/teacher/classroom/schedule", emoji: "📅" },
-    { title: "Live Quizzes", url: "/teacher/classroom/live-quizzes", emoji: "⚡" },
-    { title: "Notes", url: "/teacher/classroom/notes", emoji: "📝" },
+    { title: "Live Assessment", url: "/teacher/classroom/live-quizzes", emoji: "⚡" },
+    { title: "Study Notes", url: "/teacher/classroom/notes", emoji: "📝" },
   ],
-  "LMS": [
-    { title: "Series", url: "/teacher/lms/series", emoji: "📖" },
-    { title: "Content Library", url: "/teacher/lms/library", emoji: "🗂️" },
-    { title: "Directory", url: "/teacher/lms/directory", emoji: "📁" },
+  "Lessons": [
+    { title: "Lesson Plan", url: "/teacher/lms/series", emoji: "📖" },
+    { title: "Material Library", url: "/teacher/lms/library", emoji: "🗂️" },
+    { title: "Lesson Plan Library", url: "/teacher/lms/directory", emoji: "📁" },
   ],
   "Reports": [
     { title: "Attendance", url: "/teacher/reports/attendance", emoji: "📊" },

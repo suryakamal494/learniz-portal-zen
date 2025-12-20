@@ -120,15 +120,15 @@ const LMSSeriesPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">LMS Series</h1>
-          <p className="text-muted-foreground mt-1">Manage and organize your content series</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Lesson Plans</h1>
+          <p className="text-muted-foreground mt-1">Manage and organize your lesson plans</p>
         </div>
         <Button 
           onClick={() => navigate('/teacher/lms/series/create')}
           className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create Series
+          Create Lesson Plan
         </Button>
       </div>
 
@@ -248,7 +248,7 @@ const LMSSeriesPage = () => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle>
-              Series List ({filteredSeries.length} results)
+              Lesson Plan List ({filteredSeries.length} results)
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button 

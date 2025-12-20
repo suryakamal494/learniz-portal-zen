@@ -68,8 +68,8 @@ export default function AssignLMSNotesPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Assign LMS and Notes</h1>
-          <p className="text-muted-foreground">Home {'>'} Online Classes {'>'} Assign LMS and Notes</p>
+          <h1 className="text-2xl font-bold text-foreground">Assign Lessons and Study Notes</h1>
+          <p className="text-muted-foreground">Home {'>'} Online Classes {'>'} Assign Lessons and Study Notes</p>
         </div>
       </div>
 
@@ -136,12 +136,12 @@ export default function AssignLMSNotesPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* LMS Series Dropdown */}
+              {/* Lesson Plan Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="lms-series">LMS Series</Label>
+                <Label htmlFor="lms-series">Lesson Plan</Label>
                 <Select value={selectedLMSSeries} onValueChange={setSelectedLMSSeries}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select LMS Series" />
+                    <SelectValue placeholder="Select Lesson Plan" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None Selected</SelectItem>
@@ -154,12 +154,12 @@ export default function AssignLMSNotesPage() {
                 </Select>
               </div>
 
-              {/* LMS Notes Dropdown */}
+              {/* Study Notes Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="lms-notes">LMS Notes</Label>
+                <Label htmlFor="lms-notes">Study Notes</Label>
                 <Select value={selectedNotes} onValueChange={setSelectedNotes}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Notes" />
+                    <SelectValue placeholder="Select Study Notes" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None Selected</SelectItem>
@@ -176,12 +176,12 @@ export default function AssignLMSNotesPage() {
                 </Select>
               </div>
 
-              {/* Live Quiz Dropdown */}
+              {/* Live Assessment Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="live-quiz">Live Quiz</Label>
+                <Label htmlFor="live-quiz">Live Assessment</Label>
                 <Select value={selectedQuiz} onValueChange={setSelectedQuiz}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Live Quiz" />
+                    <SelectValue placeholder="Select Live Assessment" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None Selected</SelectItem>

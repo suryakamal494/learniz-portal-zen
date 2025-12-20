@@ -78,9 +78,9 @@ export function TodaysClasses() {
                 <TableHead>Class</TableHead>
                 <TableHead>Topic</TableHead>
                 <TableHead>Streaming</TableHead>
-                <TableHead>LMS</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead>Live Quiz</TableHead>
+                <TableHead>Lessons</TableHead>
+                <TableHead>Study Notes</TableHead>
+                <TableHead>Live Assessment</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -139,15 +139,15 @@ export function TodaysClasses() {
                 
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="text-center">
-                    <p className="text-muted-foreground mb-1">LMS</p>
+                    <p className="text-muted-foreground mb-1">Lessons</p>
                     {getAssignmentStatus(classItem.assignments.lmsAssigned)}
                   </div>
                   <div className="text-center">
-                    <p className="text-muted-foreground mb-1">Notes</p>
+                    <p className="text-muted-foreground mb-1">Study Notes</p>
                     {getAssignmentStatus(classItem.assignments.notesAssigned)}
                   </div>
                   <div className="text-center">
-                    <p className="text-muted-foreground mb-1">Quiz</p>
+                    <p className="text-muted-foreground mb-1">Assessment</p>
                     {getAssignmentStatus(classItem.assignments.liveQuizAssigned)}
                   </div>
                 </div>

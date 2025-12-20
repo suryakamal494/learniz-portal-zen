@@ -119,8 +119,8 @@ export default function BatchListingPage() {
                 <TableHead className="font-semibold">Name</TableHead>
                 <TableHead className="font-semibold">Class & Course</TableHead>
                 <TableHead className="font-semibold">Students</TableHead>
-                <TableHead className="font-semibold text-center">Assign LMS</TableHead>
-                <TableHead className="font-semibold text-center">Assign Notes</TableHead>
+                <TableHead className="font-semibold text-center">Assign Lessons</TableHead>
+                <TableHead className="font-semibold text-center">Assign Study Notes</TableHead>
                 <TableHead className="font-semibold text-center">Exam Report</TableHead>
                 <TableHead className="font-semibold text-center">Action</TableHead>
               </TableRow>

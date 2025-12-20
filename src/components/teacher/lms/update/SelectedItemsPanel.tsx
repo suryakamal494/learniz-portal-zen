@@ -125,11 +125,11 @@ export const SelectedItemsPanel: React.FC<SelectedItemsPanelProps> = ({
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Updating...' : `Update Series (${selectedItems.length} items)`}
+                {isLoading ? 'Updating...' : `Update Lesson Plan (${selectedItems.length} items)`}
               </Button>
               
               <div className="text-xs text-center text-gray-500">
-                This will add the selected items to your series
+                This will add the selected items to your lesson plan
               </div>
             </div>
           </div>

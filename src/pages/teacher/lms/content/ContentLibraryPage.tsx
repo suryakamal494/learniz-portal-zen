@@ -84,8 +84,8 @@ const ContentLibraryPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Content Library</h1>
-          <p className="text-muted-foreground mt-1">Browse and manage your learning content</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Material Library</h1>
+          <p className="text-muted-foreground mt-1">Browse and manage your lesson materials</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button 
@@ -204,7 +204,7 @@ const ContentLibraryPage = () => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle>
-              Content Library ({filteredContent.length} items)
+              Material Library ({filteredContent.length} items)
             </CardTitle>
             <div className="flex items-center gap-2">
               {/* View Mode Toggle */}
