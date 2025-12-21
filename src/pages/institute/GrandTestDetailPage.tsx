@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, FileText, Calendar, Users, BookOpen, TrendingUp, 
   ChevronDown, ChevronRight, AlertTriangle, CheckCircle, XCircle,
-  Download
+  Download, Trophy, Award
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,9 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { getGrandTestById } from '@/data/mockGrandTests';
-import { GrandTestSubject, GrandTestChapter, GrandTestStudent, PriorityLevel } from '@/types/grandTest';
+import { GrandTestSubject, GrandTestChapter, GrandTestStudent, PriorityLevel, CompetitionExamType, competitionExamLabels } from '@/types/grandTest';
+import { PublishRanksModal } from '@/components/institute/PublishRanksModal';
+import { toast } from 'sonner';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
@@ -47,7 +49,9 @@ const bandConfig = {
 
 export default function GrandTestDetailPage() {
   const { testId } = useParams();
-  const test = getGrandTestById(testId || '');
+  const [test, setTest] = useState(() => getGrandTestById(testId || ''));
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   if (!test) {
     return (
@@ -69,16 +73,33 @@ export default function GrandTestDetailPage() {
     );
   }
 
+  const handlePublishRanks = (examType: CompetitionExamType) => {
+    setIsPublishing(true);
+    // Simulate API call
+    setTimeout(() => {
+      setTest(prev => prev ? { ...prev, ranksPublished: true, competitionExamType: examType } : prev);
+      setIsPublishing(false);
+      setIsPublishModalOpen(false);
+      toast.success(`Ranks published successfully for ${competitionExamLabels[examType]}!`);
+    }, 1500);
+  };
+
   const formattedDate = new Date(test.date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
 
+  // Calculate percentages for pie chart
+  const totalAttempted = test.totalCorrect + test.totalWrong;
+  const correctPercent = Math.round((test.totalCorrect / (test.totalCorrect + test.totalWrong)) * 100);
+  const wrongPercent = 100 - correctPercent;
+  const skippedPercent = Math.round((test.totalSkipped / test.totalResponses) * 100);
+
   const pieData = [
-    { name: 'Correct', value: test.correct, color: '#10B981' },
-    { name: 'Wrong', value: test.wrong, color: '#EF4444' },
-    { name: 'Skipped', value: test.skipped, color: '#94A3B8' }
+    { name: 'Correct', value: correctPercent, color: '#10B981' },
+    { name: 'Wrong', value: wrongPercent, color: '#EF4444' },
+    { name: 'Skipped', value: skippedPercent, color: '#94A3B8' }
   ];
 
   const subjectChartData = test.subjectPerformance.map(s => ({
@@ -98,7 +119,15 @@ export default function GrandTestDetailPage() {
         
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{test.name}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold">{test.name}</h1>
+              {test.ranksPublished && test.competitionExamType && (
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 gap-1">
+                  <Trophy className="h-3 w-3" />
+                  Ranks Published ({competitionExamLabels[test.competitionExamType]})
+                </Badge>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -114,24 +143,32 @@ export default function GrandTestDetailPage() {
               </span>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
+          <div className="flex gap-2">
+            {!test.ranksPublished && (
+              <Button onClick={() => setIsPublishModalOpen(true)}>
+                <Trophy className="h-4 w-4 mr-2" />
+                Publish Ranks
+              </Button>
+            )}
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export Report
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Overall Snapshot */}
+      {/* Overall Snapshot - Redesigned with cumulative stats */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Test Snapshot</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Overall Accuracy */}
             <div className="text-center p-4 rounded-lg bg-muted/50">
               <p className="text-4xl font-bold text-primary">{test.overallAccuracy.toFixed(1)}%</p>
-              <p className="text-sm text-muted-foreground mt-1">Overall Accuracy</p>
+              <p className="text-sm text-muted-foreground mt-1">Class Accuracy</p>
               <p className="text-xs mt-2">
                 <span className={priorityConfig[test.overallAccuracy >= 70 ? 'healthy' : test.overallAccuracy >= 40 ? 'needs_attention' : 'critical'].className}>
                   {priorityConfig[test.overallAccuracy >= 70 ? 'healthy' : test.overallAccuracy >= 40 ? 'needs_attention' : 'critical'].label}
@@ -143,7 +180,18 @@ export default function GrandTestDetailPage() {
             <div className="text-center p-4 rounded-lg bg-muted/50">
               <p className="text-4xl font-bold">{test.overallEngagement.toFixed(1)}%</p>
               <p className="text-sm text-muted-foreground mt-1">Engagement Rate</p>
-              <p className="text-xs text-muted-foreground mt-2">Questions attempted</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {(test.totalCorrect + test.totalWrong).toLocaleString()} of {test.totalResponses.toLocaleString()} attempted
+              </p>
+            </div>
+
+            {/* Students Summary */}
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <p className="text-4xl font-bold text-green-600 dark:text-green-400">{test.studentsAbovePassing}</p>
+              <p className="text-sm text-muted-foreground mt-1">Students Above 60%</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {test.studentsBelowPassing} students need support (&lt;40%)
+              </p>
             </div>
 
             {/* Pie Chart */}
@@ -157,20 +205,43 @@ export default function GrandTestDetailPage() {
                     innerRadius={30}
                     outerRadius={50}
                     dataKey="value"
-                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                    label={({ name, value }) => `${value}%`}
                     labelLine={false}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value) => `${value}%`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex justify-center gap-4 text-xs">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Correct</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Wrong</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400" /> Skipped</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Average Per Student Summary */}
+          <div className="mt-6 p-4 rounded-lg border bg-card">
+            <p className="text-sm font-medium mb-3">Average Performance Per Student</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              <div>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{test.avgCorrectPerStudent}</p>
+                <p className="text-xs text-muted-foreground">Avg Correct</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{Math.round(test.totalWrong / test.totalStudents)}</p>
+                <p className="text-xs text-muted-foreground">Avg Wrong</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-muted-foreground">{Math.round(test.totalSkipped / test.totalStudents)}</p>
+                <p className="text-xs text-muted-foreground">Avg Skipped</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{test.totalQuestions}</p>
+                <p className="text-xs text-muted-foreground">Total Questions</p>
               </div>
             </div>
           </div>
@@ -207,23 +278,23 @@ export default function GrandTestDetailPage() {
           <TabsTrigger value="students">Student Performance</TabsTrigger>
         </TabsList>
 
-        {/* Subject Analysis Tab */}
+        {/* Subject Analysis Tab - Redesigned */}
         <TabsContent value="subjects" className="space-y-4">
           {test.subjectPerformance.map((subject) => (
-            <SubjectCard key={subject.id} subject={subject} />
+            <SubjectCard key={subject.id} subject={subject} totalStudents={test.totalStudents} />
           ))}
         </TabsContent>
 
         {/* Chapter Breakdown Tab */}
         <TabsContent value="chapters" className="space-y-4">
           {test.subjectPerformance.map((subject) => (
-            <SubjectChaptersCard key={subject.id} subject={subject} />
+            <SubjectChaptersCard key={subject.id} subject={subject} totalStudents={test.totalStudents} />
           ))}
         </TabsContent>
 
         {/* Student Performance Tab */}
         <TabsContent value="students">
-          <StudentPerformanceSection students={test.studentPerformance} />
+          <StudentPerformanceSection students={test.studentPerformance} totalStudents={test.totalStudents} />
         </TabsContent>
       </Tabs>
 
@@ -249,7 +320,7 @@ export default function GrandTestDetailPage() {
                       <div>
                         <p className="font-medium">{subject.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {subject.accuracy.toFixed(1)}% accuracy • {subject.priorityLevel === 'critical' ? 'Immediate reinforcement required' : 'Revision recommended'}
+                          {subject.accuracy.toFixed(1)}% accuracy • {subject.studentsStruggling} students struggling (&lt;50%)
                         </p>
                       </div>
                     </div>
@@ -273,7 +344,9 @@ export default function GrandTestDetailPage() {
                   <div key={chapter.id} className="flex items-center justify-between p-3 rounded-lg border">
                     <div>
                       <p className="font-medium text-sm">{chapter.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.name} • {chapter.studentsStruggling} students need revision
+                      </p>
                     </div>
                     <span className={`text-sm font-medium ${priorityConfig[chapter.priorityLevel].className}`}>
                       {chapter.accuracy.toFixed(1)}%
@@ -302,12 +375,28 @@ export default function GrandTestDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Publish Ranks Modal */}
+      <PublishRanksModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onPublish={handlePublishRanks}
+        testName={test.name}
+        isPublishing={isPublishing}
+      />
     </div>
   );
 }
 
-function SubjectCard({ subject }: { subject: GrandTestSubject }) {
+// Redesigned Subject Card with meaningful metrics
+function SubjectCard({ subject, totalStudents }: { subject: GrandTestSubject; totalStudents: number }) {
   const config = priorityConfig[subject.priorityLevel];
+  
+  // Calculate percentages
+  const totalAttempted = subject.totalCorrect + subject.totalWrong;
+  const correctPercent = Math.round((subject.totalCorrect / totalAttempted) * 100);
+  const wrongPercent = Math.round((subject.totalWrong / totalAttempted) * 100);
+  const skippedPercent = Math.round((subject.totalSkipped / subject.totalResponses) * 100);
   
   return (
     <Card>
@@ -342,24 +431,53 @@ function SubjectCard({ subject }: { subject: GrandTestSubject }) {
           </div>
         </div>
         
+        {/* Meaningful metrics */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-3 rounded-lg bg-muted/50">
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">
+              {subject.avgCorrectPerStudent}/{subject.totalQuestions}
+            </p>
+            <p className="text-xs text-muted-foreground">Avg Correct per Student</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <p className="text-lg font-bold text-primary">
+              {subject.studentsExcelling}
+            </p>
+            <p className="text-xs text-muted-foreground">Students Excelling (&gt;80%)</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+              {subject.studentsStruggling}
+            </p>
+            <p className="text-xs text-muted-foreground">Students Struggling (&lt;50%)</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <p className="text-lg font-bold">
+              {subject.totalResponses.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">Total Responses</p>
+          </div>
+        </div>
+
+        {/* Progress bar showing percentage distribution */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs mb-1">
-            <span>Correct: {subject.correct}</span>
-            <span>Wrong: {subject.wrong}</span>
-            <span>Skipped: {subject.skipped}</span>
+            <span className="text-green-600 dark:text-green-400">{correctPercent}% correct</span>
+            <span className="text-red-600 dark:text-red-400">{wrongPercent}% wrong</span>
+            <span className="text-muted-foreground">{skippedPercent}% skipped</span>
           </div>
           <div className="flex h-2 rounded-full overflow-hidden bg-muted">
             <div 
               className="bg-green-500" 
-              style={{ width: `${(subject.correct / (subject.correct + subject.wrong + subject.skipped)) * 100}%` }} 
+              style={{ width: `${correctPercent}%` }} 
             />
             <div 
               className="bg-red-500" 
-              style={{ width: `${(subject.wrong / (subject.correct + subject.wrong + subject.skipped)) * 100}%` }} 
+              style={{ width: `${wrongPercent}%` }} 
             />
             <div 
               className="bg-slate-400" 
-              style={{ width: `${(subject.skipped / (subject.correct + subject.wrong + subject.skipped)) * 100}%` }} 
+              style={{ width: `${skippedPercent}%` }} 
             />
           </div>
         </div>
@@ -368,7 +486,7 @@ function SubjectCard({ subject }: { subject: GrandTestSubject }) {
   );
 }
 
-function SubjectChaptersCard({ subject }: { subject: GrandTestSubject }) {
+function SubjectChaptersCard({ subject, totalStudents }: { subject: GrandTestSubject; totalStudents: number }) {
   const [isOpen, setIsOpen] = useState(true);
   
   return (
@@ -393,7 +511,7 @@ function SubjectChaptersCard({ subject }: { subject: GrandTestSubject }) {
           <CardContent className="pt-0">
             <div className="space-y-3">
               {subject.chapters.map((chapter) => (
-                <ChapterRow key={chapter.id} chapter={chapter} />
+                <ChapterRow key={chapter.id} chapter={chapter} totalStudents={totalStudents} />
               ))}
             </div>
           </CardContent>
@@ -403,20 +521,23 @@ function SubjectChaptersCard({ subject }: { subject: GrandTestSubject }) {
   );
 }
 
-function ChapterRow({ chapter }: { chapter: GrandTestChapter }) {
+function ChapterRow({ chapter, totalStudents }: { chapter: GrandTestChapter; totalStudents: number }) {
   const config = priorityConfig[chapter.priorityLevel];
   
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3">
       <div className="flex items-center gap-2">
         {config.icon}
-        <span className="font-medium">{chapter.name}</span>
+        <div>
+          <span className="font-medium">{chapter.name}</span>
+          <p className="text-xs text-muted-foreground">
+            {chapter.studentsStruggling} of {totalStudents} students need revision
+          </p>
+        </div>
       </div>
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-green-600 dark:text-green-400">✓ {chapter.correct}</span>
-          <span className="text-red-600 dark:text-red-400">✗ {chapter.wrong}</span>
-          <span className="text-muted-foreground">○ {chapter.skipped}</span>
+        <div className="text-sm text-muted-foreground">
+          {chapter.totalQuestions} questions • {chapter.engagement.toFixed(0)}% attempted
         </div>
         <div className="min-w-20 text-right">
           <span className={`font-bold ${config.className}`}>{chapter.accuracy.toFixed(1)}%</span>
@@ -426,18 +547,24 @@ function ChapterRow({ chapter }: { chapter: GrandTestChapter }) {
   );
 }
 
-function StudentPerformanceSection({ students }: { students: GrandTestStudent[] }) {
+function StudentPerformanceSection({ students, totalStudents }: { students: GrandTestStudent[]; totalStudents: number }) {
   const bandCounts = {
     high: students.filter(s => s.band === 'high').length,
     medium: students.filter(s => s.band === 'medium').length,
     at_risk: students.filter(s => s.band === 'at_risk').length
   };
 
+  // Calculate percentages based on sample shown vs total
+  const sampleSize = students.length;
+  
   return (
     <div className="space-y-4">
       {/* Band Summary */}
       <Card>
         <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground mb-3">
+            Showing {sampleSize} students • Total: {totalStudents} students
+          </p>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">{bandCounts.high}</p>
@@ -527,6 +654,9 @@ function StudentRow({ student }: { student: GrandTestStudent }) {
                 <div key={idx} className="flex items-center justify-between text-sm">
                   <span>{subj.subjectName}</span>
                   <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {subj.correct}/{subj.correct + subj.wrong + subj.skipped}
+                    </span>
                     <Progress value={subj.accuracy} className="w-24 h-2" />
                     <span className="min-w-12 text-right font-medium">{subj.accuracy.toFixed(0)}%</span>
                   </div>
