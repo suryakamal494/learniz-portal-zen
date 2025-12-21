@@ -2,6 +2,7 @@
 
 export type TestType = 'half-yearly' | 'annual' | 'term' | 'quarterly';
 export type PriorityLevel = 'healthy' | 'needs_attention' | 'critical';
+export type CompetitionExamType = 'jee_mains' | 'neet' | 'eamcet';
 
 export interface GrandTest {
   id: string;
@@ -14,12 +15,19 @@ export interface GrandTest {
   overallAccuracy: number;
   overallEngagement: number;
   status: 'completed' | 'in_progress' | 'scheduled';
+  ranksPublished?: boolean;
+  competitionExamType?: CompetitionExamType;
 }
 
 export interface GrandTestDetail extends GrandTest {
-  correct: number;
-  wrong: number;
-  skipped: number;
+  // Overall cumulative stats (across all students)
+  totalResponses: number;        // totalQuestions × totalStudents
+  totalCorrect: number;          // Sum of all correct answers from all students
+  totalWrong: number;            // Sum of all wrong answers from all students
+  totalSkipped: number;          // Sum of all skipped answers from all students
+  studentsAbovePassing: number;  // Students who scored >= 60%
+  studentsBelowPassing: number;  // Students who scored < 40%
+  avgCorrectPerStudent: number;  // Average correct answers per student
   subjectPerformance: GrandTestSubject[];
   studentPerformance: GrandTestStudent[];
 }
@@ -29,11 +37,16 @@ export interface GrandTestSubject {
   name: string;
   color: string;
   totalQuestions: number;
-  correct: number;
-  wrong: number;
-  skipped: number;
-  accuracy: number;
-  engagement: number;
+  // Cumulative stats (across all students for this subject)
+  totalResponses: number;        // totalQuestions × totalStudents
+  totalCorrect: number;          // Sum of all correct answers
+  totalWrong: number;            // Sum of all wrong answers
+  totalSkipped: number;          // Sum of all skipped answers
+  accuracy: number;              // totalCorrect / (totalCorrect + totalWrong) * 100
+  engagement: number;            // (totalCorrect + totalWrong) / totalResponses * 100
+  avgCorrectPerStudent: number;  // Average correct per student for this subject
+  studentsStruggling: number;    // Students with <50% accuracy in this subject
+  studentsExcelling: number;     // Students with >80% accuracy in this subject
   priorityLevel: PriorityLevel;
   chapters: GrandTestChapter[];
 }
@@ -43,11 +56,14 @@ export interface GrandTestChapter {
   name: string;
   subjectId: string;
   totalQuestions: number;
-  correct: number;
-  wrong: number;
-  skipped: number;
+  // Cumulative stats
+  totalResponses: number;
+  totalCorrect: number;
+  totalWrong: number;
+  totalSkipped: number;
   accuracy: number;
   engagement: number;
+  studentsStruggling: number;    // Students needing revision on this chapter
   priorityLevel: PriorityLevel;
 }
 
@@ -64,6 +80,9 @@ export interface GrandTestStudent {
   subjectWise: {
     subjectId: string;
     subjectName: string;
+    correct: number;
+    wrong: number;
+    skipped: number;
     accuracy: number;
   }[];
 }
@@ -81,3 +100,10 @@ export function getStudentBand(accuracy: number): 'high' | 'medium' | 'at_risk' 
   if (accuracy >= 40) return 'medium';
   return 'at_risk';
 }
+
+// Competition exam type labels
+export const competitionExamLabels: Record<CompetitionExamType, string> = {
+  jee_mains: 'JEE Mains',
+  neet: 'NEET',
+  eamcet: 'EAMCET'
+};
