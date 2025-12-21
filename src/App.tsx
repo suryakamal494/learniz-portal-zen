@@ -68,6 +68,8 @@ import TeacherPerformancePage from './pages/institute/TeacherPerformancePage';
 import TeacherDetailPage from './pages/institute/TeacherDetailPage';
 import SubjectHealthPage from './pages/institute/SubjectHealthPage';
 import ClassOverviewPage from './pages/institute/ClassOverviewPage';
+import GrandTestsPage from './pages/institute/GrandTestsPage';
+import GrandTestDetailPage from './pages/institute/GrandTestDetailPage';
 
 // Institute Layout with Navigation
 function InstituteLayout() {
@@ -111,10 +113,18 @@ function InstituteLayout() {
                 <Link 
                   to="/institute/classes" 
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/institute/classes') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    location.pathname === '/institute/classes' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
                   Classes
+                </Link>
+                <Link 
+                  to="/institute/grand-tests" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institute/grand-tests') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Grand Tests
                 </Link>
               </div>
             </div>
@@ -154,10 +164,18 @@ function InstituteLayout() {
             <Link 
               to="/institute/classes" 
               className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
-                isActive('/institute/classes') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                location.pathname === '/institute/classes' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
               }`}
             >
               Classes
+            </Link>
+            <Link 
+              to="/institute/grand-tests" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                isActive('/institute/grand-tests') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Grand Tests
             </Link>
           </div>
         </div>
@@ -252,6 +270,8 @@ function App() {
           <Route path="teachers/:teacherId" element={<TeacherDetailPage />} />
           <Route path="subjects" element={<SubjectHealthPage />} />
           <Route path="classes" element={<ClassOverviewPage />} />
+          <Route path="grand-tests" element={<GrandTestsPage />} />
+          <Route path="grand-tests/:testId" element={<GrandTestDetailPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
