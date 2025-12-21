@@ -40,11 +40,14 @@ import {
   Send,
   BellRing,
   Shield,
-  Globe
+  Globe,
+  Download,
+  Printer
 } from 'lucide-react';
 
 export default function BrochurePage() {
   const navigate = useNavigate();
+  const [isPrintMode, setIsPrintMode] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 10;
 
@@ -56,11 +59,24 @@ export default function BrochurePage() {
     setCurrentSlide(prev => Math.min(totalSlides - 1, prev + 1));
   };
 
+  const handlePrint = () => {
+    setIsPrintMode(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setIsPrintMode(false), 500);
+    }, 100);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isPrintMode) return;
       if (e.key === 'ArrowLeft') handlePrevious();
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'Escape') navigate('/login');
+      if (e.key === 'p' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handlePrint();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -730,10 +746,47 @@ export default function BrochurePage() {
     </BrochureSlide>
   ];
 
+  // Print mode: show all slides stacked vertically
+  if (isPrintMode) {
+    return (
+      <div className="brochure-print-container bg-[#0f1419]">
+        <style>{`
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 0;
+            }
+            body {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .brochure-print-container {
+              background: #0f1419 !important;
+            }
+            .brochure-slide-print {
+              page-break-after: always;
+              page-break-inside: avoid;
+              height: 100vh;
+              width: 100vw;
+            }
+            .brochure-slide-print:last-child {
+              page-break-after: auto;
+            }
+          }
+        `}</style>
+        {slides.map((slide, i) => (
+          <div key={i} className="brochure-slide-print">
+            {slide}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0f1419] overflow-hidden">
       {/* Navigation */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#1a1f2e]/90 backdrop-blur-sm rounded-full px-4 py-2 border border-[#2a3041]">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#1a1f2e]/90 backdrop-blur-sm rounded-full px-4 py-2 border border-[#2a3041] print:hidden">
         <button
           onClick={handlePrevious}
           disabled={currentSlide === 0}
@@ -761,6 +814,17 @@ export default function BrochurePage() {
         >
           <ChevronRight size={20} />
         </button>
+        
+        {/* Print/Download Button */}
+        <div className="w-px h-6 bg-[#2a3041] mx-1" />
+        <button
+          onClick={handlePrint}
+          className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all flex items-center gap-1.5"
+          title="Print / Save as PDF (Ctrl+P)"
+        >
+          <Download size={18} />
+          <span className="text-xs hidden sm:inline">PDF</span>
+        </button>
       </div>
 
       {/* Slide container */}
@@ -778,7 +842,7 @@ export default function BrochurePage() {
       </div>
 
       {/* Page number */}
-      <div className="fixed bottom-4 right-6 text-[#8b95a8] text-sm">
+      <div className="fixed bottom-4 right-6 text-[#8b95a8] text-sm print:hidden">
         {currentSlide + 1} / {totalSlides}
       </div>
     </div>
