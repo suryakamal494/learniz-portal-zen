@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, GraduationCap } from "lucide-react";
+import { User, GraduationCap, FileText } from "lucide-react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -97,6 +97,17 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Brochure Link */}
+        <div className="text-center">
+          <Link 
+            to="/brochure"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#ff6b4a] to-[#ff8a6a] text-white font-medium rounded-xl hover:opacity-90 transition-all duration-300 shadow-lg"
+          >
+            <FileText className="h-5 w-5" />
+            View Product Brochure
+          </Link>
+        </div>
 
         {/* Footer */}
         <p className="text-center text-body-xs text-muted-foreground">
