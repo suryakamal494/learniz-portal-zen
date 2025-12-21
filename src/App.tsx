@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
+import BrochurePage from './pages/BrochurePage';
 
 // Teacher pages
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -199,6 +200,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/brochure" element={<BrochurePage />} />
 
         {/* Teacher Routes */}
         <Route path="/teacher" element={<TeacherLayoutWrapper />}>
