@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { StudentChapterPerformance } from '@/types/chapterReport';
 import { StudentDetailModal } from './StudentDetailModal';
 import { 
   getTrendIcon, 
-  getMasteryLabel, 
-  getMasteryColor,
   formatComparison,
   getComparisonColor
 } from '@/utils/chapterAnalyticsUtils';
@@ -111,7 +108,6 @@ export function StudentPerformanceSection({ students, classAverage, defaultOpen 
                       <TableHead className="hidden lg:table-cell">
                         <SortButton field="comparison">vs Class</SortButton>
                       </TableHead>
-                      <TableHead className="hidden md:table-cell">Mastery</TableHead>
                       <TableHead className="w-[80px]">Action</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -143,11 +139,6 @@ export function StudentPerformanceSection({ students, classAverage, defaultOpen 
                           <span className={getComparisonColor(student.comparisonWithClass)}>
                             {formatComparison(student.comparisonWithClass)}
                           </span>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Badge className={getMasteryColor(student.masteryLevel)}>
-                            {getMasteryLabel(student.masteryLevel)}
-                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Button 
