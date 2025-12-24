@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronUp, ChevronDown, MoreVertical, ExternalLink, BookOpen, FileText, Zap, Edit, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { TeacherScheduleClass, TeacherScheduleSort } from '@/types/teacherSchedule';
+import { TeachingStatus } from '@/types/teachingProgress';
+import { TeachingStatusCell } from './TeachingStatusCell';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -13,12 +15,14 @@ interface TeacherDesktopScheduleTableProps {
   data: TeacherScheduleClass[];
   sort: TeacherScheduleSort;
   onSortChange: (field: string) => void;
+  onTeachingStatusChange?: (classId: string, status: TeachingStatus, notes?: string) => void;
 }
 
 export function TeacherDesktopScheduleTable({
   data,
   sort,
-  onSortChange
+  onSortChange,
+  onTeachingStatusChange
 }: TeacherDesktopScheduleTableProps) {
   const navigate = useNavigate();
 
@@ -39,6 +43,12 @@ export function TeacherDesktopScheduleTable({
 
   const handleDeleteClick = (classItem: TeacherScheduleClass) => {
     toast.success(`Delete clicked for ${classItem.topic}`);
+  };
+
+  const handleTeachingStatusChange = (classId: string, status: TeachingStatus, notes?: string) => {
+    if (onTeachingStatusChange) {
+      onTeachingStatusChange(classId, status, notes);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -117,6 +127,7 @@ export function TeacherDesktopScheduleTable({
                   {getSortIcon('topic')}
                 </div>
               </TableHead>
+              <TableHead className="font-medium">TEACHING STATUS</TableHead>
               <TableHead className="font-medium">ASSIGNMENTS</TableHead>
               <TableHead className="text-center font-medium">ACTION</TableHead>
             </TableRow>
@@ -150,6 +161,15 @@ export function TeacherDesktopScheduleTable({
                     <div className="font-medium text-sm mb-1">{classItem.topic}</div>
                     <div className="text-xs text-muted-foreground">{classItem.faculty}</div>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <TeachingStatusCell
+                    status={classItem.teachingStatus}
+                    notes={classItem.teachingNotes}
+                    topic={classItem.topic}
+                    classId={classItem.id}
+                    onStatusChange={handleTeachingStatusChange}
+                  />
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

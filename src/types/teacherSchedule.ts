@@ -1,3 +1,4 @@
+import { TeachingStatus } from './teachingProgress';
 
 export interface TeacherScheduleClass {
   id: string;
@@ -16,6 +17,11 @@ export interface TeacherScheduleClass {
     liveQuizAssigned: boolean;
   };
   status: 'scheduled' | 'completed' | 'cancelled';
+  // Teaching Progress fields
+  teachingStatus: TeachingStatus;
+  teachingNotes?: string;
+  markedAt?: string;
+  markedBy?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -71,6 +71,7 @@ import SubjectHealthPage from './pages/institute/SubjectHealthPage';
 import ClassOverviewPage from './pages/institute/ClassOverviewPage';
 import GrandTestsPage from './pages/institute/GrandTestsPage';
 import GrandTestDetailPage from './pages/institute/GrandTestDetailPage';
+import ScheduleTrackingPage from './pages/institute/ScheduleTrackingPage';
 
 // Institute Layout with Navigation
 function InstituteLayout() {
@@ -127,6 +128,14 @@ function InstituteLayout() {
                 >
                   Grand Tests
                 </Link>
+                <Link 
+                  to="/institute/schedule-tracking" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institute/schedule-tracking') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Schedule Tracking
+                </Link>
               </div>
             </div>
             <Link 
@@ -177,6 +186,14 @@ function InstituteLayout() {
               }`}
             >
               Grand Tests
+            </Link>
+            <Link 
+              to="/institute/schedule-tracking" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                isActive('/institute/schedule-tracking') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Tracking
             </Link>
           </div>
         </div>
@@ -274,6 +291,7 @@ function App() {
           <Route path="classes" element={<ClassOverviewPage />} />
           <Route path="grand-tests" element={<GrandTestsPage />} />
           <Route path="grand-tests/:testId" element={<GrandTestDetailPage />} />
+          <Route path="schedule-tracking" element={<ScheduleTrackingPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

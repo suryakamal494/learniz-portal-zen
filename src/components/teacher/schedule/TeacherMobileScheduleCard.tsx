@@ -6,15 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { TeacherScheduleClass } from '@/types/teacherSchedule';
+import { TeachingStatus } from '@/types/teachingProgress';
+import { TeachingStatusCell } from './TeachingStatusCell';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 interface TeacherMobileScheduleCardProps {
   data: TeacherScheduleClass[];
+  onTeachingStatusChange?: (classId: string, status: TeachingStatus, notes?: string) => void;
 }
 
-export function TeacherMobileScheduleCard({ data }: TeacherMobileScheduleCardProps) {
+export function TeacherMobileScheduleCard({ data, onTeachingStatusChange }: TeacherMobileScheduleCardProps) {
   const navigate = useNavigate();
 
   const handleAssignmentClick = (type: string, classItem: TeacherScheduleClass) => {
@@ -27,6 +30,12 @@ export function TeacherMobileScheduleCard({ data }: TeacherMobileScheduleCardPro
 
   const handleDeleteClick = (classItem: TeacherScheduleClass) => {
     toast.success(`Delete clicked for ${classItem.topic}`);
+  };
+
+  const handleTeachingStatusChange = (classId: string, status: TeachingStatus, notes?: string) => {
+    if (onTeachingStatusChange) {
+      onTeachingStatusChange(classId, status, notes);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -106,6 +115,20 @@ export function TeacherMobileScheduleCard({ data }: TeacherMobileScheduleCardPro
             <div className="mb-4 p-3 bg-muted/30 rounded border">
               <p className="text-sm text-muted-foreground mb-1">Faculty: <span className="text-foreground font-medium">{classItem.faculty}</span></p>
               <p className="text-sm text-muted-foreground">Duration: <span className="text-foreground font-medium">{classItem.duration}</span></p>
+            </div>
+
+            {/* Teaching Status */}
+            <div className="mb-4 p-3 bg-primary/5 rounded border border-primary/20">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">Teaching Status</span>
+                <TeachingStatusCell
+                  status={classItem.teachingStatus}
+                  notes={classItem.teachingNotes}
+                  topic={classItem.topic}
+                  classId={classItem.id}
+                  onStatusChange={handleTeachingStatusChange}
+                />
+              </div>
             </div>
 
             {/* Assignment Buttons */}
