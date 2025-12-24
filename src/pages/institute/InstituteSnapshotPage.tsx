@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Users, BookOpen, GraduationCap, TrendingUp, Download, ChevronRight } from 'lucide-react';
+import { Building2, Users, GraduationCap, Download, ChevronRight, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TimeFilterBar } from '@/components/institute/TimeFilterBar';
 import { MetricCard } from '@/components/institute/MetricCard';
 import { AttentionAreasCard } from '@/components/institute/AttentionAreasCard';
-import { InstituteInsightCard } from '@/components/institute/InstituteInsightCard';
-import { CollapsibleSection } from '@/components/institute/CollapsibleSection';
-import { PerformanceBarCard } from '@/components/institute/PerformanceBarCard';
 import { TrendBadge } from '@/components/institute/TrendBadge';
-import { mockInstituteSnapshot, mockInstituteTrend } from '@/data/mockInstituteData';
-import { generateInstituteInsight, formatDate, getSubjectBgClass } from '@/utils/instituteAnalyticsUtils';
+import { PerformanceBarCard } from '@/components/institute/PerformanceBarCard';
+import { mockInstituteSnapshot, mockInstituteClasses } from '@/data/mockInstituteData';
 import { TimeFilterOption } from '@/types/instituteAnalytics';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function InstituteSnapshotPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterOption>('all-time');
@@ -26,9 +22,9 @@ export default function InstituteSnapshotPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
-            Institute Snapshot
+            Institute Overview
           </h1>
-          <p className="text-muted-foreground mt-1">Overall academic health at a glance</p>
+          <p className="text-muted-foreground mt-1">Navigate by class to view meaningful performance data</p>
         </div>
         <div className="flex items-center gap-3">
           <TimeFilterBar value={timeFilter} onChange={setTimeFilter} />
@@ -39,78 +35,118 @@ export default function InstituteSnapshotPage() {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Summary Counts */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard
-          title="Overall Accuracy"
-          value={`${snapshot.overallAccuracy.toFixed(1)}%`}
-          trend={snapshot.overallTrend}
-          icon={TrendingUp}
-          iconColor="text-green-500"
-          showPerformanceStatus
-          accuracy={snapshot.overallAccuracy}
+          title="Total Students"
+          value={snapshot.totalStudents}
+          subtitle="Across all classes"
+          icon={GraduationCap}
+          iconColor="text-purple-500"
         />
         <MetricCard
-          title="Engagement Rate"
-          value={`${snapshot.overallEngagement.toFixed(1)}%`}
-          subtitle="Active participation"
+          title="Total Teachers"
+          value={snapshot.totalTeachers}
+          subtitle="Active faculty"
           icon={Users}
           iconColor="text-blue-500"
         />
         <MetricCard
-          title="Total Students"
-          value={snapshot.totalStudents}
-          subtitle={`${snapshot.totalTeachers} teachers`}
-          icon={GraduationCap}
-          iconColor="text-purple-500"
+          title="Total Classes"
+          value={snapshot.totalClasses}
+          subtitle={`${mockInstituteClasses.reduce((acc, cls) => acc + cls.batches.length, 0)} batches`}
+          icon={BookOpen}
+          iconColor="text-green-500"
         />
         <MetricCard
           title="Questions Attempted"
           value={snapshot.totalQuestions.toLocaleString()}
           subtitle={`${snapshot.totalSubjects} subjects`}
-          icon={BookOpen}
+          icon={GraduationCap}
           iconColor="text-amber-500"
         />
       </div>
 
-      {/* What This Means */}
-      <InstituteInsightCard
-        type="insight"
-        title="What This Means"
-        message={generateInstituteInsight(snapshot.overallAccuracy, snapshot.overallEngagement, snapshot.overallTrend)}
-      />
-
-      {/* Subject Performance */}
-      <CollapsibleSection
-        title="Subject-Wise Performance"
-        whatThisShows="How each subject is performing across the entire institute. Click a subject to see detailed chapter analysis."
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {snapshot.subjectSummary.map((subject) => (
+      {/* Class Cards - Main Focus */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Classes</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Select a class to view detailed performance by subject and batch
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {mockInstituteClasses.map((classItem) => (
             <Link
-              key={subject.id}
-              to={`/institute/subjects?subject=${subject.id}`}
+              key={classItem.id}
+              to={`/institute/classes?class=${classItem.id}`}
               className="block"
             >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: subject.color }}
-                      />
-                      <span className="font-semibold">{subject.name}</span>
-                    </div>
-                    <TrendBadge trend={subject.trend} size="sm" />
+              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full border-l-4 border-l-primary">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                      {classItem.name}
+                    </CardTitle>
+                    <TrendBadge trend={classItem.trend} size="sm" />
                   </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <span>{classItem.totalStudents} students</span>
+                    <span>•</span>
+                    <span>{classItem.batches.length} batches</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Class Accuracy */}
                   <PerformanceBarCard
-                    label="Accuracy"
-                    value={subject.accuracy}
-                    showStatus={false}
+                    label="Class Accuracy"
+                    value={classItem.overallAccuracy}
+                    showStatus={true}
+                    trend={classItem.trend}
                   />
-                  <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-                    <span>{subject.chapterCount} chapters</span>
+                  
+                  {/* Subject Performance for this class */}
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-xs font-medium text-muted-foreground">Subject Performance</p>
+                    {classItem.subjectPerformance.map((subject) => (
+                      <div key={subject.subjectId} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{subject.subjectName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            'font-medium',
+                            subject.accuracy >= 70 ? 'text-green-600' :
+                            subject.accuracy >= 50 ? 'text-amber-600' : 'text-red-600'
+                          )}>
+                            {subject.accuracy.toFixed(1)}%
+                          </span>
+                          <TrendBadge trend={subject.trend} size="sm" showLabel={false} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Batches Preview */}
+                  <div className="pt-2 border-t">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Batches</p>
+                    <div className="flex flex-wrap gap-2">
+                      {classItem.batches.map((batch) => (
+                        <span
+                          key={batch.id}
+                          className={cn(
+                            'text-xs px-2 py-1 rounded-full',
+                            batch.accuracy >= 70 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                            batch.accuracy >= 50 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          )}
+                        >
+                          {batch.name}: {batch.accuracy.toFixed(0)}%
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* View Details Link */}
+                  <div className="flex items-center justify-end pt-2 text-sm text-primary">
+                    <span>View Details</span>
                     <ChevronRight className="h-4 w-4" />
                   </div>
                 </CardContent>
@@ -118,58 +154,9 @@ export default function InstituteSnapshotPage() {
             </Link>
           ))}
         </div>
-      </CollapsibleSection>
+      </div>
 
-      {/* Trend Chart */}
-      <CollapsibleSection
-        title="Performance Trend"
-        whatThisShows="How the institute's overall accuracy and engagement has changed over time."
-      >
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={mockInstituteTrend}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="label" className="text-xs" />
-              <YAxis domain={[0, 100]} className="text-xs" />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="accuracy" stroke="#3B82F6" strokeWidth={2} name="Accuracy %" />
-              <Line type="monotone" dataKey="engagement" stroke="#10B981" strokeWidth={2} name="Engagement %" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CollapsibleSection>
-
-      {/* Recently Active Chapters */}
-      <CollapsibleSection
-        title="Recently Active Chapters"
-        whatThisShows="Chapters that had test activity in recent days. These represent current teaching focus areas."
-      >
-        <div className="space-y-2">
-          {snapshot.recentlyActiveChapters.map((chapter) => (
-            <div
-              key={chapter.id}
-              className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-1 rounded-full ${getSubjectBgClass(chapter.subjectId)}`}>
-                  {chapter.subjectName}
-                </span>
-                <span className="font-medium">{chapter.name}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="font-bold text-sm">{chapter.accuracy.toFixed(1)}%</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(chapter.lastActivityDate)}</p>
-                </div>
-                <TrendBadge trend={chapter.trend} showLabel={false} size="sm" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </CollapsibleSection>
-
-      {/* Attention Areas */}
+      {/* Attention Areas - Keep with class context */}
       <AttentionAreasCard areas={snapshot.attentionAreas} />
 
       {/* Quick Navigation */}
@@ -198,13 +185,13 @@ export default function InstituteSnapshotPage() {
             </CardContent>
           </Card>
         </Link>
-        <Link to="/institute/classes">
+        <Link to="/institute/grand-tests">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4 flex items-center gap-3">
               <GraduationCap className="h-8 w-8 text-green-500" />
               <div>
-                <p className="font-semibold">Class Overview</p>
-                <p className="text-sm text-muted-foreground">View by class</p>
+                <p className="font-semibold">Grand Tests</p>
+                <p className="text-sm text-muted-foreground">Institution-wide exams</p>
               </div>
               <ChevronRight className="h-5 w-5 ml-auto text-muted-foreground" />
             </CardContent>
@@ -213,4 +200,9 @@ export default function InstituteSnapshotPage() {
       </div>
     </div>
   );
+}
+
+// Helper function for conditional class names
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
 }

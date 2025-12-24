@@ -8,7 +8,6 @@ import { TopicPerformanceSection } from '@/components/teacher/reports/chapter/To
 import { DifficultyAnalysisSection } from '@/components/teacher/reports/chapter/DifficultyAnalysisSection';
 import { QuestionTypeSection } from '@/components/teacher/reports/chapter/QuestionTypeSection';
 import { StudentPerformanceSection } from '@/components/teacher/reports/chapter/StudentPerformanceSection';
-import { StudentGroupingSection } from '@/components/teacher/reports/chapter/StudentGroupingSection';
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,14 +56,13 @@ export default function ChapterAnalyticsPage() {
         </div>
       </div>
 
-      {/* All 7 Sections */}
+      {/* All 6 Sections */}
       <ChapterOverviewCard analytics={analytics} />
       <ChapterTrendChart trendData={analytics.overallMetrics.trendData} trend={analytics.overallMetrics.trend} />
       <TopicPerformanceSection topics={analytics.topicPerformance} />
       <DifficultyAnalysisSection difficulty={analytics.difficultyPerformance} />
       <QuestionTypeSection questionTypes={analytics.questionTypePerformance} />
       <StudentPerformanceSection students={analytics.studentPerformance} classAverage={analytics.overallMetrics.accuracy} />
-      <StudentGroupingSection analytics={analytics} />
     </div>
   );
 }
