@@ -7,6 +7,7 @@ import { TeacherTableSkeleton } from '@/components/teacher/ui/TeacherLoadingSkel
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TeacherScheduleClass, TeacherScheduleSort } from '@/types/teacherSchedule';
+import { TeachingStatus } from '@/types/teachingProgress';
 
 interface TeacherScheduleTableProps {
   data: TeacherScheduleClass[];
@@ -20,6 +21,7 @@ interface TeacherScheduleTableProps {
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  onTeachingStatusChange?: (classId: string, status: TeachingStatus, notes?: string) => void;
 }
 
 export function TeacherScheduleTable({
@@ -33,7 +35,8 @@ export function TeacherScheduleTable({
   pageSize,
   totalItems,
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
+  onTeachingStatusChange
 }: TeacherScheduleTableProps) {
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
@@ -55,11 +58,16 @@ export function TeacherScheduleTable({
               data={scheduleData}
               sort={sort}
               onSortChange={onSortChange}
+              onTeachingStatusChange={onTeachingStatusChange}
             />
-            <TeacherMobileScheduleCard data={scheduleData} />
+            <TeacherMobileScheduleCard 
+              data={scheduleData} 
+              onTeachingStatusChange={onTeachingStatusChange}
+            />
           </>
         )}
       </TeacherDataWrapper>
+
 
       {/* Pagination */}
       {!isLoading && data.length > 0 && (

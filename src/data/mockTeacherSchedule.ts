@@ -19,6 +19,7 @@ export const mockTeacherScheduleClasses: TeacherScheduleClass[] = [
       liveQuizAssigned: false
     },
     status: 'scheduled',
+    teachingStatus: 'pending',
     createdAt: '2024-01-10T10:00:00Z',
     updatedAt: '2024-01-12T15:30:00Z'
   },
@@ -39,6 +40,7 @@ export const mockTeacherScheduleClasses: TeacherScheduleClass[] = [
       liveQuizAssigned: true
     },
     status: 'scheduled',
+    teachingStatus: 'pending',
     createdAt: '2024-01-08T09:00:00Z',
     updatedAt: '2024-01-14T11:20:00Z'
   },
@@ -58,6 +60,7 @@ export const mockTeacherScheduleClasses: TeacherScheduleClass[] = [
       liveQuizAssigned: false
     },
     status: 'scheduled',
+    teachingStatus: 'pending',
     createdAt: '2024-01-11T14:00:00Z',
     updatedAt: '2024-01-13T16:45:00Z'
   },
@@ -78,6 +81,9 @@ export const mockTeacherScheduleClasses: TeacherScheduleClass[] = [
       liveQuizAssigned: true
     },
     status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-17T12:00:00Z',
+    markedBy: 'Dr. Suresh Nair',
     createdAt: '2024-01-05T08:30:00Z',
     updatedAt: '2024-01-17T12:00:00Z'
   },
@@ -97,6 +103,7 @@ export const mockTeacherScheduleClasses: TeacherScheduleClass[] = [
       liveQuizAssigned: false
     },
     status: 'scheduled',
+    teachingStatus: 'pending',
     createdAt: '2024-01-12T13:00:00Z',
     updatedAt: '2024-01-15T10:15:00Z'
   },
@@ -117,6 +124,7 @@ export const mockTeacherScheduleClasses: TeacherScheduleClass[] = [
       liveQuizAssigned: false
     },
     status: 'scheduled',
+    teachingStatus: 'pending',
     createdAt: '2024-01-09T11:45:00Z',
     updatedAt: '2024-01-16T14:20:00Z'
   }
