@@ -72,6 +72,7 @@ import ClassOverviewPage from './pages/institute/ClassOverviewPage';
 import GrandTestsPage from './pages/institute/GrandTestsPage';
 import GrandTestDetailPage from './pages/institute/GrandTestDetailPage';
 import ScheduleTrackingPage from './pages/institute/ScheduleTrackingPage';
+import LearningResponsePage from './pages/institute/LearningResponsePage';
 
 // Institute Layout with Navigation
 function InstituteLayout() {
@@ -136,6 +137,14 @@ function InstituteLayout() {
                 >
                   Schedule Tracking
                 </Link>
+                <Link 
+                  to="/institute/learning-response" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institute/learning-response') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Learning Response
+                </Link>
               </div>
             </div>
             <Link 
@@ -194,6 +203,14 @@ function InstituteLayout() {
               }`}
             >
               Tracking
+            </Link>
+            <Link 
+              to="/institute/learning-response" 
+              className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
+                isActive('/institute/learning-response') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              CLR
             </Link>
           </div>
         </div>
@@ -292,6 +309,7 @@ function App() {
           <Route path="grand-tests" element={<GrandTestsPage />} />
           <Route path="grand-tests/:testId" element={<GrandTestDetailPage />} />
           <Route path="schedule-tracking" element={<ScheduleTrackingPage />} />
+          <Route path="learning-response" element={<LearningResponsePage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
