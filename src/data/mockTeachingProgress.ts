@@ -4,11 +4,21 @@ import {
   ScheduleTrackingStats, 
   BatchProgress, 
   ChapterProgress, 
-  TeacherProgress 
+  TeacherProgress,
+  ClassProgressEnhanced,
+  TeacherProgressEnhanced,
+  BatchProgressEnhanced,
+  SubjectProgress,
+  ChapterWithTeachers,
+  TeacherClassBatchProgress,
+  TeacherSubjectProgress,
+  TeacherChapterProgress,
+  ChapterTeacherBreakdown
 } from '@/types/teachingProgress';
 
-// Extended mock data with teaching status
+// Extended mock data with teaching status - MORE DATA for better hierarchy
 export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
+  // Class 12, Science A - Physics
   {
     id: '1',
     date: '2024-01-15',
@@ -19,12 +29,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     subject: 'Physics',
     topic: 'Electromagnetic Induction',
     faculty: 'Dr. Rajesh Kumar',
-    assignments: {
-      urlView: 'https://example.com/physics-induction',
-      lmsAssigned: true,
-      notesAssigned: true,
-      liveQuizAssigned: false
-    },
+    assignments: { urlView: '', lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
     teachingNotes: 'Covered all topics as planned',
@@ -32,117 +37,6 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-10T10:00:00Z',
     updatedAt: '2024-01-15T10:05:00Z'
-  },
-  {
-    id: '2',
-    date: '2024-01-15',
-    time: '10:30 AM',
-    duration: '90 mins',
-    class: 'Class 11',
-    batch: 'Commerce B',
-    subject: 'Mathematics',
-    topic: 'Differential Calculus',
-    faculty: 'Prof. Priya Sharma',
-    assignments: {
-      urlView: 'https://example.com/math-calculus',
-      lmsAssigned: true,
-      notesAssigned: false,
-      liveQuizAssigned: true
-    },
-    status: 'completed',
-    teachingStatus: 'partial',
-    teachingNotes: 'Only revision done, new examples pending',
-    markedAt: '2024-01-15T12:05:00Z',
-    markedBy: 'Prof. Priya Sharma',
-    createdAt: '2024-01-08T09:00:00Z',
-    updatedAt: '2024-01-15T12:05:00Z'
-  },
-  {
-    id: '3',
-    date: '2024-01-16',
-    time: '02:00 PM',
-    duration: '45 mins',
-    class: 'Class 10',
-    batch: 'General A',
-    subject: 'Chemistry',
-    topic: 'Organic Compounds',
-    faculty: 'Dr. Anjali Verma',
-    assignments: {
-      lmsAssigned: false,
-      notesAssigned: true,
-      liveQuizAssigned: false
-    },
-    status: 'cancelled',
-    teachingStatus: 'not-taken',
-    teachingNotes: 'Faculty on medical leave',
-    markedAt: '2024-01-16T14:00:00Z',
-    markedBy: 'Admin',
-    createdAt: '2024-01-11T14:00:00Z',
-    updatedAt: '2024-01-16T14:00:00Z'
-  },
-  {
-    id: '4',
-    date: '2024-01-17',
-    time: '11:00 AM',
-    duration: '60 mins',
-    class: 'Class 12',
-    batch: 'Science B',
-    subject: 'Biology',
-    topic: 'Genetics and Evolution',
-    faculty: 'Dr. Suresh Nair',
-    assignments: {
-      urlView: 'https://example.com/biology-genetics',
-      lmsAssigned: true,
-      notesAssigned: true,
-      liveQuizAssigned: true
-    },
-    status: 'completed',
-    teachingStatus: 'completed',
-    markedAt: '2024-01-17T12:00:00Z',
-    markedBy: 'Dr. Suresh Nair',
-    createdAt: '2024-01-05T08:30:00Z',
-    updatedAt: '2024-01-17T12:00:00Z'
-  },
-  {
-    id: '5',
-    date: '2024-01-18',
-    time: '09:30 AM',
-    duration: '75 mins',
-    class: 'Class 11',
-    batch: 'Science C',
-    subject: 'Physics',
-    topic: 'Wave Optics',
-    faculty: 'Dr. Rajesh Kumar',
-    assignments: {
-      lmsAssigned: false,
-      notesAssigned: false,
-      liveQuizAssigned: false
-    },
-    status: 'scheduled',
-    teachingStatus: 'pending',
-    createdAt: '2024-01-12T13:00:00Z',
-    updatedAt: '2024-01-15T10:15:00Z'
-  },
-  {
-    id: '6',
-    date: '2024-01-19',
-    time: '03:30 PM',
-    duration: '50 mins',
-    class: 'Class 10',
-    batch: 'General B',
-    subject: 'English',
-    topic: 'Poetry Analysis',
-    faculty: 'Ms. Kavita Joshi',
-    assignments: {
-      urlView: 'https://example.com/english-poetry',
-      lmsAssigned: true,
-      notesAssigned: true,
-      liveQuizAssigned: false
-    },
-    status: 'scheduled',
-    teachingStatus: 'pending',
-    createdAt: '2024-01-09T11:45:00Z',
-    updatedAt: '2024-01-16T14:20:00Z'
   },
   {
     id: '7',
@@ -154,17 +48,179 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     subject: 'Physics',
     topic: 'AC Circuits',
     faculty: 'Dr. Rajesh Kumar',
-    assignments: {
-      lmsAssigned: true,
-      notesAssigned: true,
-      liveQuizAssigned: false
-    },
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
     markedAt: '2024-01-19T11:05:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-12T09:00:00Z',
     updatedAt: '2024-01-19T11:05:00Z'
+  },
+  {
+    id: '9',
+    date: '2024-01-22',
+    time: '09:00 AM',
+    duration: '90 mins',
+    class: 'Class 12',
+    batch: 'Science A',
+    subject: 'Physics',
+    topic: 'Electromagnetic Induction',
+    faculty: 'Dr. Rajesh Kumar',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-22T10:35:00Z',
+    markedBy: 'Dr. Rajesh Kumar',
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-22T10:35:00Z'
+  },
+  // Class 12, Science A - Chemistry
+  {
+    id: '10',
+    date: '2024-01-16',
+    time: '11:00 AM',
+    duration: '60 mins',
+    class: 'Class 12',
+    batch: 'Science A',
+    subject: 'Chemistry',
+    topic: 'Electrochemistry',
+    faculty: 'Dr. Anjali Verma',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-16T12:05:00Z',
+    markedBy: 'Dr. Anjali Verma',
+    createdAt: '2024-01-10T10:00:00Z',
+    updatedAt: '2024-01-16T12:05:00Z'
+  },
+  {
+    id: '11',
+    date: '2024-01-18',
+    time: '11:00 AM',
+    duration: '60 mins',
+    class: 'Class 12',
+    batch: 'Science A',
+    subject: 'Chemistry',
+    topic: 'Electrochemistry',
+    faculty: 'Dr. Anjali Verma',
+    assignments: { lmsAssigned: true, notesAssigned: false, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'partial',
+    teachingNotes: 'Half portion covered, remaining in next class',
+    markedAt: '2024-01-18T12:05:00Z',
+    markedBy: 'Dr. Anjali Verma',
+    createdAt: '2024-01-12T10:00:00Z',
+    updatedAt: '2024-01-18T12:05:00Z'
+  },
+  {
+    id: '12',
+    date: '2024-01-20',
+    time: '11:00 AM',
+    duration: '45 mins',
+    class: 'Class 12',
+    batch: 'Science A',
+    subject: 'Chemistry',
+    topic: 'Chemical Kinetics',
+    faculty: 'Dr. Anjali Verma',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-20T11:50:00Z',
+    markedBy: 'Dr. Anjali Verma',
+    createdAt: '2024-01-14T10:00:00Z',
+    updatedAt: '2024-01-20T11:50:00Z'
+  },
+  // Class 12, Science B - Biology
+  {
+    id: '4',
+    date: '2024-01-17',
+    time: '11:00 AM',
+    duration: '60 mins',
+    class: 'Class 12',
+    batch: 'Science B',
+    subject: 'Biology',
+    topic: 'Genetics and Evolution',
+    faculty: 'Dr. Suresh Nair',
+    assignments: { urlView: '', lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-17T12:00:00Z',
+    markedBy: 'Dr. Suresh Nair',
+    createdAt: '2024-01-05T08:30:00Z',
+    updatedAt: '2024-01-17T12:00:00Z'
+  },
+  {
+    id: '13',
+    date: '2024-01-19',
+    time: '11:00 AM',
+    duration: '75 mins',
+    class: 'Class 12',
+    batch: 'Science B',
+    subject: 'Biology',
+    topic: 'Genetics and Evolution',
+    faculty: 'Dr. Suresh Nair',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-19T12:20:00Z',
+    markedBy: 'Dr. Suresh Nair',
+    createdAt: '2024-01-10T08:30:00Z',
+    updatedAt: '2024-01-19T12:20:00Z'
+  },
+  {
+    id: '14',
+    date: '2024-01-22',
+    time: '11:00 AM',
+    duration: '60 mins',
+    class: 'Class 12',
+    batch: 'Science B',
+    subject: 'Biology',
+    topic: 'Biotechnology',
+    faculty: 'Dr. Suresh Nair',
+    assignments: { lmsAssigned: false, notesAssigned: true, liveQuizAssigned: false },
+    status: 'scheduled',
+    teachingStatus: 'pending',
+    createdAt: '2024-01-15T08:30:00Z',
+    updatedAt: '2024-01-15T08:30:00Z'
+  },
+  // Class 12, Science B - Physics (shared teacher)
+  {
+    id: '15',
+    date: '2024-01-18',
+    time: '02:00 PM',
+    duration: '60 mins',
+    class: 'Class 12',
+    batch: 'Science B',
+    subject: 'Physics',
+    topic: 'Electromagnetic Induction',
+    faculty: 'Dr. Rajesh Kumar',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-18T15:05:00Z',
+    markedBy: 'Dr. Rajesh Kumar',
+    createdAt: '2024-01-12T10:00:00Z',
+    updatedAt: '2024-01-18T15:05:00Z'
+  },
+  // Class 11, Commerce B - Mathematics
+  {
+    id: '2',
+    date: '2024-01-15',
+    time: '10:30 AM',
+    duration: '90 mins',
+    class: 'Class 11',
+    batch: 'Commerce B',
+    subject: 'Mathematics',
+    topic: 'Differential Calculus',
+    faculty: 'Prof. Priya Sharma',
+    assignments: { urlView: '', lmsAssigned: true, notesAssigned: false, liveQuizAssigned: true },
+    status: 'completed',
+    teachingStatus: 'partial',
+    teachingNotes: 'Only revision done, new examples pending',
+    markedAt: '2024-01-15T12:05:00Z',
+    markedBy: 'Prof. Priya Sharma',
+    createdAt: '2024-01-08T09:00:00Z',
+    updatedAt: '2024-01-15T12:05:00Z'
   },
   {
     id: '8',
@@ -176,17 +232,249 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     subject: 'Mathematics',
     topic: 'Integration Basics',
     faculty: 'Prof. Priya Sharma',
-    assignments: {
-      lmsAssigned: true,
-      notesAssigned: true,
-      liveQuizAssigned: true
-    },
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
     status: 'completed',
     teachingStatus: 'completed',
     markedAt: '2024-01-20T15:35:00Z',
     markedBy: 'Prof. Priya Sharma',
     createdAt: '2024-01-14T10:00:00Z',
     updatedAt: '2024-01-20T15:35:00Z'
+  },
+  {
+    id: '16',
+    date: '2024-01-22',
+    time: '10:30 AM',
+    duration: '60 mins',
+    class: 'Class 11',
+    batch: 'Commerce B',
+    subject: 'Mathematics',
+    topic: 'Differential Calculus',
+    faculty: 'Prof. Priya Sharma',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-22T11:35:00Z',
+    markedBy: 'Prof. Priya Sharma',
+    createdAt: '2024-01-16T09:00:00Z',
+    updatedAt: '2024-01-22T11:35:00Z'
+  },
+  // Class 11, Commerce B - Accountancy (another teacher, same chapter)
+  {
+    id: '17',
+    date: '2024-01-17',
+    time: '02:00 PM',
+    duration: '60 mins',
+    class: 'Class 11',
+    batch: 'Commerce B',
+    subject: 'Accountancy',
+    topic: 'Financial Statements',
+    faculty: 'Mr. Arun Patel',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-17T15:05:00Z',
+    markedBy: 'Mr. Arun Patel',
+    createdAt: '2024-01-11T10:00:00Z',
+    updatedAt: '2024-01-17T15:05:00Z'
+  },
+  {
+    id: '18',
+    date: '2024-01-19',
+    time: '02:00 PM',
+    duration: '45 mins',
+    class: 'Class 11',
+    batch: 'Commerce B',
+    subject: 'Accountancy',
+    topic: 'Financial Statements',
+    faculty: 'Mr. Arun Patel',
+    assignments: { lmsAssigned: false, notesAssigned: true, liveQuizAssigned: false },
+    status: 'cancelled',
+    teachingStatus: 'not-taken',
+    teachingNotes: 'Power outage in building',
+    markedAt: '2024-01-19T14:00:00Z',
+    markedBy: 'Admin',
+    createdAt: '2024-01-13T10:00:00Z',
+    updatedAt: '2024-01-19T14:00:00Z'
+  },
+  // Class 11, Science C - Physics
+  {
+    id: '5',
+    date: '2024-01-18',
+    time: '09:30 AM',
+    duration: '75 mins',
+    class: 'Class 11',
+    batch: 'Science C',
+    subject: 'Physics',
+    topic: 'Wave Optics',
+    faculty: 'Dr. Rajesh Kumar',
+    assignments: { lmsAssigned: false, notesAssigned: false, liveQuizAssigned: false },
+    status: 'scheduled',
+    teachingStatus: 'pending',
+    createdAt: '2024-01-12T13:00:00Z',
+    updatedAt: '2024-01-15T10:15:00Z'
+  },
+  {
+    id: '19',
+    date: '2024-01-20',
+    time: '09:30 AM',
+    duration: '60 mins',
+    class: 'Class 11',
+    batch: 'Science C',
+    subject: 'Physics',
+    topic: 'Wave Optics',
+    faculty: 'Dr. Rajesh Kumar',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-20T10:35:00Z',
+    markedBy: 'Dr. Rajesh Kumar',
+    createdAt: '2024-01-14T13:00:00Z',
+    updatedAt: '2024-01-20T10:35:00Z'
+  },
+  // Class 10, General A - Chemistry
+  {
+    id: '3',
+    date: '2024-01-16',
+    time: '02:00 PM',
+    duration: '45 mins',
+    class: 'Class 10',
+    batch: 'General A',
+    subject: 'Chemistry',
+    topic: 'Organic Compounds',
+    faculty: 'Dr. Anjali Verma',
+    assignments: { lmsAssigned: false, notesAssigned: true, liveQuizAssigned: false },
+    status: 'cancelled',
+    teachingStatus: 'not-taken',
+    teachingNotes: 'Faculty on medical leave',
+    markedAt: '2024-01-16T14:00:00Z',
+    markedBy: 'Admin',
+    createdAt: '2024-01-11T14:00:00Z',
+    updatedAt: '2024-01-16T14:00:00Z'
+  },
+  {
+    id: '20',
+    date: '2024-01-18',
+    time: '02:00 PM',
+    duration: '45 mins',
+    class: 'Class 10',
+    batch: 'General A',
+    subject: 'Chemistry',
+    topic: 'Organic Compounds',
+    faculty: 'Dr. Anjali Verma',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-18T14:50:00Z',
+    markedBy: 'Dr. Anjali Verma',
+    createdAt: '2024-01-12T14:00:00Z',
+    updatedAt: '2024-01-18T14:50:00Z'
+  },
+  {
+    id: '21',
+    date: '2024-01-20',
+    time: '02:00 PM',
+    duration: '60 mins',
+    class: 'Class 10',
+    batch: 'General A',
+    subject: 'Chemistry',
+    topic: 'Acids and Bases',
+    faculty: 'Dr. Anjali Verma',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-20T15:05:00Z',
+    markedBy: 'Dr. Anjali Verma',
+    createdAt: '2024-01-14T14:00:00Z',
+    updatedAt: '2024-01-20T15:05:00Z'
+  },
+  // Class 10, General A - Mathematics (another teacher for same chapter)
+  {
+    id: '22',
+    date: '2024-01-17',
+    time: '10:00 AM',
+    duration: '60 mins',
+    class: 'Class 10',
+    batch: 'General A',
+    subject: 'Mathematics',
+    topic: 'Quadratic Equations',
+    faculty: 'Prof. Priya Sharma',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-17T11:05:00Z',
+    markedBy: 'Prof. Priya Sharma',
+    createdAt: '2024-01-11T10:00:00Z',
+    updatedAt: '2024-01-17T11:05:00Z'
+  },
+  {
+    id: '23',
+    date: '2024-01-19',
+    time: '10:00 AM',
+    duration: '45 mins',
+    class: 'Class 10',
+    batch: 'General A',
+    subject: 'Mathematics',
+    topic: 'Quadratic Equations',
+    faculty: 'Mr. Vikram Singh',
+    assignments: { lmsAssigned: true, notesAssigned: false, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'partial',
+    teachingNotes: 'Substitute class, covered revision only',
+    markedAt: '2024-01-19T10:50:00Z',
+    markedBy: 'Mr. Vikram Singh',
+    createdAt: '2024-01-13T10:00:00Z',
+    updatedAt: '2024-01-19T10:50:00Z'
+  },
+  // Class 10, General B - English
+  {
+    id: '6',
+    date: '2024-01-19',
+    time: '03:30 PM',
+    duration: '50 mins',
+    class: 'Class 10',
+    batch: 'General B',
+    subject: 'English',
+    topic: 'Poetry Analysis',
+    faculty: 'Ms. Kavita Joshi',
+    assignments: { urlView: '', lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'scheduled',
+    teachingStatus: 'pending',
+    createdAt: '2024-01-09T11:45:00Z',
+    updatedAt: '2024-01-16T14:20:00Z'
+  },
+  {
+    id: '24',
+    date: '2024-01-21',
+    time: '03:30 PM',
+    duration: '50 mins',
+    class: 'Class 10',
+    batch: 'General B',
+    subject: 'English',
+    topic: 'Poetry Analysis',
+    faculty: 'Ms. Kavita Joshi',
+    assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
+    status: 'completed',
+    teachingStatus: 'completed',
+    markedAt: '2024-01-21T16:25:00Z',
+    markedBy: 'Ms. Kavita Joshi',
+    createdAt: '2024-01-14T11:45:00Z',
+    updatedAt: '2024-01-21T16:25:00Z'
+  },
+  {
+    id: '25',
+    date: '2024-01-23',
+    time: '03:30 PM',
+    duration: '45 mins',
+    class: 'Class 10',
+    batch: 'General B',
+    subject: 'English',
+    topic: 'Short Stories',
+    faculty: 'Ms. Kavita Joshi',
+    assignments: { lmsAssigned: false, notesAssigned: true, liveQuizAssigned: false },
+    status: 'scheduled',
+    teachingStatus: 'pending',
+    createdAt: '2024-01-16T11:45:00Z',
+    updatedAt: '2024-01-16T11:45:00Z'
   }
 ];
 
@@ -239,7 +527,7 @@ export function calculateScheduleStats(classes: TeacherScheduleClass[]): Schedul
   return stats;
 }
 
-// Calculate batch-wise progress
+// Calculate batch-wise progress (legacy)
 export function calculateBatchProgress(classes: TeacherScheduleClass[]): BatchProgress[] {
   const batchMap = new Map<string, BatchProgress>();
 
@@ -272,7 +560,7 @@ export function calculateBatchProgress(classes: TeacherScheduleClass[]): BatchPr
         break;
       case 'partial':
         batch.partialClasses++;
-        batch.completedHours += hours * 0.5; // Count partial as 50%
+        batch.completedHours += hours * 0.5;
         break;
       case 'not-taken':
         batch.notTakenClasses++;
@@ -288,7 +576,7 @@ export function calculateBatchProgress(classes: TeacherScheduleClass[]): BatchPr
   }));
 }
 
-// Calculate chapter-wise progress
+// Calculate chapter-wise progress (legacy)
 export function calculateChapterProgress(classes: TeacherScheduleClass[]): ChapterProgress[] {
   const chapterMap = new Map<string, ChapterProgress>();
 
@@ -329,7 +617,7 @@ export function calculateChapterProgress(classes: TeacherScheduleClass[]): Chapt
   return Array.from(chapterMap.values());
 }
 
-// Calculate teacher-wise progress
+// Calculate teacher-wise progress (legacy)
 export function calculateTeacherProgress(classes: TeacherScheduleClass[]): TeacherProgress[] {
   const teacherMap = new Map<string, TeacherProgress>();
 
@@ -369,4 +657,195 @@ export function calculateTeacherProgress(classes: TeacherScheduleClass[]): Teach
       ? Math.round((teacher.completedClasses / teacher.assignedClasses) * 100) 
       : 0
   }));
+}
+
+// ============ NEW HIERARCHICAL CALCULATION FUNCTIONS ============
+
+// Calculate Class → Batch → Subject → Chapter → Teacher hierarchy
+export function calculateClassBatchSubjectProgress(classes: TeacherScheduleClass[]): ClassProgressEnhanced[] {
+  const classMap = new Map<string, ClassProgressEnhanced>();
+
+  classes.forEach(cls => {
+    const hours = parseDurationToHours(cls.duration);
+    const completedHours = cls.teachingStatus === 'completed' ? hours : 
+                           cls.teachingStatus === 'partial' ? hours * 0.5 : 0;
+
+    // Get or create class
+    if (!classMap.has(cls.class)) {
+      classMap.set(cls.class, {
+        classId: cls.class.replace(/\s+/g, '-').toLowerCase(),
+        className: cls.class,
+        totalHours: 0,
+        completedHours: 0,
+        batches: []
+      });
+    }
+    const classData = classMap.get(cls.class)!;
+    classData.totalHours += hours;
+    classData.completedHours += completedHours;
+
+    // Find or create batch
+    let batch = classData.batches.find(b => b.batchName === cls.batch);
+    if (!batch) {
+      batch = {
+        batchId: `${cls.class}-${cls.batch}`.replace(/\s+/g, '-').toLowerCase(),
+        batchName: cls.batch,
+        className: cls.class,
+        totalHours: 0,
+        completedHours: 0,
+        sessionsPlanned: 0,
+        sessionsCompleted: 0,
+        subjects: []
+      };
+      classData.batches.push(batch);
+    }
+    batch.totalHours += hours;
+    batch.completedHours += completedHours;
+    batch.sessionsPlanned++;
+    if (cls.teachingStatus === 'completed') batch.sessionsCompleted++;
+
+    // Find or create subject
+    let subject = batch.subjects.find(s => s.subjectName === cls.subject);
+    if (!subject) {
+      subject = {
+        subjectId: `${cls.batch}-${cls.subject}`.replace(/\s+/g, '-').toLowerCase(),
+        subjectName: cls.subject,
+        totalHours: 0,
+        completedHours: 0,
+        sessionsPlanned: 0,
+        sessionsCompleted: 0,
+        chapters: []
+      };
+      batch.subjects.push(subject);
+    }
+    subject.totalHours += hours;
+    subject.completedHours += completedHours;
+    subject.sessionsPlanned++;
+    if (cls.teachingStatus === 'completed') subject.sessionsCompleted++;
+
+    // Find or create chapter
+    let chapter = subject.chapters.find(c => c.chapterName === cls.topic);
+    if (!chapter) {
+      chapter = {
+        chapterId: `${cls.subject}-${cls.topic}`.replace(/\s+/g, '-').toLowerCase(),
+        chapterName: cls.topic,
+        totalHours: 0,
+        completedHours: 0,
+        sessionsPlanned: 0,
+        sessionsCompleted: 0,
+        sessionsPartial: 0,
+        sessionsMissed: 0,
+        teachers: []
+      };
+      subject.chapters.push(chapter);
+    }
+    chapter.totalHours += hours;
+    chapter.completedHours += completedHours;
+    chapter.sessionsPlanned++;
+    if (cls.teachingStatus === 'completed') chapter.sessionsCompleted++;
+    else if (cls.teachingStatus === 'partial') chapter.sessionsPartial++;
+    else if (cls.teachingStatus === 'not-taken') chapter.sessionsMissed++;
+
+    // Find or create teacher within chapter
+    let teacher = chapter.teachers.find(t => t.teacherName === cls.faculty);
+    if (!teacher) {
+      teacher = {
+        teacherId: cls.faculty.replace(/\s+/g, '-').toLowerCase(),
+        teacherName: cls.faculty,
+        hoursSpent: 0,
+        sessionsCompleted: 0,
+        sessionsPartial: 0,
+        sessionsMissed: 0
+      };
+      chapter.teachers.push(teacher);
+    }
+    teacher.hoursSpent += completedHours;
+    if (cls.teachingStatus === 'completed') teacher.sessionsCompleted++;
+    else if (cls.teachingStatus === 'partial') teacher.sessionsPartial++;
+    else if (cls.teachingStatus === 'not-taken') teacher.sessionsMissed++;
+  });
+
+  return Array.from(classMap.values()).sort((a, b) => a.className.localeCompare(b.className));
+}
+
+// Calculate Teacher → Class/Batch → Subject → Chapter hierarchy
+export function calculateTeacherClassProgress(classes: TeacherScheduleClass[]): TeacherProgressEnhanced[] {
+  const teacherMap = new Map<string, TeacherProgressEnhanced>();
+
+  classes.forEach(cls => {
+    const hours = parseDurationToHours(cls.duration);
+    const completedHours = cls.teachingStatus === 'completed' ? hours : 
+                           cls.teachingStatus === 'partial' ? hours * 0.5 : 0;
+
+    // Get or create teacher
+    if (!teacherMap.has(cls.faculty)) {
+      teacherMap.set(cls.faculty, {
+        teacherId: cls.faculty.replace(/\s+/g, '-').toLowerCase(),
+        teacherName: cls.faculty,
+        totalHours: hours,
+        completedHours: completedHours,
+        sessionsCompleted: cls.teachingStatus === 'completed' ? 1 : 0,
+        sessionsPartial: cls.teachingStatus === 'partial' ? 1 : 0,
+        sessionsMissed: cls.teachingStatus === 'not-taken' ? 1 : 0,
+        classBatches: []
+      });
+    } else {
+      const teacher = teacherMap.get(cls.faculty)!;
+      teacher.totalHours += hours;
+      teacher.completedHours += completedHours;
+      if (cls.teachingStatus === 'completed') teacher.sessionsCompleted++;
+      else if (cls.teachingStatus === 'partial') teacher.sessionsPartial++;
+      else if (cls.teachingStatus === 'not-taken') teacher.sessionsMissed++;
+    }
+    const teacher = teacherMap.get(cls.faculty)!;
+
+    // Find or create class/batch combo
+    const classBatchKey = `${cls.class}-${cls.batch}`;
+    let classBatch = teacher.classBatches.find(cb => `${cb.className}-${cb.batchName}` === classBatchKey);
+    if (!classBatch) {
+      classBatch = {
+        classId: cls.class.replace(/\s+/g, '-').toLowerCase(),
+        className: cls.class,
+        batchId: classBatchKey.replace(/\s+/g, '-').toLowerCase(),
+        batchName: cls.batch,
+        hoursSpent: 0,
+        subjects: []
+      };
+      teacher.classBatches.push(classBatch);
+    }
+    classBatch.hoursSpent += completedHours;
+
+    // Find or create subject
+    let subject = classBatch.subjects.find(s => s.subjectName === cls.subject);
+    if (!subject) {
+      subject = {
+        subjectId: `${classBatchKey}-${cls.subject}`.replace(/\s+/g, '-').toLowerCase(),
+        subjectName: cls.subject,
+        hoursSpent: 0,
+        chapters: []
+      };
+      classBatch.subjects.push(subject);
+    }
+    subject.hoursSpent += completedHours;
+
+    // Find or create chapter
+    let chapter = subject.chapters.find(c => c.chapterName === cls.topic);
+    if (!chapter) {
+      chapter = {
+        chapterId: `${cls.subject}-${cls.topic}`.replace(/\s+/g, '-').toLowerCase(),
+        chapterName: cls.topic,
+        hoursSpent: 0,
+        sessionsCompleted: 0,
+        sessionsPartial: 0,
+        sessionsMissed: 0
+      };
+      subject.chapters.push(chapter);
+    }
+    chapter.hoursSpent += completedHours;
+    if (cls.teachingStatus === 'completed') chapter.sessionsCompleted++;
+    else if (cls.teachingStatus === 'partial') chapter.sessionsPartial++;
+    else if (cls.teachingStatus === 'not-taken') chapter.sessionsMissed++;
+  });
+
+  return Array.from(teacherMap.values()).sort((a, b) => b.completedHours - a.completedHours);
 }

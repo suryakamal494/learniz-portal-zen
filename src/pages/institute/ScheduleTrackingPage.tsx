@@ -1,19 +1,18 @@
 
 import React, { useState, useMemo } from 'react';
-import { Calendar, Filter, RefreshCw } from 'lucide-react';
+import { Filter, RefreshCw, BookOpen, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScheduleOverviewCards } from '@/components/institute/schedule/ScheduleOverviewCards';
-import { BatchProgressTable } from '@/components/institute/schedule/BatchProgressTable';
-import { ChapterProgressSection } from '@/components/institute/schedule/ChapterProgressSection';
-import { TeacherProgressGrid } from '@/components/institute/schedule/TeacherProgressGrid';
+import { BatchWiseTracking } from '@/components/institute/schedule/BatchWiseTracking';
+import { TeacherWiseTracking } from '@/components/institute/schedule/TeacherWiseTracking';
 import { 
   mockTeacherScheduleWithStatus,
   calculateScheduleStats,
-  calculateBatchProgress,
-  calculateChapterProgress,
-  calculateTeacherProgress
+  calculateClassBatchSubjectProgress,
+  calculateTeacherClassProgress
 } from '@/data/mockTeachingProgress';
 
 export default function ScheduleTrackingPage() {
@@ -38,9 +37,8 @@ export default function ScheduleTrackingPage() {
 
   // Calculate all stats from filtered data
   const stats = useMemo(() => calculateScheduleStats(filteredData), [filteredData]);
-  const batchProgress = useMemo(() => calculateBatchProgress(filteredData), [filteredData]);
-  const chapterProgress = useMemo(() => calculateChapterProgress(filteredData), [filteredData]);
-  const teacherProgress = useMemo(() => calculateTeacherProgress(filteredData), [filteredData]);
+  const classProgress = useMemo(() => calculateClassBatchSubjectProgress(filteredData), [filteredData]);
+  const teacherProgress = useMemo(() => calculateTeacherClassProgress(filteredData), [filteredData]);
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -106,17 +104,29 @@ export default function ScheduleTrackingPage() {
       {/* Overview Cards */}
       <ScheduleOverviewCards stats={stats} />
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Batch Progress */}
-        <BatchProgressTable batchProgress={batchProgress} />
-        
-        {/* Chapter Progress */}
-        <ChapterProgressSection chapterProgress={chapterProgress} />
-      </div>
+      {/* Tabbed Content */}
+      <Tabs defaultValue="batch-wise" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="batch-wise" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Batch-wise</span>
+            <span className="sm:hidden">Batches</span>
+          </TabsTrigger>
+          <TabsTrigger value="teacher-wise" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">Teacher-wise</span>
+            <span className="sm:hidden">Teachers</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Teacher Progress */}
-      <TeacherProgressGrid teacherProgress={teacherProgress} />
+        <TabsContent value="batch-wise" className="mt-4">
+          <BatchWiseTracking classProgress={classProgress} />
+        </TabsContent>
+
+        <TabsContent value="teacher-wise" className="mt-4">
+          <TeacherWiseTracking teacherProgress={teacherProgress} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
