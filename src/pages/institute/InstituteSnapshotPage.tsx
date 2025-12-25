@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Users, GraduationCap, Download, ChevronRight, BookOpen } from 'lucide-react';
+import { Building2, Users, GraduationCap, Download, ChevronRight, BookOpen, FileText, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { TimeFilterBar } from '@/components/institute/TimeFilterBar';
 import { MetricCard } from '@/components/institute/MetricCard';
-import { AttentionAreasCard } from '@/components/institute/AttentionAreasCard';
 import { TrendBadge } from '@/components/institute/TrendBadge';
 import { PerformanceBarCard } from '@/components/institute/PerformanceBarCard';
 import { mockInstituteSnapshot, mockInstituteClasses } from '@/data/mockInstituteData';
+import { mockGrandTests } from '@/data/mockGrandTests';
+import { mockCLRReports, calculateCLRSummary, getReportsBySignal } from '@/data/mockCLRData';
 import { TimeFilterOption } from '@/types/instituteAnalytics';
 
 export default function InstituteSnapshotPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterOption>('all-time');
   const snapshot = mockInstituteSnapshot;
+  
+  // Get recent grand tests (completed ones)
+  const recentGrandTests = mockGrandTests
+    .filter(t => t.status === 'completed')
+    .slice(0, 3);
+  
+  // Get CLR alerts (immediate review items)
+  const clrSummary = calculateCLRSummary(mockCLRReports);
+  const immediateReviewReports = getReportsBySignal(mockCLRReports, 'immediate-review');
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
@@ -66,6 +77,94 @@ export default function InstituteSnapshotPage() {
           iconColor="text-amber-500"
         />
       </div>
+
+      {/* Alerts Section - CLR Immediate Review */}
+      {immediateReviewReports.length > 0 && (
+        <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2 text-red-700 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+                Classrooms Needing Immediate Review
+              </CardTitle>
+              <Link to="/institute/learning-response">
+                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30">
+                  View All
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {immediateReviewReports.slice(0, 3).map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{report.chapter}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {report.className} • {report.batchName} • {report.subject}
+                    </p>
+                  </div>
+                  <Badge variant="destructive" className="shrink-0">
+                    {report.accuracyTrend[report.accuracyTrend.length - 1]}% accuracy
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Grand Tests */}
+      {recentGrandTests.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Recent Grand Tests
+              </CardTitle>
+              <Link to="/institute/grand-tests">
+                <Button variant="ghost" size="sm">
+                  View All
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {recentGrandTests.map((test) => (
+                <Link 
+                  key={test.id} 
+                  to={`/institute/grand-tests/${test.id}`}
+                  className="block"
+                >
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{test.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {test.totalStudents} students
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={cn(
+                        'font-semibold',
+                        test.overallAccuracy >= 70 ? 'text-green-600 dark:text-green-400' :
+                        test.overallAccuracy >= 50 ? 'text-amber-600 dark:text-amber-400' : 
+                        'text-red-600 dark:text-red-400'
+                      )}>
+                        {test.overallAccuracy.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">accuracy</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Class Cards - Main Focus */}
       <div>
@@ -155,9 +254,6 @@ export default function InstituteSnapshotPage() {
           ))}
         </div>
       </div>
-
-      {/* Attention Areas - Keep with class context */}
-      <AttentionAreasCard areas={snapshot.attentionAreas} />
 
       {/* Quick Navigation */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
