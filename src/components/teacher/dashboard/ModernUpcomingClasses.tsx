@@ -1,11 +1,16 @@
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar, Clock, Users, Video, Play } from "lucide-react"
 import { mockUpcomingClasses } from "@/data/mockUpcomingClasses"
+import { TeachingStatusCell } from "@/components/teacher/schedule/TeachingStatusCell"
+import { TeachingStatus } from "@/types/teachingProgress"
 
 export function ModernUpcomingClasses() {
+  const [classStatuses, setClassStatuses] = useState<Record<string, { status: TeachingStatus; notes?: string }>>({})
+
   const handleStreamingClick = (link: string) => {
     window.open(link, '_blank')
   }
@@ -13,6 +18,21 @@ export function ModernUpcomingClasses() {
   const handleAssignClick = (type: string, classId: string) => {
     console.log(`Assign ${type} for class ${classId}`)
     // Navigation logic will be implemented based on requirements
+  }
+
+  const handleTeachingStatusChange = (classId: string, status: TeachingStatus, notes?: string) => {
+    setClassStatuses(prev => ({
+      ...prev,
+      [classId]: { status, notes }
+    }))
+  }
+
+  const getTeachingStatus = (classId: string): TeachingStatus => {
+    return classStatuses[classId]?.status || 'pending'
+  }
+
+  const getTeachingNotes = (classId: string): string | undefined => {
+    return classStatuses[classId]?.notes
   }
 
   const getSubjectColor = (subject: string) => {
@@ -52,6 +72,7 @@ export function ModernUpcomingClasses() {
                 <TableHead className="font-semibold text-slate-700">Batch</TableHead>
                 <TableHead className="font-semibold text-slate-700">Class</TableHead>
                 <TableHead className="font-semibold text-slate-700">Topic</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Teaching Status</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Streaming</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Animations</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Study Notes</TableHead>
@@ -104,6 +125,16 @@ export function ModernUpcomingClasses() {
                       <div className="font-medium text-slate-900 truncate">{classItem.topic}</div>
                       <div className="text-sm text-slate-500">{classItem.duration}</div>
                     </div>
+                  </TableCell>
+                  
+                  <TableCell className="text-center">
+                    <TeachingStatusCell
+                      status={getTeachingStatus(classItem.id)}
+                      notes={getTeachingNotes(classItem.id)}
+                      topic={classItem.topic}
+                      classId={classItem.id}
+                      onStatusChange={handleTeachingStatusChange}
+                    />
                   </TableCell>
                   
                   <TableCell className="text-center">
