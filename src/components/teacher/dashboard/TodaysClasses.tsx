@@ -1,15 +1,18 @@
-
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useNavigate } from "react-router-dom"
-import { Play, ExternalLink } from "lucide-react"
+import { Play } from "lucide-react"
 import { mockTeacherScheduleClasses } from "@/data/mockTeacherSchedule"
-import { format, isToday, parseISO } from "date-fns"
+import { isToday, parseISO } from "date-fns"
+import { TeachingStatusCell } from "@/components/teacher/schedule/TeachingStatusCell"
+import { TeachingStatus } from "@/types/teachingProgress"
 
 export function TodaysClasses() {
   const navigate = useNavigate()
+  const [classStatuses, setClassStatuses] = useState<Record<string, { status: TeachingStatus; notes?: string }>>({})
   
   // Filter for today's classes or next upcoming classes
   const todayClasses = mockTeacherScheduleClasses.filter(cls => 
@@ -34,6 +37,21 @@ export function TodaysClasses() {
 
   const handleAssignClick = (classId: string) => {
     navigate(`/teacher/schedule/assign/${classId}`)
+  }
+
+  const handleTeachingStatusChange = (classId: string, status: TeachingStatus, notes?: string) => {
+    setClassStatuses(prev => ({
+      ...prev,
+      [classId]: { status, notes }
+    }))
+  }
+
+  const getTeachingStatus = (classId: string): TeachingStatus => {
+    return classStatuses[classId]?.status || 'pending'
+  }
+
+  const getTeachingNotes = (classId: string): string | undefined => {
+    return classStatuses[classId]?.notes
   }
 
   const getAssignmentStatus = (assigned: boolean) => {
@@ -77,6 +95,7 @@ export function TodaysClasses() {
                 <TableHead>Batch</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>Topic</TableHead>
+                <TableHead>Teaching Status</TableHead>
                 <TableHead>Streaming</TableHead>
                 <TableHead>Lessons</TableHead>
                 <TableHead>Study Notes</TableHead>
@@ -90,6 +109,15 @@ export function TodaysClasses() {
                   <TableCell>{classItem.batch}</TableCell>
                   <TableCell>{classItem.class}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{classItem.topic}</TableCell>
+                  <TableCell>
+                    <TeachingStatusCell
+                      status={getTeachingStatus(classItem.id)}
+                      notes={getTeachingNotes(classItem.id)}
+                      topic={classItem.topic}
+                      classId={classItem.id}
+                      onStatusChange={handleTeachingStatusChange}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Button
                       size="sm"
@@ -135,7 +163,18 @@ export function TodaysClasses() {
                   </Button>
                 </div>
                 
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{classItem.topic}</p>
+                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{classItem.topic}</p>
+                
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Status:</span>
+                  <TeachingStatusCell
+                    status={getTeachingStatus(classItem.id)}
+                    notes={getTeachingNotes(classItem.id)}
+                    topic={classItem.topic}
+                    classId={classItem.id}
+                    onStatusChange={handleTeachingStatusChange}
+                  />
+                </div>
                 
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="text-center">
