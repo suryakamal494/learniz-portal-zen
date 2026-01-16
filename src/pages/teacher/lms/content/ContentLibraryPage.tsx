@@ -97,6 +97,7 @@ const ContentLibraryPage = () => {
           </Button>
           <Button 
             variant="outline"
+            onClick={() => navigate('/teacher/lms/ai-ppt-generator')}
             className="w-full sm:w-auto bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
           >
             ✨ AI PPT Generator
