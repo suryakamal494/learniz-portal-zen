@@ -48,6 +48,7 @@ import CreateLMSSeriesPage from './pages/teacher/lms/CreateLMSSeriesPage';
 import UpdateLMSSeriesPage from './pages/teacher/lms/UpdateLMSSeriesPage';
 import UpdateExamOrderPage from './pages/teacher/lms/UpdateExamOrderPage';
 import LMSSeriesPreviewPage from './pages/teacher/lms/LMSSeriesPreviewPage';
+import AIPPTGeneratorPage from './pages/teacher/lms/AIPPTGeneratorPage';
 
 // Teacher Reports - Enhanced
 import ReportsMainPage from './pages/teacher/reports/ReportsMainPage';
@@ -153,6 +154,7 @@ function App() {
           <Route path="lms/series/:seriesId/update-order" element={<UpdateExamOrderPage />} />
           <Route path="lms/series/:seriesId/preview" element={<LMSSeriesPreviewPage />} />
           <Route path="lms/directory" element={<LMSDirectoryPage />} />
+          <Route path="lms/ai-ppt-generator" element={<AIPPTGeneratorPage />} />
         </Route>
 
         {/* Institute Analytics Routes */}
