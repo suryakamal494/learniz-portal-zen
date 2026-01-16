@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ClassProgressEnhanced, SubjectProgress, ChapterWithTeachers } from '@/types/teachingProgress';
+import { ClassProgressEnhanced, SubjectProgress, ChapterWithTeachers, TeachingSessionNote } from '@/types/teachingProgress';
+import { ChapterNotesButton } from './ChapterNotesButton';
+import { TeachingNotesPanel } from './TeachingNotesPanel';
 
 interface BatchWiseTrackingProps {
   classProgress: ClassProgressEnhanced[];
@@ -16,6 +18,30 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+  
+  // Notes panel state
+  const [notesPanelOpen, setNotesPanelOpen] = useState(false);
+  const [selectedChapterNotes, setSelectedChapterNotes] = useState<{
+    chapterName: string;
+    subjectName: string;
+    contextInfo: string;
+    notes: TeachingSessionNote[];
+  } | null>(null);
+
+  const openNotesPanel = (
+    chapterName: string, 
+    subjectName: string, 
+    contextInfo: string, 
+    notes: TeachingSessionNote[]
+  ) => {
+    setSelectedChapterNotes({ chapterName, subjectName, contextInfo, notes });
+    setNotesPanelOpen(true);
+  };
+
+  const closeNotesPanel = () => {
+    setNotesPanelOpen(false);
+    setSelectedChapterNotes(null);
+  };
 
   const toggleSet = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, key: string) => {
     setFn(prev => {
@@ -207,6 +233,9 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                                         chapter={chapter} 
                                                         isExpanded={isChapterExpanded}
                                                         hasMultipleTeachers={hasMultipleTeachers}
+                                                        subjectName={subject.subjectName}
+                                                        batchContext={`${classData.className} - ${batch.batchName}`}
+                                                        onNotesClick={openNotesPanel}
                                                       />
                                                     </CollapsibleTrigger>
                                                     <CollapsibleContent>
@@ -218,6 +247,9 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                                     chapter={chapter} 
                                                     isExpanded={false}
                                                     hasMultipleTeachers={false}
+                                                    subjectName={subject.subjectName}
+                                                    batchContext={`${classData.className} - ${batch.batchName}`}
+                                                    onNotesClick={openNotesPanel}
                                                   />
                                                 )}
                                               </div>
@@ -241,16 +273,33 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
           </Card>
         );
       })}
+      {/* Notes Panel */}
+      {selectedChapterNotes && (
+        <TeachingNotesPanel
+          isOpen={notesPanelOpen}
+          onClose={closeNotesPanel}
+          chapterName={selectedChapterNotes.chapterName}
+          subjectName={selectedChapterNotes.subjectName}
+          contextInfo={selectedChapterNotes.contextInfo}
+          notes={selectedChapterNotes.notes}
+        />
+      )}
     </div>
   );
 }
 
 // Chapter row component
-function ChapterRow({ chapter, isExpanded, hasMultipleTeachers }: { 
-  chapter: ChapterWithTeachers; 
+interface ChapterRowProps {
+  chapter: ChapterWithTeachers;
   isExpanded: boolean;
   hasMultipleTeachers: boolean;
-}) {
+  subjectName: string;
+  batchContext: string;
+  onNotesClick: (chapterName: string, subjectName: string, contextInfo: string, notes: TeachingSessionNote[]) => void;
+}
+
+function ChapterRow({ chapter, isExpanded, hasMultipleTeachers, subjectName, batchContext, onNotesClick }: ChapterRowProps) {
+  const notesCount = chapter.sessionNotes?.length || 0;
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -262,7 +311,15 @@ function ChapterRow({ chapter, isExpanded, hasMultipleTeachers }: {
           )
         )}
         <div>
-          <div className="text-sm font-medium text-foreground">{chapter.chapterName}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">{chapter.chapterName}</span>
+            {notesCount > 0 && (
+              <ChapterNotesButton
+                notesCount={notesCount}
+                onClick={() => onNotesClick(chapter.chapterName, subjectName, batchContext, chapter.sessionNotes)}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {chapter.sessionsCompleted > 0 && (
               <span className="text-green-600">{chapter.sessionsCompleted} done</span>

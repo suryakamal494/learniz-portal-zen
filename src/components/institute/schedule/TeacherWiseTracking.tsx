@@ -5,7 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { TeacherProgressEnhanced, TeacherClassBatchProgress, TeacherSubjectProgress } from '@/types/teachingProgress';
+import { TeacherProgressEnhanced, TeacherClassBatchProgress, TeacherSubjectProgress, TeachingSessionNote } from '@/types/teachingProgress';
+import { ChapterNotesButton } from './ChapterNotesButton';
+import { TeachingNotesPanel } from './TeachingNotesPanel';
 
 interface TeacherWiseTrackingProps {
   teacherProgress: TeacherProgressEnhanced[];
@@ -15,6 +17,30 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
   const [expandedTeachers, setExpandedTeachers] = useState<Set<string>>(new Set());
   const [expandedClassBatches, setExpandedClassBatches] = useState<Set<string>>(new Set());
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
+
+  // Notes panel state
+  const [notesPanelOpen, setNotesPanelOpen] = useState(false);
+  const [selectedChapterNotes, setSelectedChapterNotes] = useState<{
+    chapterName: string;
+    subjectName: string;
+    contextInfo: string;
+    notes: TeachingSessionNote[];
+  } | null>(null);
+
+  const openNotesPanel = (
+    chapterName: string, 
+    subjectName: string, 
+    contextInfo: string, 
+    notes: TeachingSessionNote[]
+  ) => {
+    setSelectedChapterNotes({ chapterName, subjectName, contextInfo, notes });
+    setNotesPanelOpen(true);
+  };
+
+  const closeNotesPanel = () => {
+    setNotesPanelOpen(false);
+    setSelectedChapterNotes(null);
+  };
 
   const toggleSet = (set: Set<string>, setFn: React.Dispatch<React.SetStateAction<Set<string>>>, key: string) => {
     setFn(prev => {
@@ -204,31 +230,45 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
 
                                       <CollapsibleContent>
                                         <div className="pl-6 pt-2 space-y-1.5">
-                                          {subject.chapters.map(chapter => (
-                                            <div 
-                                              key={chapter.chapterId}
-                                              className="flex items-center justify-between p-2 rounded bg-card border border-border/50"
-                                            >
-                                              <div className="flex items-center gap-2">
-                                                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                                                <span className="text-sm text-foreground">{chapter.chapterName}</span>
+                                          {subject.chapters.map(chapter => {
+                                            const notesCount = chapter.sessionNotes?.length || 0;
+                                            return (
+                                              <div 
+                                                key={chapter.chapterId}
+                                                className="flex items-center justify-between p-2 rounded bg-card border border-border/50"
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                                                  <span className="text-sm text-foreground">{chapter.chapterName}</span>
+                                                  {notesCount > 0 && (
+                                                    <ChapterNotesButton
+                                                      notesCount={notesCount}
+                                                      onClick={() => openNotesPanel(
+                                                        chapter.chapterName,
+                                                        subject.subjectName,
+                                                        `${teacher.teacherName} • ${classBatch.className} - ${classBatch.batchName}`,
+                                                        chapter.sessionNotes
+                                                      )}
+                                                    />
+                                                  )}
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs">
+                                                  {chapter.sessionsCompleted > 0 && (
+                                                    <span className="text-green-600">{chapter.sessionsCompleted} done</span>
+                                                  )}
+                                                  {chapter.sessionsPartial > 0 && (
+                                                    <span className="text-amber-600">{chapter.sessionsPartial} partial</span>
+                                                  )}
+                                                  {chapter.sessionsMissed > 0 && (
+                                                    <span className="text-red-600">{chapter.sessionsMissed} missed</span>
+                                                  )}
+                                                  <span className="font-medium text-foreground">
+                                                    {chapter.hoursSpent.toFixed(1)}h
+                                                  </span>
+                                                </div>
                                               </div>
-                                              <div className="flex items-center gap-3 text-xs">
-                                                {chapter.sessionsCompleted > 0 && (
-                                                  <span className="text-green-600">{chapter.sessionsCompleted} done</span>
-                                                )}
-                                                {chapter.sessionsPartial > 0 && (
-                                                  <span className="text-amber-600">{chapter.sessionsPartial} partial</span>
-                                                )}
-                                                {chapter.sessionsMissed > 0 && (
-                                                  <span className="text-red-600">{chapter.sessionsMissed} missed</span>
-                                                )}
-                                                <span className="font-medium text-foreground">
-                                                  {chapter.hoursSpent.toFixed(1)}h
-                                                </span>
-                                              </div>
-                                            </div>
-                                          ))}
+                                            );
+                                          })}
                                         </div>
                                       </CollapsibleContent>
                                     </Collapsible>
@@ -247,6 +287,18 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
           </Card>
         );
       })}
+
+      {/* Notes Panel */}
+      {selectedChapterNotes && (
+        <TeachingNotesPanel
+          isOpen={notesPanelOpen}
+          onClose={closeNotesPanel}
+          chapterName={selectedChapterNotes.chapterName}
+          subjectName={selectedChapterNotes.subjectName}
+          contextInfo={selectedChapterNotes.contextInfo}
+          notes={selectedChapterNotes.notes}
+        />
+      )}
     </div>
   );
 }

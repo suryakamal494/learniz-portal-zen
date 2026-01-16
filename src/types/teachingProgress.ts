@@ -1,5 +1,16 @@
 export type TeachingStatus = 'completed' | 'partial' | 'not-taken' | 'pending';
 
+// Session note recorded by teachers when marking teaching status
+export interface TeachingSessionNote {
+  sessionId: string;
+  date: string;
+  time: string;
+  teacherName: string;
+  status: TeachingStatus;
+  notes: string;
+  markedAt: string;
+}
+
 export interface TeachingProgressLog {
   scheduleId: string;
   teachingStatus: TeachingStatus;
@@ -79,6 +90,7 @@ export interface ChapterWithTeachers {
   sessionsPartial: number;
   sessionsMissed: number;
   teachers: ChapterTeacherBreakdown[];
+  sessionNotes: TeachingSessionNote[];
 }
 
 // Subject-level aggregation within a batch
@@ -121,6 +133,7 @@ export interface TeacherChapterProgress {
   sessionsCompleted: number;
   sessionsPartial: number;
   sessionsMissed: number;
+  sessionNotes: TeachingSessionNote[];
 }
 
 // Teacher's subject breakdown
