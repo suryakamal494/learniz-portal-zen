@@ -13,7 +13,8 @@ import {
   TeacherClassBatchProgress,
   TeacherSubjectProgress,
   TeacherChapterProgress,
-  ChapterTeacherBreakdown
+  ChapterTeacherBreakdown,
+  TeachingSessionNote
 } from '@/types/teachingProgress';
 
 // Extended mock data with teaching status - MORE DATA for better hierarchy
@@ -32,7 +33,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { urlView: '', lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
-    teachingNotes: 'Covered all topics as planned',
+    teachingNotes: 'Covered all topics as planned. Students showed good understanding of electromagnetic induction principles.',
     markedAt: '2024-01-15T10:05:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-10T10:00:00Z',
@@ -51,6 +52,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Introduced AC circuit concepts and phasor diagrams. Students found impedance calculations challenging.',
     markedAt: '2024-01-19T11:05:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-12T09:00:00Z',
@@ -69,6 +71,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Completed numerical problems on Faraday law. Need more practice on Lenz law applications in next class.',
     markedAt: '2024-01-22T10:35:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-15T10:00:00Z',
@@ -88,6 +91,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Galvanic cell concepts explained with practical examples. Students participated actively.',
     markedAt: '2024-01-16T12:05:00Z',
     markedBy: 'Dr. Anjali Verma',
     createdAt: '2024-01-10T10:00:00Z',
@@ -125,6 +129,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Rate laws and order of reaction covered. Will start Arrhenius equation in next session.',
     markedAt: '2024-01-20T11:50:00Z',
     markedBy: 'Dr. Anjali Verma',
     createdAt: '2024-01-14T10:00:00Z',
@@ -144,6 +149,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { urlView: '', lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Mendel laws explained with Punnett squares. Students enjoyed the genetics problem-solving session.',
     markedAt: '2024-01-17T12:00:00Z',
     markedBy: 'Dr. Suresh Nair',
     createdAt: '2024-01-05T08:30:00Z',
@@ -162,6 +168,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'DNA replication model demonstrated. Students grasped semi-conservative replication well.',
     markedAt: '2024-01-19T12:20:00Z',
     markedBy: 'Dr. Suresh Nair',
     createdAt: '2024-01-10T08:30:00Z',
@@ -197,6 +204,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'EMI fundamentals covered for Science B batch. Good class participation.',
     markedAt: '2024-01-18T15:05:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-12T10:00:00Z',
@@ -235,6 +243,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Students grasped fundamental theorem of integration well. Extra practice problems assigned.',
     markedAt: '2024-01-20T15:35:00Z',
     markedBy: 'Prof. Priya Sharma',
     createdAt: '2024-01-14T10:00:00Z',
@@ -253,6 +262,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Chain rule and product rule problems completed. Students are ready for applications.',
     markedAt: '2024-01-22T11:35:00Z',
     markedBy: 'Prof. Priya Sharma',
     createdAt: '2024-01-16T09:00:00Z',
@@ -272,6 +282,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Balance sheet format explained with practical company examples. Students need more practice.',
     markedAt: '2024-01-17T15:05:00Z',
     markedBy: 'Mr. Arun Patel',
     createdAt: '2024-01-11T10:00:00Z',
@@ -326,6 +337,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Interference patterns demonstrated with laser setup. Lab session was very effective.',
     markedAt: '2024-01-20T10:35:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-14T13:00:00Z',
@@ -364,6 +376,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'IUPAC nomenclature covered. Students practiced naming various organic compounds.',
     markedAt: '2024-01-18T14:50:00Z',
     markedBy: 'Dr. Anjali Verma',
     createdAt: '2024-01-12T14:00:00Z',
@@ -382,6 +395,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: true },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'pH calculations and indicators explained. Conducted litmus paper experiment.',
     markedAt: '2024-01-20T15:05:00Z',
     markedBy: 'Dr. Anjali Verma',
     createdAt: '2024-01-14T14:00:00Z',
@@ -401,6 +415,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Quadratic formula derivation completed. Students understood completing the square method.',
     markedAt: '2024-01-17T11:05:00Z',
     markedBy: 'Prof. Priya Sharma',
     createdAt: '2024-01-11T10:00:00Z',
@@ -455,6 +470,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
+    teachingNotes: 'Excellent class discussion on metaphors and imagery. Students analyzed poems enthusiastically.',
     markedAt: '2024-01-21T16:25:00Z',
     markedBy: 'Ms. Kavita Joshi',
     createdAt: '2024-01-14T11:45:00Z',
@@ -735,7 +751,8 @@ export function calculateClassBatchSubjectProgress(classes: TeacherScheduleClass
         sessionsCompleted: 0,
         sessionsPartial: 0,
         sessionsMissed: 0,
-        teachers: []
+        teachers: [],
+        sessionNotes: []
       };
       subject.chapters.push(chapter);
     }
@@ -745,6 +762,19 @@ export function calculateClassBatchSubjectProgress(classes: TeacherScheduleClass
     if (cls.teachingStatus === 'completed') chapter.sessionsCompleted++;
     else if (cls.teachingStatus === 'partial') chapter.sessionsPartial++;
     else if (cls.teachingStatus === 'not-taken') chapter.sessionsMissed++;
+
+    // Collect session notes if present
+    if (cls.teachingNotes) {
+      chapter.sessionNotes.push({
+        sessionId: cls.id,
+        date: cls.date,
+        time: cls.time,
+        teacherName: cls.faculty,
+        status: cls.teachingStatus,
+        notes: cls.teachingNotes,
+        markedAt: cls.markedAt || cls.updatedAt
+      });
+    }
 
     // Find or create teacher within chapter
     let teacher = chapter.teachers.find(t => t.teacherName === cls.faculty);
@@ -837,7 +867,8 @@ export function calculateTeacherClassProgress(classes: TeacherScheduleClass[]): 
         hoursSpent: 0,
         sessionsCompleted: 0,
         sessionsPartial: 0,
-        sessionsMissed: 0
+        sessionsMissed: 0,
+        sessionNotes: []
       };
       subject.chapters.push(chapter);
     }
@@ -845,6 +876,19 @@ export function calculateTeacherClassProgress(classes: TeacherScheduleClass[]): 
     if (cls.teachingStatus === 'completed') chapter.sessionsCompleted++;
     else if (cls.teachingStatus === 'partial') chapter.sessionsPartial++;
     else if (cls.teachingStatus === 'not-taken') chapter.sessionsMissed++;
+
+    // Collect session notes if present
+    if (cls.teachingNotes) {
+      chapter.sessionNotes.push({
+        sessionId: cls.id,
+        date: cls.date,
+        time: cls.time,
+        teacherName: cls.faculty,
+        status: cls.teachingStatus,
+        notes: cls.teachingNotes,
+        markedAt: cls.markedAt || cls.updatedAt
+      });
+    }
   });
 
   return Array.from(teacherMap.values()).sort((a, b) => b.completedHours - a.completedHours);
