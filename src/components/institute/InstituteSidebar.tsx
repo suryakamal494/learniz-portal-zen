@@ -52,6 +52,12 @@ const navigationItems = [
     exact: true
   },
   {
+    title: 'Students',
+    url: '/institute/students',
+    icon: Users,
+    exact: false
+  },
+  {
     title: 'Grand Tests',
     url: '/institute/grand-tests',
     icon: FileText,
