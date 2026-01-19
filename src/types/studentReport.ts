@@ -5,6 +5,8 @@ export interface StudentOverview {
   rollNumber: string;
   class: string;
   section: string;
+  classId: string;
+  sectionId: string;
   overallAccuracy: number;
   classAverage: number;
   performanceStatus: 'above_average' | 'average' | 'below_average';

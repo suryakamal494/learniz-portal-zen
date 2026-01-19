@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -12,17 +11,56 @@ import {
   ChevronDown, 
   GraduationCap,
   TrendingUp,
-  ArrowLeft
+  User,
+  X
 } from 'lucide-react';
-import { getClassGroups } from '@/data/mockStudentReports';
-import { ClassGroup } from '@/types/studentReport';
+import { getClassGroups, searchStudents } from '@/data/mockStudentReports';
+import { ClassGroup, StudentOverview } from '@/types/studentReport';
 import { cn } from '@/lib/utils';
 
 const StudentReportsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
+  const [searchResults, setSearchResults] = useState<StudentOverview[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   
   const classGroups = useMemo(() => getClassGroups(), []);
+
+  // Debounced global search
+  useEffect(() => {
+    const query = searchQuery.trim();
+    
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      const results = searchStudents(query);
+      setSearchResults(results.slice(0, 10)); // Limit to 10 results
+      setShowResults(true);
+      setIsSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Click outside to close results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleClass = (classId: string) => {
     setExpandedClasses(prev => {
@@ -36,15 +74,17 @@ const StudentReportsPage: React.FC = () => {
     });
   };
 
-  const filteredClasses = useMemo(() => {
-    if (!searchQuery.trim()) return classGroups;
-    
-    const query = searchQuery.toLowerCase();
-    return classGroups.filter(cls => 
-      cls.className.toLowerCase().includes(query) ||
-      cls.sections.some(s => s.sectionName.toLowerCase().includes(query))
-    );
-  }, [classGroups, searchQuery]);
+  const handleStudentSelect = (student: StudentOverview) => {
+    setShowResults(false);
+    setSearchQuery('');
+    navigate(`/institute/students/${student.classId}/${student.sectionId}/${student.studentId}`);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowResults(false);
+  };
 
   const getAccuracyColor = (accuracy: number) => {
     if (accuracy >= 70) return 'text-green-600';
@@ -56,6 +96,17 @@ const StudentReportsPage: React.FC = () => {
     if (accuracy >= 70) return 'bg-green-50 border-green-200';
     if (accuracy >= 40) return 'bg-amber-50 border-amber-200';
     return 'bg-red-50 border-red-200';
+  };
+
+  const getPerformanceBadge = (status: string) => {
+    switch (status) {
+      case 'above_average':
+        return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Above Avg</Badge>;
+      case 'below_average':
+        return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs">Below Avg</Badge>;
+      default:
+        return <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Average</Badge>;
+    }
   };
 
   return (
@@ -86,62 +137,84 @@ const StudentReportsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
+        {/* Global Student Search */}
+        <div className="mb-6" ref={searchRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by class or section..."
+              placeholder="Search by student name or roll number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11"
+              onFocus={() => searchQuery.trim().length >= 2 && setShowResults(true)}
+              className="pl-10 pr-10 h-11"
             />
-          </div>
-        </div>
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-primary">
-                {classGroups.length}
+            {/* Search Results Dropdown */}
+            {showResults && (
+              <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                {isSearching ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Searching...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="py-2">
+                    <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b mb-1">
+                      Found {searchResults.length} student{searchResults.length > 1 ? 's' : ''}
+                    </div>
+                    {searchResults.map((student) => (
+                      <button
+                        key={student.studentId}
+                        onClick={() => handleStudentSelect(student)}
+                        className="w-full px-3 py-3 text-left hover:bg-muted/50 transition-colors flex items-start gap-3 border-b last:border-0"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <User className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-foreground">
+                              {student.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ({student.rollNumber})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-sm text-muted-foreground">
+                              {student.class} - Section {student.section}
+                            </span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className={cn("text-sm font-medium", getAccuracyColor(student.overallAccuracy))}>
+                              {student.overallAccuracy}%
+                            </span>
+                            {getPerformanceBadge(student.performanceStatus)}
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-2" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No students found matching "{searchQuery}"
+                  </div>
+                )}
               </div>
-              <div className="text-sm text-muted-foreground">Classes</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">
-                {classGroups.reduce((sum, c) => sum + c.sections.length, 0)}
-              </div>
-              <div className="text-sm text-muted-foreground">Sections</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {classGroups.reduce((sum, c) => sum + c.totalStudents, 0)}
-              </div>
-              <div className="text-sm text-muted-foreground">Students</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-50 border-purple-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-purple-600">
-                {Math.round(
-                  classGroups.reduce((sum, c) => 
-                    sum + c.sections.reduce((s, sec) => s + sec.averageAccuracy, 0) / c.sections.length, 0
-                  ) / classGroups.length
-                )}%
-              </div>
-              <div className="text-sm text-muted-foreground">Avg Accuracy</div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </div>
 
         {/* Class List */}
         <div className="space-y-4">
-          {filteredClasses.map((classGroup) => {
+          {classGroups.map((classGroup) => {
             const isExpanded = expandedClasses.has(classGroup.classId);
             
             return (
@@ -216,10 +289,10 @@ const StudentReportsPage: React.FC = () => {
           })}
         </div>
 
-        {filteredClasses.length === 0 && (
+        {classGroups.length === 0 && (
           <Card className="p-8 text-center">
             <div className="text-muted-foreground">
-              No classes found matching "{searchQuery}"
+              No classes available
             </div>
           </Card>
         )}

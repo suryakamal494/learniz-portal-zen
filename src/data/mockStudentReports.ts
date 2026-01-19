@@ -299,6 +299,8 @@ const generateStudent = (
     rollNumber,
     class: className,
     section,
+    classId,
+    sectionId: section,
     overallAccuracy,
     classAverage,
     performanceStatus: getPerformanceStatus(overallAccuracy, classAverage),
