@@ -74,6 +74,9 @@ import GrandTestsPage from './pages/institute/GrandTestsPage';
 import GrandTestDetailPage from './pages/institute/GrandTestDetailPage';
 import ScheduleTrackingPage from './pages/institute/ScheduleTrackingPage';
 import LearningResponsePage from './pages/institute/LearningResponsePage';
+import StudentReportsPage from './pages/institute/StudentReportsPage';
+import SectionStudentsPage from './pages/institute/SectionStudentsPage';
+import StudentDetailPage from './pages/institute/StudentDetailPage';
 import { InstituteLayout } from './components/institute/InstituteLayout';
 
 
@@ -164,6 +167,9 @@ function App() {
           <Route path="teachers/:teacherId" element={<TeacherDetailPage />} />
           <Route path="subjects" element={<SubjectHealthPage />} />
           <Route path="classes" element={<ClassOverviewPage />} />
+          <Route path="students" element={<StudentReportsPage />} />
+          <Route path="students/:classId/:sectionId" element={<SectionStudentsPage />} />
+          <Route path="students/:classId/:sectionId/:studentId" element={<StudentDetailPage />} />
           <Route path="grand-tests" element={<GrandTestsPage />} />
           <Route path="grand-tests/:testId" element={<GrandTestDetailPage />} />
           <Route path="schedule-tracking" element={<ScheduleTrackingPage />} />
