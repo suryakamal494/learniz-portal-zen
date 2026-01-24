@@ -35,6 +35,19 @@ export interface StudentTestResult {
   totalStudents?: number;
 }
 
+// Difficulty analysis metrics
+export interface DifficultyMetrics {
+  accuracy: number;
+  attempted: number;
+  total: number;
+}
+
+// Cognitive analysis metrics
+export interface CognitiveMetrics {
+  accuracy: number;
+  attempted: number;
+}
+
 // Chapter performance for a student
 export interface StudentChapterPerformance {
   chapterId: string;
@@ -50,6 +63,31 @@ export interface StudentChapterPerformance {
     lmsQuizzes: StudentTestResult[];
     assignments: StudentTestResult[];
   };
+  difficultyAnalysis?: {
+    easy: DifficultyMetrics;
+    medium: DifficultyMetrics;
+    hard: DifficultyMetrics;
+  };
+  cognitiveAnalysis?: {
+    conceptual: CognitiveMetrics;
+    logical: CognitiveMetrics;
+    memory: CognitiveMetrics;
+    analytical: CognitiveMetrics;
+  };
+}
+
+// Aggregated analysis for subjects
+export interface AggregatedDifficultyAnalysis {
+  easy: { avgAccuracy: number };
+  medium: { avgAccuracy: number };
+  hard: { avgAccuracy: number };
+}
+
+export interface AggregatedCognitiveAnalysis {
+  conceptual: { avgAccuracy: number };
+  logical: { avgAccuracy: number };
+  memory: { avgAccuracy: number };
+  analytical: { avgAccuracy: number };
 }
 
 // Subject performance for a student
@@ -62,6 +100,8 @@ export interface StudentSubjectPerformance {
   chapters: StudentChapterPerformance[];
   testsTotal: number;
   testsAttempted: number;
+  aggregatedDifficulty?: AggregatedDifficultyAnalysis;
+  aggregatedCognitive?: AggregatedCognitiveAnalysis;
 }
 
 // Grand test subject result

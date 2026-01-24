@@ -8,6 +8,8 @@ import {
   ClassGroup,
   ClassSection,
   ChapterTestType,
+  DifficultyMetrics,
+  CognitiveMetrics,
   getPerformanceStatus,
   getBand,
   getTrend
@@ -152,6 +154,58 @@ const generateTestResults = (
   return tests.sort((a, b) => new Date(b.testDate).getTime() - new Date(a.testDate).getTime());
 };
 
+// Generate difficulty analysis for a chapter
+const generateDifficultyAnalysis = (baseAccuracy: number): {
+  easy: DifficultyMetrics;
+  medium: DifficultyMetrics;
+  hard: DifficultyMetrics;
+} => {
+  return {
+    easy: {
+      accuracy: Math.min(100, Math.max(40, baseAccuracy + randomFloat(10, 20))),
+      attempted: randomInRange(15, 25),
+      total: randomInRange(20, 30)
+    },
+    medium: {
+      accuracy: Math.min(100, Math.max(30, baseAccuracy + randomFloat(-5, 5))),
+      attempted: randomInRange(20, 35),
+      total: randomInRange(25, 40)
+    },
+    hard: {
+      accuracy: Math.min(100, Math.max(15, baseAccuracy + randomFloat(-20, -5))),
+      attempted: randomInRange(10, 20),
+      total: randomInRange(15, 25)
+    }
+  };
+};
+
+// Generate cognitive analysis for a chapter
+const generateCognitiveAnalysis = (baseAccuracy: number): {
+  conceptual: CognitiveMetrics;
+  logical: CognitiveMetrics;
+  memory: CognitiveMetrics;
+  analytical: CognitiveMetrics;
+} => {
+  return {
+    memory: {
+      accuracy: Math.min(100, Math.max(35, baseAccuracy + randomFloat(5, 15))),
+      attempted: randomInRange(10, 20)
+    },
+    conceptual: {
+      accuracy: Math.min(100, Math.max(30, baseAccuracy + randomFloat(-5, 8))),
+      attempted: randomInRange(12, 22)
+    },
+    logical: {
+      accuracy: Math.min(100, Math.max(25, baseAccuracy + randomFloat(-10, 5))),
+      attempted: randomInRange(8, 18)
+    },
+    analytical: {
+      accuracy: Math.min(100, Math.max(20, baseAccuracy + randomFloat(-15, 0))),
+      attempted: randomInRange(6, 15)
+    }
+  };
+};
+
 // Generate chapter performance
 const generateChapterPerformance = (
   subjectId: string,
@@ -185,7 +239,9 @@ const generateChapterPerformance = (
       liveAssessments,
       lmsQuizzes,
       assignments
-    }
+    },
+    difficultyAnalysis: generateDifficultyAnalysis(chapterBaseAccuracy),
+    cognitiveAnalysis: generateCognitiveAnalysis(chapterBaseAccuracy)
   };
 };
 
@@ -206,6 +262,31 @@ const generateSubjectPerformance = (
     ? Math.round(chapterPerformances.reduce((sum, ch) => sum + ch.overallAccuracy, 0) / chapterPerformances.length * 10) / 10
     : 0;
   
+  // Aggregate difficulty analysis from chapters
+  const aggregateDifficulty = () => {
+    const chaptersWithDiff = chapterPerformances.filter(c => c.difficultyAnalysis);
+    if (chaptersWithDiff.length === 0) return undefined;
+    
+    return {
+      easy: { avgAccuracy: Math.round(chaptersWithDiff.reduce((s, c) => s + (c.difficultyAnalysis?.easy.accuracy || 0), 0) / chaptersWithDiff.length * 10) / 10 },
+      medium: { avgAccuracy: Math.round(chaptersWithDiff.reduce((s, c) => s + (c.difficultyAnalysis?.medium.accuracy || 0), 0) / chaptersWithDiff.length * 10) / 10 },
+      hard: { avgAccuracy: Math.round(chaptersWithDiff.reduce((s, c) => s + (c.difficultyAnalysis?.hard.accuracy || 0), 0) / chaptersWithDiff.length * 10) / 10 }
+    };
+  };
+  
+  // Aggregate cognitive analysis from chapters
+  const aggregateCognitive = () => {
+    const chaptersWithCog = chapterPerformances.filter(c => c.cognitiveAnalysis);
+    if (chaptersWithCog.length === 0) return undefined;
+    
+    return {
+      conceptual: { avgAccuracy: Math.round(chaptersWithCog.reduce((s, c) => s + (c.cognitiveAnalysis?.conceptual.accuracy || 0), 0) / chaptersWithCog.length * 10) / 10 },
+      logical: { avgAccuracy: Math.round(chaptersWithCog.reduce((s, c) => s + (c.cognitiveAnalysis?.logical.accuracy || 0), 0) / chaptersWithCog.length * 10) / 10 },
+      memory: { avgAccuracy: Math.round(chaptersWithCog.reduce((s, c) => s + (c.cognitiveAnalysis?.memory.accuracy || 0), 0) / chaptersWithCog.length * 10) / 10 },
+      analytical: { avgAccuracy: Math.round(chaptersWithCog.reduce((s, c) => s + (c.cognitiveAnalysis?.analytical.accuracy || 0), 0) / chaptersWithCog.length * 10) / 10 }
+    };
+  };
+  
   return {
     subjectId: subjectConfig.id,
     subjectName: subjectConfig.name,
@@ -214,7 +295,9 @@ const generateSubjectPerformance = (
     classAverage: overallAccuracy + randomFloat(-6, 6),
     chapters: chapterPerformances,
     testsTotal: allTests,
-    testsAttempted: allTests
+    testsAttempted: allTests,
+    aggregatedDifficulty: aggregateDifficulty(),
+    aggregatedCognitive: aggregateCognitive()
   };
 };
 
