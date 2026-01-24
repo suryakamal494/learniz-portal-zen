@@ -98,8 +98,36 @@ export const GrandTestCard: React.FC<GrandTestCardProps> = ({ grandTest, default
     return colors[subjectId] || 'bg-gray-100 text-gray-700';
   };
 
+  const getBandCardStyles = (band: string) => {
+    switch (band) {
+      case 'high':
+        return 'border-l-4 border-l-green-500 bg-gradient-to-r from-green-50/50 to-transparent';
+      case 'medium':
+        return 'border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50/50 to-transparent';
+      case 'at_risk':
+        return 'border-l-4 border-l-red-500 bg-gradient-to-r from-red-50/50 to-transparent';
+      default:
+        return 'border-l-4 border-l-gray-300';
+    }
+  };
+
+  const getTestTypeBadgeColor = (type: string) => {
+    switch (type) {
+      case 'half-yearly':
+        return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'annual':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'term':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'quarterly':
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   return (
-    <Card className="overflow-hidden">
+    <Card className={cn("overflow-hidden", getBandCardStyles(grandTest.band))}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
@@ -114,7 +142,7 @@ export const GrandTestCard: React.FC<GrandTestCardProps> = ({ grandTest, default
                     {grandTest.testName}
                   </h3>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className={cn("text-xs", getTestTypeBadgeColor(grandTest.testType))}>
                       {getTestTypeLabel(grandTest.testType)}
                     </Badge>
                     <span className="flex items-center gap-1">

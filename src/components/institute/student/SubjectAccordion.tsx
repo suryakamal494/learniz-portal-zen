@@ -99,35 +99,55 @@ export const SubjectAccordion: React.FC<SubjectAccordionProps> = ({ subjects }) 
     }
   };
 
-  const renderChapter = (chapter: StudentChapterPerformance) => (
-    <AccordionItem 
-      key={chapter.chapterId} 
-      value={chapter.chapterId}
-      className="border rounded-lg mb-2 overflow-hidden"
-    >
-      <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline">
-        <div className="flex items-center justify-between w-full pr-2">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="text-left min-w-0">
-              <div className="font-medium text-sm truncate">{chapter.chapterName}</div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{chapter.testsAttempted} tests</span>
-                <span className="flex items-center gap-1">
-                  {getTrendIcon(chapter.trend)}
-                  {getTrendLabel(chapter.trend)}
-                </span>
+  const getChapterBorderColor = (accuracy: number) => {
+    if (accuracy >= 70) return 'border-l-green-400';
+    if (accuracy >= 40) return 'border-l-amber-400';
+    return 'border-l-red-400';
+  };
+
+  const renderChapter = (chapter: StudentChapterPerformance, subjectColor: string) => {
+    const chapterBgTint = {
+      blue: 'bg-blue-50/40',
+      purple: 'bg-purple-50/40',
+      green: 'bg-green-50/40',
+      emerald: 'bg-emerald-50/40',
+      orange: 'bg-orange-50/40',
+      amber: 'bg-amber-50/40',
+    }[subjectColor] || 'bg-gray-50/40';
+
+    return (
+      <AccordionItem 
+        key={chapter.chapterId} 
+        value={chapter.chapterId}
+        className={cn(
+          "border rounded-lg mb-2 overflow-hidden border-l-4",
+          getChapterBorderColor(chapter.overallAccuracy),
+          chapterBgTint
+        )}
+      >
+        <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline">
+          <div className="flex items-center justify-between w-full pr-2">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="text-left min-w-0">
+                <div className="font-medium text-sm truncate">{chapter.chapterName}</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{chapter.testsAttempted} tests</span>
+                  <span className="flex items-center gap-1">
+                    {getTrendIcon(chapter.trend)}
+                    {getTrendLabel(chapter.trend)}
+                  </span>
+                </div>
               </div>
             </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {getComparisonBadge(chapter.overallAccuracy, chapter.classAverage)}
+              <span className={cn("font-bold text-sm", getAccuracyColor(chapter.overallAccuracy))}>
+                {chapter.overallAccuracy.toFixed(1)}%
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {getComparisonBadge(chapter.overallAccuracy, chapter.classAverage)}
-            <span className={cn("font-bold text-sm", getAccuracyColor(chapter.overallAccuracy))}>
-              {chapter.overallAccuracy.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-      </AccordionTrigger>
+        </AccordionTrigger>
       <AccordionContent className="px-4 pb-4">
         {/* Chapter Overview */}
         <div className="mb-4 p-3 bg-muted/50 rounded-lg">
@@ -156,6 +176,7 @@ export const SubjectAccordion: React.FC<SubjectAccordionProps> = ({ subjects }) 
       </AccordionContent>
     </AccordionItem>
   );
+  };
 
   return (
     <Accordion type="single" collapsible className="space-y-3">
@@ -217,7 +238,7 @@ export const SubjectAccordion: React.FC<SubjectAccordionProps> = ({ subjects }) 
             {/* Chapters */}
             <h4 className="font-medium text-sm text-foreground mb-3">Chapters</h4>
             <Accordion type="single" collapsible className="space-y-2">
-              {subject.chapters.map(renderChapter)}
+              {subject.chapters.map((chapter) => renderChapter(chapter, subject.subjectColor))}
             </Accordion>
           </AccordionContent>
         </AccordionItem>

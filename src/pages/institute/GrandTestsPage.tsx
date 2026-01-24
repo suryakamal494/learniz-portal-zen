@@ -4,8 +4,10 @@ import { FileText, Users, ChevronRight, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { mockGrandTests } from '@/data/mockGrandTests';
 import { GrandTest } from '@/types/grandTest';
+import { cn } from '@/lib/utils';
 
 export default function GrandTestsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,13 +66,44 @@ export default function GrandTestsPage() {
 }
 
 function GrandTestCard({ test }: { test: GrandTest }) {
+  const getStatusStyles = () => {
+    switch (test.status) {
+      case 'completed':
+        return {
+          card: 'border-green-200 bg-gradient-to-r from-green-50/50 to-transparent',
+          icon: 'bg-green-100 text-green-600',
+          badge: 'bg-green-100 text-green-700 border-green-200'
+        };
+      case 'scheduled':
+        return {
+          card: 'border-amber-200 bg-gradient-to-r from-amber-50/50 to-transparent',
+          icon: 'bg-amber-100 text-amber-600',
+          badge: 'bg-amber-100 text-amber-700 border-amber-200'
+        };
+      case 'in_progress':
+        return {
+          card: 'border-blue-200 bg-gradient-to-r from-blue-50/50 to-transparent',
+          icon: 'bg-blue-100 text-blue-600',
+          badge: 'bg-blue-100 text-blue-700 border-blue-200'
+        };
+      default:
+        return {
+          card: 'border-gray-200',
+          icon: 'bg-gray-100 text-gray-600',
+          badge: 'bg-gray-100 text-gray-700'
+        };
+    }
+  };
+
+  const styles = getStatusStyles();
+
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={cn("hover:shadow-md transition-shadow border", styles.card)}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-              <FileText className="h-5 w-5 text-primary" />
+            <div className={cn("p-2 rounded-lg shrink-0", styles.icon)}>
+              <FileText className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold truncate">{test.name}</h3>
@@ -81,18 +114,25 @@ function GrandTestCard({ test }: { test: GrandTest }) {
             </div>
           </div>
           
-          {test.status === 'completed' ? (
-            <Link to={`/institute/grand-tests/${test.id}`}>
-              <Button variant="outline" size="sm" className="gap-1 shrink-0">
-                View
-                <ChevronRight className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            {test.status !== 'completed' && (
+              <Badge variant="outline" className={cn("text-xs capitalize", styles.badge)}>
+                {test.status === 'scheduled' ? 'Scheduled' : 'In Progress'}
+              </Badge>
+            )}
+            {test.status === 'completed' ? (
+              <Link to={`/institute/grand-tests/${test.id}`}>
+                <Button variant="default" size="sm" className="gap-1 shrink-0 bg-green-600 hover:bg-green-700">
+                  View Results
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled className="shrink-0">
+                {test.status === 'scheduled' ? 'Upcoming' : 'Live'}
               </Button>
-            </Link>
-          ) : (
-            <Button variant="outline" size="sm" disabled className="shrink-0">
-              {test.status === 'scheduled' ? 'Scheduled' : 'In Progress'}
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
