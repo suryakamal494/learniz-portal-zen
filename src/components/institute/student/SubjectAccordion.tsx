@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/accordion';
 import { StudentSubjectPerformance, StudentChapterPerformance } from '@/types/studentReport';
 import { ChapterTestTabs } from './ChapterTestTabs';
+import { ChapterAnalysisSummary } from './ChapterAnalysisSummary';
 import { 
   BookOpen, 
   TrendingUp, 
@@ -171,8 +172,11 @@ export const SubjectAccordion: React.FC<SubjectAccordionProps> = ({ subjects }) 
           </div>
         </div>
 
+        {/* Difficulty & Cognitive Analysis */}
+        <ChapterAnalysisSummary chapter={chapter} />
+
         {/* Test Breakdown Tabs */}
-        <ChapterTestTabs testsByType={chapter.testsByType} />
+        <ChapterTestTabs testsByType={chapter.testsByType} chapterName={chapter.chapterName} />
       </AccordionContent>
     </AccordionItem>
   );

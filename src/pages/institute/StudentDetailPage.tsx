@@ -20,6 +20,7 @@ import {
 import { getStudentReport, getClassGroups } from '@/data/mockStudentReports';
 import { SubjectAccordion } from '@/components/institute/student/SubjectAccordion';
 import { GrandTestCard } from '@/components/institute/student/GrandTestCard';
+import { StudentPerformanceOverview } from '@/components/institute/student/StudentPerformanceOverview';
 import { cn } from '@/lib/utils';
 
 const StudentDetailPage: React.FC = () => {
@@ -157,6 +158,9 @@ const StudentDetailPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Performance Overview Dashboard */}
+        <StudentPerformanceOverview student={student} subjects={subjects} />
 
         {/* Tabs: Subjects & Grand Tests */}
         <Tabs defaultValue="subjects" className="w-full">
