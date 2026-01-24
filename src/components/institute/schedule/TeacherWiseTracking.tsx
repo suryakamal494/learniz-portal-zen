@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, User, Clock, BookOpen, GraduationCap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { TeacherProgressEnhanced, TeacherClassBatchProgress, TeacherSubjectProgress, TeachingSessionNote } from '@/types/teachingProgress';
 import { ChapterNotesButton } from './ChapterNotesButton';
 import { TeachingNotesPanel } from './TeachingNotesPanel';
+import { formatHoursShort, formatHoursRange } from '@/utils/formatUtils';
 
 interface TeacherWiseTrackingProps {
   teacherProgress: TeacherProgressEnhanced[];
@@ -83,7 +83,7 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {teacherProgress.map(teacher => {
         const isTeacherExpanded = expandedTeachers.has(teacher.teacherId);
         const completionRate = getCompletionPercentage(teacher.completedHours, teacher.totalHours);
@@ -123,12 +123,12 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1.5">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span className="font-semibold text-foreground">
-                          {teacher.completedHours.toFixed(1)}h
+                        <Clock className="h-4 w-4 text-primary shrink-0" />
+                        <span className="font-semibold text-foreground whitespace-nowrap">
+                          {formatHoursShort(teacher.completedHours)}
                         </span>
-                        <span className="text-muted-foreground">
-                          / {teacher.totalHours.toFixed(1)}h
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          / {formatHoursShort(teacher.totalHours)}
                         </span>
                       </div>
                     </div>
@@ -185,9 +185,9 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="text-sm font-medium text-foreground">
-                                  {classBatch.hoursSpent.toFixed(1)}h
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                                  {formatHoursShort(classBatch.hoursSpent)}
                                 </span>
                               </div>
                             </div>
@@ -222,8 +222,8 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
                                               {subject.chapters.length} chapters
                                             </span>
                                           </div>
-                                          <span className={`text-sm font-medium ${subjectColors.text}`}>
-                                            {subject.hoursSpent.toFixed(1)}h
+                                          <span className={`text-sm font-medium ${subjectColors.text} whitespace-nowrap`}>
+                                            {formatHoursShort(subject.hoursSpent)}
                                           </span>
                                         </div>
                                       </CollapsibleTrigger>
@@ -262,8 +262,8 @@ export function TeacherWiseTracking({ teacherProgress }: TeacherWiseTrackingProp
                                                   {chapter.sessionsMissed > 0 && (
                                                     <span className="text-red-600">{chapter.sessionsMissed} missed</span>
                                                   )}
-                                                  <span className="font-medium text-foreground">
-                                                    {chapter.hoursSpent.toFixed(1)}h
+                                                  <span className="font-medium text-foreground whitespace-nowrap">
+                                                    {formatHoursShort(chapter.hoursSpent)}
                                                   </span>
                                                 </div>
                                               </div>

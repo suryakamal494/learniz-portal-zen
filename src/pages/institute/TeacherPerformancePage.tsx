@@ -71,7 +71,7 @@ export default function TeacherPerformancePage() {
       </div>
 
       {/* Teacher Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredTeachers.map((tp) => (
           <Link key={tp.teacherId} to={`/institute/teachers/${tp.teacherId}`}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">

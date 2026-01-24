@@ -68,7 +68,7 @@ export default function ScheduleTrackingPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Class</label>
               <Select value={classFilter} onValueChange={setClassFilter}>
                 <SelectTrigger>
@@ -82,7 +82,7 @@ export default function ScheduleTrackingPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Date Range</label>
               <Select value={dateRange} onValueChange={setDateRange}>
                 <SelectTrigger>

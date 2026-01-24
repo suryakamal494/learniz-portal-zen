@@ -12,6 +12,7 @@ import { mockInstituteSnapshot, mockInstituteClasses } from '@/data/mockInstitut
 import { mockGrandTests } from '@/data/mockGrandTests';
 import { mockCLRReports, calculateCLRSummary, getReportsBySignal } from '@/data/mockCLRData';
 import { TimeFilterOption } from '@/types/instituteAnalytics';
+import { formatNumber } from '@/utils/formatUtils';
 
 export default function InstituteSnapshotPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterOption>('all-time');
@@ -154,7 +155,7 @@ export default function InstituteSnapshotPage() {
                         test.overallAccuracy >= 50 ? 'text-amber-600 dark:text-amber-400' : 
                         'text-red-600 dark:text-red-400'
                       )}>
-                        {test.overallAccuracy.toFixed(1)}%
+                        {formatNumber(test.overallAccuracy)}%
                       </p>
                       <p className="text-xs text-muted-foreground">accuracy</p>
                     </div>
@@ -215,7 +216,7 @@ export default function InstituteSnapshotPage() {
                             subject.accuracy >= 70 ? 'text-green-600' :
                             subject.accuracy >= 50 ? 'text-amber-600' : 'text-red-600'
                           )}>
-                            {subject.accuracy.toFixed(1)}%
+                            {formatNumber(subject.accuracy)}%
                           </span>
                           <TrendBadge trend={subject.trend} size="sm" showLabel={false} />
                         </div>
@@ -256,7 +257,7 @@ export default function InstituteSnapshotPage() {
       </div>
 
       {/* Quick Navigation */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link to="/institute/teachers">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4 flex items-center gap-3">
