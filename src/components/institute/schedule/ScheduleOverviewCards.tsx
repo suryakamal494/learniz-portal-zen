@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Calendar, Clock, Users, BookOpen, GraduationCap, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduleTrackingStats } from '@/types/teachingProgress';
+import { formatNumber, formatHoursShort } from '@/utils/formatUtils';
 
 interface ScheduleOverviewCardsProps {
   stats: ScheduleTrackingStats;
@@ -16,7 +16,7 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
   const cards = [
     {
       title: 'Total Classes',
-      value: stats.totalClasses,
+      value: formatNumber(stats.totalClasses),
       subtitle: 'Scheduled',
       icon: Calendar,
       color: 'text-blue-500',
@@ -24,7 +24,7 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
     },
     {
       title: 'Completed',
-      value: stats.completedClasses,
+      value: formatNumber(stats.completedClasses),
       subtitle: `${completionRate}% completion`,
       icon: GraduationCap,
       color: 'text-green-500',
@@ -32,7 +32,7 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
     },
     {
       title: 'Partially Done',
-      value: stats.partialClasses,
+      value: formatNumber(stats.partialClasses),
       subtitle: 'Need follow-up',
       icon: TrendingUp,
       color: 'text-amber-500',
@@ -40,7 +40,7 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
     },
     {
       title: 'Not Taken',
-      value: stats.notTakenClasses,
+      value: formatNumber(stats.notTakenClasses),
       subtitle: 'Missed classes',
       icon: Clock,
       color: 'text-red-500',
@@ -48,7 +48,7 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
     },
     {
       title: 'Total Hours',
-      value: stats.totalScheduledHours.toFixed(1),
+      value: formatHoursShort(stats.totalScheduledHours),
       subtitle: 'Scheduled',
       icon: BookOpen,
       color: 'text-purple-500',
@@ -56,8 +56,8 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
     },
     {
       title: 'Hours Completed',
-      value: stats.completedHours.toFixed(1),
-      subtitle: `${stats.missedHours.toFixed(1)}h missed`,
+      value: formatHoursShort(stats.completedHours),
+      subtitle: `${formatHoursShort(stats.missedHours)} missed`,
       icon: Users,
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500/10'
@@ -65,7 +65,7 @@ export function ScheduleOverviewCards({ stats }: ScheduleOverviewCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
       {cards.map((card, index) => (
         <Card key={index} className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, BookOpen, Users, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ClassProgressEnhanced, SubjectProgress, ChapterWithTeachers, TeachingSessionNote } from '@/types/teachingProgress';
 import { ChapterNotesButton } from './ChapterNotesButton';
 import { TeachingNotesPanel } from './TeachingNotesPanel';
+import { formatHoursShort, formatHoursRange } from '@/utils/formatUtils';
 
 interface BatchWiseTrackingProps {
   classProgress: ClassProgressEnhanced[];
@@ -97,27 +97,27 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
               onOpenChange={() => toggleSet(expandedClasses, setExpandedClasses, classData.classId)}
             >
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 transition-colors gap-3 sm:gap-4">
                   <div className="flex items-center gap-3">
                     {isClassExpanded ? (
-                      <ChevronDown className="h-5 w-5 text-primary" />
+                      <ChevronDown className="h-5 w-5 text-primary shrink-0" />
                     ) : (
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                     )}
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Users className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-foreground">{classData.className}</div>
+                    <div className="text-left min-w-0">
+                      <div className="font-semibold text-foreground truncate">{classData.className}</div>
                       <div className="text-sm text-muted-foreground">
                         {classData.batches.length} batches
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4 ml-auto sm:ml-0">
                     <div className="text-right">
-                      <div className="text-sm font-medium text-foreground">
-                        {classData.completedHours.toFixed(1)}h / {classData.totalHours.toFixed(1)}h
+                      <div className="text-sm font-medium text-foreground whitespace-nowrap">
+                        {formatHoursRange(classData.completedHours, classData.totalHours)}
                       </div>
                       <div className="text-xs text-muted-foreground">Hours completed</div>
                     </div>
@@ -148,29 +148,29 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                           onOpenChange={() => toggleSet(expandedBatches, setExpandedBatches, batchKey)}
                         >
                           <CollapsibleTrigger className="w-full">
-                            <div className="flex items-center justify-between p-4 pl-8 hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 pl-6 sm:pl-8 hover:bg-muted/50 transition-colors gap-2 sm:gap-4">
+                              <div className="flex items-center gap-3 min-w-0">
                                 {isBatchExpanded ? (
-                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                                 ) : (
-                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                                 )}
-                                <div>
-                                  <div className="font-medium text-foreground">{batch.batchName}</div>
+                                <div className="min-w-0">
+                                  <div className="font-medium text-foreground truncate">{batch.batchName}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {batch.subjects.length} subjects • {batch.sessionsPlanned} sessions
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                  <Clock className="h-3.5 w-3.5" />
-                                  <span>{batch.completedHours.toFixed(1)}h / {batch.totalHours.toFixed(1)}h</span>
+                              <div className="flex items-center gap-3 sm:gap-4 ml-auto sm:ml-0">
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground whitespace-nowrap">
+                                  <Clock className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{formatHoursRange(batch.completedHours, batch.totalHours)}</span>
                                 </div>
-                                <div className="w-20">
+                                <div className="w-16 sm:w-20 hidden xs:block">
                                   <Progress value={batchCompletion} className="h-2" />
                                 </div>
-                                <span className="text-sm font-medium w-12 text-right">{batchCompletion}%</span>
+                                <span className="text-sm font-medium w-10 sm:w-12 text-right">{batchCompletion}%</span>
                               </div>
                             </div>
                           </CollapsibleTrigger>
@@ -190,31 +190,31 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                       onOpenChange={() => toggleSet(expandedSubjects, setExpandedSubjects, subjectKey)}
                                     >
                                       <CollapsibleTrigger className="w-full">
-                                        <div className="flex items-center justify-between p-3 pl-14 hover:bg-muted/60 transition-colors">
-                                          <div className="flex items-center gap-3">
+                                        <div className="flex flex-col xs:flex-row xs:items-center justify-between p-3 pl-10 sm:pl-14 hover:bg-muted/60 transition-colors gap-2 xs:gap-3">
+                                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                             {isSubjectExpanded ? (
-                                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                                             ) : (
-                                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                                             )}
-                                            <Badge className={`${subjectColors.bg} ${subjectColors.text} border-0`}>
+                                            <Badge className={`${subjectColors.bg} ${subjectColors.text} border-0 shrink-0`}>
                                               {subject.subjectName}
                                             </Badge>
-                                            <span className="text-xs text-muted-foreground">
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap">
                                               {subject.chapters.length} chapters
                                             </span>
                                           </div>
-                                          <div className="flex items-center gap-2 text-sm">
+                                          <div className="flex items-center gap-2 text-sm ml-auto xs:ml-0 whitespace-nowrap">
                                             <span className={subjectColors.text}>
-                                              {subject.completedHours.toFixed(1)}h
+                                              {formatHoursShort(subject.completedHours)}
                                             </span>
-                                            <span className="text-muted-foreground">/ {subject.totalHours.toFixed(1)}h</span>
+                                            <span className="text-muted-foreground">/ {formatHoursShort(subject.totalHours)}</span>
                                           </div>
                                         </div>
                                       </CollapsibleTrigger>
                                       
                                       <CollapsibleContent>
-                                        <div className="pl-20 pr-4 pb-3 space-y-2">
+                                        <div className="pl-8 sm:pl-16 lg:pl-20 pr-3 sm:pr-4 pb-3 space-y-2">
                                           {subject.chapters.map(chapter => {
                                             const chapterKey = `${subjectKey}-${chapter.chapterId}`;
                                             const isChapterExpanded = expandedChapters.has(chapterKey);
@@ -339,12 +339,12 @@ function ChapterRow({ chapter, isExpanded, hasMultipleTeachers, subjectName, bat
           </div>
         </div>
       </div>
-      <div className="text-right">
-        <div className="text-sm font-semibold text-foreground">
-          {chapter.completedHours.toFixed(1)}h
+      <div className="text-right shrink-0">
+        <div className="text-sm font-semibold text-foreground whitespace-nowrap">
+          {formatHoursShort(chapter.completedHours)}
         </div>
-        <div className="text-xs text-muted-foreground">
-          of {chapter.totalHours.toFixed(1)}h
+        <div className="text-xs text-muted-foreground whitespace-nowrap">
+          of {formatHoursShort(chapter.totalHours)}
         </div>
       </div>
     </div>

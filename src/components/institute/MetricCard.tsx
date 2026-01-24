@@ -8,7 +8,7 @@ import {
   getTrendColor,
   getTrendLabel 
 } from '@/utils/instituteAnalyticsUtils';
-
+import { formatNumber } from '@/utils/formatUtils';
 interface MetricCardProps {
   title: string;
   value: string | number;
@@ -69,7 +69,7 @@ export function MetricCard({
       
       <div className="flex items-end gap-2">
         <span className={cn('font-bold', valueSizeClasses[size])}>
-          {typeof value === 'number' ? value.toFixed(1) : value}
+          {typeof value === 'number' ? formatNumber(value) : value}
         </span>
         
         {trend && TrendIcon && (
