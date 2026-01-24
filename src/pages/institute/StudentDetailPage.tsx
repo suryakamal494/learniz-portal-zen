@@ -160,16 +160,26 @@ const StudentDetailPage: React.FC = () => {
 
         {/* Tabs: Subjects & Grand Tests */}
         <Tabs defaultValue="subjects" className="w-full">
-          <TabsList className="w-full justify-start mb-4 h-12">
-            <TabsTrigger value="subjects" className="flex items-center gap-2 px-4">
+          <TabsList className="w-full justify-start mb-4 h-auto p-1.5 bg-muted/60 gap-2">
+            <TabsTrigger 
+              value="subjects" 
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
               <BookOpen className="h-4 w-4" />
               Subjects
-              <Badge variant="secondary">{subjects.length}</Badge>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 data-[state=active]:bg-blue-400 data-[state=active]:text-white">
+                {subjects.length}
+              </Badge>
             </TabsTrigger>
-            <TabsTrigger value="grandtests" className="flex items-center gap-2 px-4">
+            <TabsTrigger 
+              value="grandtests" 
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
               <Trophy className="h-4 w-4" />
               Grand Tests
-              <Badge variant="secondary">{grandTests.length}</Badge>
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700 data-[state=active]:bg-amber-400 data-[state=active]:text-white">
+                {grandTests.length}
+              </Badge>
             </TabsTrigger>
           </TabsList>
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { GraduationCap, ChevronDown, ChevronRight, Users, BookOpen, ExternalLink, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -114,48 +114,58 @@ export default function ClassOverviewPage() {
 
       {/* Class Cards */}
       <div className="space-y-4">
-        {mockInstituteClasses.map((cls) => (
-          <Collapsible
-            key={cls.id}
-            open={expandedClass === cls.id}
-            onOpenChange={(open) => {
-              setExpandedClass(open ? cls.id : null);
-              if (!open) {
-                setExpandedBatch(null);
-                setExpandedSubject(null);
-              }
-            }}
-          >
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardContent className="p-5 cursor-pointer hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="font-bold text-primary">{cls.grade}</span>
+        {mockInstituteClasses.map((cls, index) => {
+          // Class-specific color schemes
+          const classColors = [
+            { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-700', badge: 'bg-blue-100 text-blue-700' },
+            { bg: 'bg-purple-50', border: 'border-purple-200', icon: 'bg-purple-100 text-purple-700', badge: 'bg-purple-100 text-purple-700' },
+            { bg: 'bg-green-50', border: 'border-green-200', icon: 'bg-green-100 text-green-700', badge: 'bg-green-100 text-green-700' },
+            { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'bg-amber-100 text-amber-700', badge: 'bg-amber-100 text-amber-700' },
+          ];
+          const colorScheme = classColors[index % classColors.length];
+          
+          return (
+            <Collapsible
+              key={cls.id}
+              open={expandedClass === cls.id}
+              onOpenChange={(open) => {
+                setExpandedClass(open ? cls.id : null);
+                if (!open) {
+                  setExpandedBatch(null);
+                  setExpandedSubject(null);
+                }
+              }}
+            >
+              <Card className={cn("border", colorScheme.border)}>
+                <CollapsibleTrigger asChild>
+                  <CardContent className={cn("p-5 cursor-pointer hover:bg-muted/30 transition-colors", expandedClass === cls.id && colorScheme.bg)}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", colorScheme.icon)}>
+                          <span className="font-bold">{cls.grade}</span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">{cls.name}</h3>
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Users className="h-3.5 w-3.5" />
+                            {cls.totalStudents} students • {cls.batches.length} batches
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">{cls.name}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                          <Users className="h-3.5 w-3.5" />
-                          {cls.totalStudents} students • {cls.batches.length} batches
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="font-bold text-lg">{cls.overallAccuracy.toFixed(1)}%</p>
+                          <TrendBadge trend={cls.trend} size="sm" />
+                        </div>
+                        {expandedClass === cls.id ? (
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{cls.overallAccuracy.toFixed(1)}%</p>
-                        <TrendBadge trend={cls.trend} size="sm" />
-                      </div>
-                      {expandedClass === cls.id ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </CollapsibleTrigger>
+                  </CardContent>
+                </CollapsibleTrigger>
 
               <CollapsibleContent>
                 <div className="px-5 pb-5 space-y-4 border-t pt-4">
@@ -332,7 +342,8 @@ export default function ClassOverviewPage() {
               </CollapsibleContent>
             </Card>
           </Collapsible>
-        ))}
+          );
+        })}
       </div>
 
       {/* Chapter Details Modal */}

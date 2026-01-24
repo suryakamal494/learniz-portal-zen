@@ -214,18 +214,30 @@ const StudentReportsPage: React.FC = () => {
 
         {/* Class List */}
         <div className="space-y-4">
-          {classGroups.map((classGroup) => {
+          {classGroups.map((classGroup, index) => {
             const isExpanded = expandedClasses.has(classGroup.classId);
+            const avgAccuracy = Math.round(
+              classGroup.sections.reduce((s, sec) => s + sec.averageAccuracy, 0) / classGroup.sections.length
+            );
+            
+            // Class-specific color schemes
+            const classColors = [
+              { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-600', badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+              { bg: 'bg-purple-50', border: 'border-purple-200', icon: 'bg-purple-100 text-purple-600', badge: 'bg-purple-100 text-purple-700 border-purple-200' },
+              { bg: 'bg-green-50', border: 'border-green-200', icon: 'bg-green-100 text-green-600', badge: 'bg-green-100 text-green-700 border-green-200' },
+              { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'bg-amber-100 text-amber-600', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+            ];
+            const colorScheme = classColors[index % classColors.length];
             
             return (
-              <Card key={classGroup.classId} className="overflow-hidden">
+              <Card key={classGroup.classId} className={cn("overflow-hidden border", colorScheme.border)}>
                 <Collapsible open={isExpanded} onOpenChange={() => toggleClass(classGroup.classId)}>
                   <CollapsibleTrigger asChild>
-                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+                    <CardHeader className={cn("cursor-pointer hover:bg-muted/50 transition-colors py-4", isExpanded && colorScheme.bg)}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <GraduationCap className="h-5 w-5 text-primary" />
+                          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", colorScheme.icon)}>
+                            <GraduationCap className="h-5 w-5" />
                           </div>
                           <div>
                             <CardTitle className="text-lg">{classGroup.className}</CardTitle>
@@ -235,10 +247,8 @@ const StudentReportsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="hidden sm:flex">
-                            {Math.round(
-                              classGroup.sections.reduce((s, sec) => s + sec.averageAccuracy, 0) / classGroup.sections.length
-                            )}% avg
+                          <Badge variant="outline" className={cn("hidden sm:flex", colorScheme.badge)}>
+                            {avgAccuracy}% avg
                           </Badge>
                           {isExpanded ? (
                             <ChevronDown className="h-5 w-5 text-muted-foreground" />
