@@ -66,6 +66,7 @@ import CreateNotesPage from './pages/teacher/lms/notes/CreateNotesPage';
 
 // Institute Analytics Pages
 import InstituteSnapshotPage from './pages/institute/InstituteSnapshotPage';
+import InstituteDashboardPage from './pages/institute/InstituteDashboardPage';
 import TeacherPerformancePage from './pages/institute/TeacherPerformancePage';
 import TeacherDetailPage from './pages/institute/TeacherDetailPage';
 import SubjectHealthPage from './pages/institute/SubjectHealthPage';
@@ -162,6 +163,7 @@ function App() {
 
         {/* Institute Analytics Routes */}
         <Route path="/institute" element={<InstituteLayout />}>
+          <Route path="dashboard" element={<InstituteDashboardPage />} />
           <Route index element={<InstituteSnapshotPage />} />
           <Route path="teachers" element={<TeacherPerformancePage />} />
           <Route path="teachers/:teacherId" element={<TeacherDetailPage />} />

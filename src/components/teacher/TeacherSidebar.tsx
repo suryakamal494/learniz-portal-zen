@@ -14,7 +14,8 @@ import {
   Zap,
   BookOpen,
   Presentation,
-  ChevronDown
+  ChevronDown,
+  Building2
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -43,6 +44,7 @@ const navigationItems = [
   { title: "Reports", url: "/teacher/reports", icon: Presentation, badge: null, hasSubmenu: true },
   { title: "Notifications", url: "/teacher/notifications", icon: Bell, badge: "3" },
   { title: "Messages", url: "/teacher/messages", icon: MessageCircle, badge: "7" },
+  { title: "Institute Dashboard", url: "/institute/dashboard", icon: Building2, badge: null },
 ]
 
 const submenuItems = {

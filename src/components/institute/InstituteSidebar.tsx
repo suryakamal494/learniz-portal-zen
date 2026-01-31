@@ -28,9 +28,15 @@ import { cn } from '@/lib/utils';
 
 const navigationItems = [
   {
-    title: 'Snapshot',
-    url: '/institute',
+    title: 'Dashboard',
+    url: '/institute/dashboard',
     icon: LayoutDashboard,
+    exact: true
+  },
+  {
+    title: 'Overview',
+    url: '/institute',
+    icon: Activity,
     exact: true
   },
   {
