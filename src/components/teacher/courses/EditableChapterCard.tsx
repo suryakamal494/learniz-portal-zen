@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 
 interface EditableChapterCardProps {
   chapter: CourseChapter;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
   onNameChange: (newName: string) => void;
   onTopicNameChange: (topicId: string, newName: string) => void;
   onTopicToggle: (topicId: string) => void;
@@ -18,12 +20,17 @@ interface EditableChapterCardProps {
 
 export function EditableChapterCard({
   chapter,
+  isExpanded: controlledExpanded,
+  onToggleExpand,
   onNameChange,
   onTopicNameChange,
   onTopicToggle,
   onRemove,
 }: EditableChapterCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [internalExpanded, setInternalExpanded] = useState(true);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
+  const handleToggleExpand = onToggleExpand || (() => setInternalExpanded(!internalExpanded));
+  
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [tempName, setTempName] = useState(chapter.name);
@@ -62,7 +69,7 @@ export function EditableChapterCard({
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <Collapsible open={isExpanded} onOpenChange={handleToggleExpand}>
         {/* Chapter Header */}
         <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30">
           <CollapsibleTrigger asChild>
@@ -154,12 +161,6 @@ export function EditableChapterCard({
 
               return (
                 <div key={topic.id} className="flex items-center gap-2 py-1 pl-4">
-                  <Checkbox
-                    checked={topic.isSelected}
-                    onCheckedChange={() => onTopicToggle(topic.id)}
-                    className="h-3.5 w-3.5"
-                  />
-
                   {isEditing ? (
                     <div className="flex items-center gap-2 flex-1">
                       <Input
@@ -182,20 +183,31 @@ export function EditableChapterCard({
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 flex-1 min-w-0">
-                      <span
-                        className={cn(
-                          'text-sm truncate',
-                          topic.isSelected ? 'text-foreground' : 'text-muted-foreground'
-                        )}
+                    <>
+                      <label
+                        htmlFor={`topic-${topic.id}`}
+                        className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                       >
-                        {topic.name}
-                      </span>
-                      {topicRenamed && (
-                        <span className="text-xs text-muted-foreground italic whitespace-nowrap">
-                          (was: {topic.originalName})
+                        <Checkbox
+                          id={`topic-${topic.id}`}
+                          checked={topic.isSelected}
+                          onCheckedChange={() => onTopicToggle(topic.id)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span
+                          className={cn(
+                            'text-sm truncate',
+                            topic.isSelected ? 'text-foreground' : 'text-muted-foreground'
+                          )}
+                        >
+                          {topic.name}
                         </span>
-                      )}
+                        {topicRenamed && (
+                          <span className="text-xs text-muted-foreground italic whitespace-nowrap">
+                            (was: {topic.originalName})
+                          </span>
+                        )}
+                      </label>
                       <Button
                         size="icon"
                         variant="ghost"
@@ -204,7 +216,7 @@ export function EditableChapterCard({
                       >
                         <Pencil className="h-2.5 w-2.5" />
                       </Button>
-                    </div>
+                    </>
                   )}
                 </div>
               );

@@ -116,12 +116,13 @@ export function ChapterPickerModal({
             {availableChapters.map((chapter) => {
               const isSelected = selectedChapterIds.has(chapter.id);
               return (
-                <div
+                <label
                   key={chapter.id}
+                  htmlFor={`chapter-${chapter.id}`}
                   className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
-                  onClick={() => toggleChapter(chapter.id)}
                 >
                   <Checkbox
+                    id={`chapter-${chapter.id}`}
                     checked={isSelected}
                     onCheckedChange={() => toggleChapter(chapter.id)}
                   />
@@ -131,7 +132,7 @@ export function ChapterPickerModal({
                       ({chapter.topics.length} topics)
                     </span>
                   </div>
-                </div>
+                </label>
               );
             })}
 
