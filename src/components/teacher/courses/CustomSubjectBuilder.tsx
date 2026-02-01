@@ -220,7 +220,7 @@ export function CustomSubjectBuilder({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -271,8 +271,8 @@ export function CustomSubjectBuilder({
               </div>
             </div>
 
-            {/* Added Chapters - Fixed height scrollable area */}
-            <div className="border rounded-lg bg-muted/20 flex flex-col" style={{ maxHeight: '320px' }}>
+            {/* Added Chapters - Larger scrollable area */}
+            <div className="border rounded-lg bg-muted/20 flex flex-col flex-1 min-h-0">
               <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30 flex-shrink-0">
                 <Label className="text-sm font-medium">Added Chapters ({chapters.length})</Label>
                 {chapters.length > 0 && (
@@ -299,7 +299,7 @@ export function CustomSubjectBuilder({
                 )}
               </div>
 
-              <div className="overflow-y-auto flex-1 p-3 space-y-2" style={{ maxHeight: '280px' }}>
+              <div className="overflow-y-auto flex-1 p-3 space-y-2" style={{ minHeight: '200px', maxHeight: '400px' }}>
                 {chapters.map((chapter) => (
                   <EditableChapterCard
                     key={chapter.id}
