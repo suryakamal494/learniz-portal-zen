@@ -271,9 +271,9 @@ export function CustomSubjectBuilder({
               </div>
             </div>
 
-            {/* Added Chapters - Larger scrollable area */}
-            <div className="flex-1 min-h-0 flex flex-col border rounded-lg bg-muted/20">
-              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+            {/* Added Chapters - Fixed height scrollable area */}
+            <div className="border rounded-lg bg-muted/20 flex flex-col" style={{ maxHeight: '320px' }}>
+              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30 flex-shrink-0">
                 <Label className="text-sm font-medium">Added Chapters ({chapters.length})</Label>
                 {chapters.length > 0 && (
                   <div className="flex gap-1">
@@ -299,32 +299,30 @@ export function CustomSubjectBuilder({
                 )}
               </div>
 
-              <ScrollArea className="flex-1 h-[280px]">
-                <div className="p-3 space-y-2">
-                  {chapters.map((chapter) => (
-                    <EditableChapterCard
-                      key={chapter.id}
-                      chapter={chapter}
-                      isExpanded={expandedChapters.has(chapter.id)}
-                      onToggleExpand={() => toggleChapterExpanded(chapter.id)}
-                      onNameChange={(name) => handleChapterNameChange(chapter.id, name)}
-                      onTopicNameChange={(topicId, name) =>
-                        handleTopicNameChange(chapter.id, topicId, name)
-                      }
-                      onTopicToggle={(topicId) => handleTopicToggle(chapter.id, topicId)}
-                      onRemove={() => handleRemoveChapter(chapter.id)}
-                    />
-                  ))}
+              <div className="overflow-y-auto flex-1 p-3 space-y-2" style={{ maxHeight: '280px' }}>
+                {chapters.map((chapter) => (
+                  <EditableChapterCard
+                    key={chapter.id}
+                    chapter={chapter}
+                    isExpanded={expandedChapters.has(chapter.id)}
+                    onToggleExpand={() => toggleChapterExpanded(chapter.id)}
+                    onNameChange={(name) => handleChapterNameChange(chapter.id, name)}
+                    onTopicNameChange={(topicId, name) =>
+                      handleTopicNameChange(chapter.id, topicId, name)
+                    }
+                    onTopicToggle={(topicId) => handleTopicToggle(chapter.id, topicId)}
+                    onRemove={() => handleRemoveChapter(chapter.id)}
+                  />
+                ))}
 
-                  {chapters.length === 0 && (
-                    <div className="text-center py-8 border-2 border-dashed border-border rounded-lg bg-background">
-                      <p className="text-muted-foreground text-sm">
-                        No chapters added yet. Select a source subject and add chapters.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+                {chapters.length === 0 && (
+                  <div className="text-center py-8 border-2 border-dashed border-border rounded-lg bg-background">
+                    <p className="text-muted-foreground text-sm">
+                      No chapters added yet. Select a source subject and add chapters.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>
