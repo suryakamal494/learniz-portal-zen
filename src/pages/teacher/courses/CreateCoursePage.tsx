@@ -56,7 +56,12 @@ export default function CreateCoursePage() {
       subject.chapters.some((chapter) => chapter.topics.some((topic) => topic.isSelected))
     );
 
-    if (!hasSelectedTopics) {
+    // For custom subjects, all topics are pre-selected when added
+    const hasCustomSubjectsWithTopics = formData.subjects.some((subject) =>
+      subject.isCustom && subject.chapters.some((ch) => ch.topics.length > 0)
+    );
+
+    if (!hasSelectedTopics && !hasCustomSubjectsWithTopics) {
       toast.error('Please select at least one topic from the subjects');
       return false;
     }

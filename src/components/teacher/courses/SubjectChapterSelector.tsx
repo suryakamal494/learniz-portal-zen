@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { X, ChevronDown, Check } from 'lucide-react';
+import { X, ChevronDown, Plus, Pencil, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -10,7 +10,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ChapterTopicTree } from './ChapterTopicTree';
-import { AvailableSubject, CourseSubjectWithContent, CourseChapter, CourseTopic } from '@/types/course';
+import { CustomSubjectBuilder } from './CustomSubjectBuilder';
+import { AvailableSubject, CourseSubjectWithContent } from '@/types/course';
 import { cn } from '@/lib/utils';
 
 interface SubjectChapterSelectorProps {
@@ -25,6 +26,8 @@ export function SubjectChapterSelector({
   onSelectionChange,
 }: SubjectChapterSelectorProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showCustomBuilder, setShowCustomBuilder] = useState(false);
+  const [editingCustomSubject, setEditingCustomSubject] = useState<CourseSubjectWithContent | null>(null);
 
   const isSubjectSelected = (subjectId: string) => {
     return selectedSubjects.some((s) => s.id === subjectId);
@@ -41,6 +44,7 @@ export function SubjectChapterSelector({
         name: subject.name,
         institute: subject.institute,
         isOwner: subject.isOwner,
+        isCustom: false,
         chapters: subject.chapters.map((ch) => ({
           id: ch.id,
           name: ch.name,
@@ -143,6 +147,7 @@ export function SubjectChapterSelector({
       name: subject.name,
       institute: subject.institute,
       isOwner: subject.isOwner,
+      isCustom: false,
       chapters: subject.chapters.map((ch) => ({
         id: ch.id,
         name: ch.name,
@@ -154,11 +159,35 @@ export function SubjectChapterSelector({
         })),
       })),
     }));
-    onSelectionChange(allSubjects);
+    // Keep existing custom subjects
+    const customSubjects = selectedSubjects.filter((s) => s.isCustom);
+    onSelectionChange([...allSubjects, ...customSubjects]);
   };
 
   const handleDeselectAll = () => {
-    onSelectionChange([]);
+    // Keep only custom subjects
+    const customSubjects = selectedSubjects.filter((s) => s.isCustom);
+    onSelectionChange(customSubjects);
+  };
+
+  const handleCustomSubjectSave = (customSubject: CourseSubjectWithContent) => {
+    if (editingCustomSubject) {
+      // Update existing
+      onSelectionChange(
+        selectedSubjects.map((s) =>
+          s.id === editingCustomSubject.id ? customSubject : s
+        )
+      );
+    } else {
+      // Add new
+      onSelectionChange([...selectedSubjects, customSubject]);
+    }
+    setEditingCustomSubject(null);
+  };
+
+  const handleEditCustomSubject = (subject: CourseSubjectWithContent) => {
+    setEditingCustomSubject(subject);
+    setShowCustomBuilder(true);
   };
 
   const getSubjectStats = (subject: CourseSubjectWithContent) => {
@@ -178,6 +207,15 @@ export function SubjectChapterSelector({
     return { selectedChapters, totalChapters, selectedTopics, totalTopics };
   };
 
+  // Get unique source subjects for custom subjects
+  const getCustomSubjectSources = (subject: CourseSubjectWithContent) => {
+    const sources = new Set<string>();
+    subject.chapters.forEach((ch) => {
+      if (ch.sourceSubjectName) sources.add(ch.sourceSubjectName);
+    });
+    return Array.from(sources);
+  };
+
   const subjectColors = [
     'bg-blue-600 border-l-blue-400',
     'bg-green-600 border-l-green-400',
@@ -188,6 +226,9 @@ export function SubjectChapterSelector({
     'bg-yellow-600 border-l-yellow-400',
   ];
 
+  const existingSubjects = selectedSubjects.filter((s) => !s.isCustom);
+  const customSubjects = selectedSubjects.filter((s) => s.isCustom);
+
   return (
     <div className="space-y-4">
       {/* Subject selection controls */}
@@ -195,7 +236,7 @@ export function SubjectChapterSelector({
         <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2">
-              Select Subjects
+              Use Existing Subject
               <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -215,6 +256,22 @@ export function SubjectChapterSelector({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <span className="text-muted-foreground text-sm">or</span>
+
+        <Button
+          variant="secondary"
+          className="gap-2"
+          onClick={() => {
+            setEditingCustomSubject(null);
+            setShowCustomBuilder(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Create Custom Subject
+        </Button>
+
+        <div className="flex-1" />
+
         <Button variant="ghost" size="sm" onClick={handleSelectAll}>
           Select All
         </Button>
@@ -223,7 +280,7 @@ export function SubjectChapterSelector({
         </Button>
 
         {selectedSubjects.length > 0 && (
-          <span className="text-sm text-muted-foreground ml-auto">
+          <span className="text-sm text-muted-foreground">
             {selectedSubjects.length} subject{selectedSubjects.length !== 1 ? 's' : ''} selected
           </span>
         )}
@@ -231,7 +288,69 @@ export function SubjectChapterSelector({
 
       {/* Selected subjects with chapters and topics */}
       <div className="space-y-4">
-        {selectedSubjects.map((subject, index) => {
+        {/* Custom Subjects */}
+        {customSubjects.map((subject, index) => {
+          const stats = getSubjectStats(subject);
+          const sources = getCustomSubjectSources(subject);
+
+          return (
+            <Card key={subject.id} className="overflow-hidden border-primary/30">
+              <CardHeader className="py-3 px-4 bg-primary/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-primary text-primary-foreground rounded-md px-2.5 py-1 font-medium text-xs gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      {subject.name}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Custom
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {stats.totalChapters} chapters • {stats.selectedTopics} topics
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleEditCustomSubject(subject)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleRemoveSubject(subject.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                {sources.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Content from: {sources.join(', ')}
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent className="p-4">
+                <ChapterTopicTree
+                  chapters={subject.chapters}
+                  onChapterToggle={(chapterId) => handleChapterToggle(subject.id, chapterId)}
+                  onTopicToggle={(chapterId, topicId) =>
+                    handleTopicToggle(subject.id, chapterId, topicId)
+                  }
+                  onSelectAllTopics={(chapterId) => handleSelectAllTopics(subject.id, chapterId)}
+                  showSourceInfo
+                />
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {/* Existing Subjects */}
+        {existingSubjects.map((subject, index) => {
           const stats = getSubjectStats(subject);
           const colorClass = subjectColors[index % subjectColors.length];
 
@@ -283,11 +402,23 @@ export function SubjectChapterSelector({
         {selectedSubjects.length === 0 && (
           <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
             <p className="text-muted-foreground">
-              No subjects selected. Use the dropdown above to add subjects.
+              No subjects selected. Use an existing subject or create a custom one.
             </p>
           </div>
         )}
       </div>
+
+      {/* Custom Subject Builder Modal */}
+      <CustomSubjectBuilder
+        open={showCustomBuilder}
+        onOpenChange={(open) => {
+          setShowCustomBuilder(open);
+          if (!open) setEditingCustomSubject(null);
+        }}
+        availableSubjects={availableSubjects}
+        onSave={handleCustomSubjectSave}
+        editingSubject={editingCustomSubject}
+      />
     </div>
   );
 }

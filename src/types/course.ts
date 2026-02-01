@@ -1,12 +1,17 @@
 export interface CourseTopic {
   id: string;
   name: string;
+  originalName?: string;           // Original name from source (for renamed topics)
+  sourceSubjectId?: string;        // Which subject this came from
   isSelected?: boolean;
 }
 
 export interface CourseChapter {
   id: string;
   name: string;
+  originalName?: string;           // Original name from source (for renamed chapters)
+  sourceSubjectId?: string;        // Which subject this came from
+  sourceSubjectName?: string;      // Source subject name for reference
   isSelected?: boolean;
   topics: CourseTopic[];
 }
@@ -19,6 +24,7 @@ export interface CourseSubject {
 }
 
 export interface CourseSubjectWithContent extends CourseSubject {
+  isCustom?: boolean;              // Is this a custom-created subject?
   chapters: CourseChapter[];
 }
 
