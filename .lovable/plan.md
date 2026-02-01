@@ -1,230 +1,393 @@
 
+# Plan: Course Creation, Preview, and Edit Functionality
 
-# Plan: Create Courses Management Page
-
-## Objective
-Create a new "Courses" menu item in the Teacher sidebar (below Institute Dashboard) with a Courses management page that replicates the wireframe UI, featuring tabs navigation, a data table with subjects displayed as badges, and an Actions dropdown with Preview, Edit, and Delete options.
-
----
-
-## Part 1: Add Sidebar Navigation
-
-### File: `src/components/teacher/TeacherSidebar.tsx`
-
-Add new navigation item after "Institute Dashboard":
-
-```typescript
-{ title: "Courses", url: "/teacher/courses", icon: BookOpen, badge: null }
-```
-
-Position: Index 11 (after Institute Dashboard at index 10)
+## Overview
+Implement a complete course management system where instructors can:
+1. Create courses by selecting subjects, then chapters within subjects, then topics within chapters
+2. Preview courses in a hierarchical tree view showing all content
+3. Edit courses to add/remove chapters and topics
 
 ---
 
-## Part 2: Create Type Definitions
+## Part 1: Update Type Definitions
 
-### File: `src/types/course.ts` (NEW)
+### File: `src/types/course.ts` (MODIFY)
+
+Extend the existing types to support the hierarchical structure:
 
 ```typescript
-export interface CourseSubject {
+// Add new types for course structure
+export interface CourseTopic {
+  id: string;
+  name: string;
+  isSelected: boolean;
+}
+
+export interface CourseChapter {
+  id: string;
+  name: string;
+  isSelected: boolean;
+  topics: CourseTopic[];
+}
+
+export interface CourseSubjectWithContent {
   id: string;
   name: string;
   institute: string;
   isOwner: boolean;
+  chapters: CourseChapter[];
 }
 
+// Extended Course type
 export interface Course {
   id: string;
   serialNumber: number;
+  title: string;              // NEW: Course title
   className: string;
   programName: string;
-  subjects: CourseSubject[];
+  fee?: number;               // NEW: Course fee
+  description?: string;       // NEW: Course description
+  image?: string;             // NEW: Course image
+  subjects: CourseSubjectWithContent[];  // ENHANCED: Now includes chapters & topics
   createdAt: string;
   updatedAt: string;
+}
+
+// Form data for creation/edit
+export interface CourseFormData {
+  title: string;
+  className: string;
+  fee: number;
+  description: string;
+  image?: string;
+  subjects: CourseSubjectWithContent[];
 }
 ```
 
 ---
 
-## Part 3: Create Mock Data
+## Part 2: Create Extended Mock Data
 
-### File: `src/data/mockCourses.ts` (NEW)
+### File: `src/data/mockCourseContent.ts` (NEW)
 
-Based on the wireframe, create 4 sample courses:
+Create comprehensive mock data for subjects with their chapters and topics:
 
-| S.NO | Class | Program Name | Subjects |
-|------|-------|--------------|----------|
-| 1 | Class 10 | Test course 1 | Biology, Chemistry |
-| 2 | Class 6 | Disha 2 | Biology, Chemistry, Mathematics, Physics, Reasoning & Aptitude |
-| 3 | Class 10 | Disha 1 | Physics, Mathematics, Chemistry, Reasoning & Aptitude |
-| 4 | Class 10 | Tejas | Biology, Chemistry, Physics, Mathematics, English, Reasoning & Aptitude, Telugu |
+```typescript
+// Each subject has multiple chapters
+// Each chapter has multiple topics
+// Example structure for Physics:
+{
+  id: 'physics-1',
+  name: 'Physics',
+  institute: 'LearnEazy Inst',
+  chapters: [
+    {
+      id: 'ch-1',
+      name: 'Mechanics',
+      topics: [
+        { id: 't-1', name: "Newton's Laws" },
+        { id: 't-2', name: 'Motion Equations' },
+        { id: 't-3', name: 'Friction' },
+        { id: 't-4', name: 'Circular Motion' },
+        { id: 't-5', name: 'Work and Energy' }
+      ]
+    },
+    {
+      id: 'ch-2',
+      name: 'Thermodynamics',
+      topics: [
+        { id: 't-6', name: 'Heat Transfer' },
+        { id: 't-7', name: 'Gas Laws' },
+        { id: 't-8', name: 'Entropy' }
+      ]
+    },
+    // ... more chapters
+  ]
+}
+```
 
-Each subject has:
-- Name (e.g., "Biology")
-- Institute (e.g., "LearnEazy Inst")
-- isOwner flag (true = shows "(Owner)")
+Will include 5-6 subjects with 8-10 chapters each, and 3-6 topics per chapter.
 
 ---
 
-## Part 4: Create Courses Page
+## Part 3: Create Course Page
 
-### File: `src/pages/teacher/courses/CoursesMainPage.tsx` (NEW)
+### File: `src/pages/teacher/courses/CreateCoursePage.tsx` (NEW)
 
-**Layout following the wireframe:**
+**Layout Structure:**
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Dashboard > Courses                              [Avatar] Srikanth  │
-│                                                  Institute Admin    │
+│ Home > Dashboard > Courses > Create                                 │
 ├─────────────────────────────────────────────────────────────────────┤
-│ [Courses●] [Subjects] [Chapters] [Topics]                           │
+│ Create Course                                                       │
+│ Set up a new course with detailed configuration                     │
 ├─────────────────────────────────────────────────────────────────────┤
-│ COURSES                                          [+ ADD COURSE]     │
-│ Manage courses and academic content                                 │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ 📋 Basic Information                                            │ │
+│ │ ┌──────────────────────┐  ┌──────────────────────┐              │ │
+│ │ │ Title *              │  │ Class *              │              │ │
+│ │ │ Enter Course Name    │  │ [Select Class ▼]     │              │ │
+│ │ └──────────────────────┘  └──────────────────────┘              │ │
+│ │ ┌─────────────────────────────────────────────┐                 │ │
+│ │ │ Fee For Course                               │                 │ │
+│ │ │ 1000                                         │                 │ │
+│ │ └─────────────────────────────────────────────┘                 │ │
+│ │ Image: [Choose File] No file chosen                             │ │
+│ │ Description: [________________________]                         │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────────────────┤
-│ ┌───────────────────────────────────────────────────────────────┐   │
-│ │ Courses (4 courses)                      🔍 Search courses... │   │
-│ ├───────────────────────────────────────────────────────────────┤   │
-│ │ S.NO ↕ │ CLASS ↕ │ PROGRAM NAME ↕ │ SUBJECTS ↕        │ ⋯   │   │
-│ ├────────┼─────────┼────────────────┼───────────────────┼──────┤   │
-│ │ 1      │ Class 10│ Test course 1  │ [Bio] [Chem]     │ ⋯   │   │
-│ │ 2      │ Class 6 │ Disha 2        │ [Bio][Chem][Math]│ ⋯   │   │
-│ │        │         │                │ [Phy][Reasoning] │      │   │
-│ │ 3      │ Class 10│ Disha 1        │ [Phy][Math][Chem]│ ⋯   │   │
-│ │        │         │                │ [Reasoning]      │      │   │
-│ │ 4      │ Class 10│ Tejas          │ [Bio][Chem][Phy] │ ⋯   │   │
-│ │        │         │                │ [Math][Eng][R&A] │      │   │
-│ │        │         │                │ [Telugu]         │      │   │
-│ └───────────────────────────────────────────────────────────────┘   │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ 📚 Subject & Content Selection                                  │ │
+│ │                                                                 │ │
+│ │ Subjects * [Select All] [Deselect All]                          │ │
+│ │ [Select subjects ▼]                                             │ │
+│ │                                                                 │ │
+│ │ ┌─────────────────────────────────────────────────────────────┐ │ │
+│ │ │ 🔵 Physics - LearnEazy Inst                           [×]   │ │ │
+│ │ │ ┌─────────────────────────────────────────────────────────┐ │ │ │
+│ │ │ │ Chapters (Select to expand)                             │ │ │ │
+│ │ │ │ ☑ Mechanics (5 topics)                            [▼]   │ │ │ │
+│ │ │ │   └── ☑ Newton's Laws                                   │ │ │ │
+│ │ │ │   └── ☑ Motion Equations                                │ │ │ │
+│ │ │ │   └── ☐ Friction                                        │ │ │ │
+│ │ │ │   └── ☑ Circular Motion                                 │ │ │ │
+│ │ │ │   └── ☐ Work and Energy                                 │ │ │ │
+│ │ │ │ ☑ Thermodynamics (3 topics)                       [▼]   │ │ │ │
+│ │ │ │   └── ☑ Heat Transfer                                   │ │ │ │
+│ │ │ │   └── ☑ Gas Laws                                        │ │ │ │
+│ │ │ │   └── ☐ Entropy                                         │ │ │ │
+│ │ │ │ ☐ Waves and Optics (4 topics)                     [▶]   │ │ │ │
+│ │ │ └─────────────────────────────────────────────────────────┘ │ │ │
+│ │ └─────────────────────────────────────────────────────────────┘ │ │
+│ │                                                                 │ │
+│ │ ┌─────────────────────────────────────────────────────────────┐ │ │
+│ │ │ 🔵 Chemistry - LearnEazy Inst                         [×]   │ │ │
+│ │ │ (Similar structure with chapters and topics)                │ │ │
+│ │ └─────────────────────────────────────────────────────────────┘ │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────────┤
+│                              [Cancel] [Create Course]               │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Components:**
-
-1. **Breadcrumb**: Dashboard > Courses
-2. **Tabs**: Courses (active), Subjects, Chapters, Topics
-3. **Header**: "COURSES" title with "ADD COURSE" button
-4. **Table Card**:
-   - Count header with search input
-   - Sortable columns: S.NO, CLASS, PROGRAM NAME, SUBJECTS
-   - Subject badges in blue with left border accent
-   - Actions dropdown (three dots)
-
-**Actions Dropdown (MoreHorizontal icon):**
-- Preview (Eye icon)
-- Edit (Pencil icon)
-- Delete (Trash icon)
+**Key Features:**
+- Basic info section (Title, Class dropdown, Fee, Image upload, Description)
+- Subject multi-select dropdown with "Select All" / "Deselect All"
+- When subject selected, show expandable chapters list
+- Each chapter is a collapsible section with checkbox
+- Under each chapter, show topics with individual checkboxes
+- Chapter checkbox controls all child topics
+- Visual count showing "X/Y topics selected"
+- Remove button (×) to deselect entire subject
 
 ---
 
-## Part 5: Update Routing
+## Part 4: Course Preview Modal
 
-### File: `src/App.tsx`
+### File: `src/components/teacher/courses/CoursePreviewModal.tsx` (NEW)
 
-Add route under Teacher routes:
+**Layout:**
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│ Course Preview                                              [×]     │
+├─────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ 📘 Disha 1 • Class 10                                           │ │
+│ │ Fee: ₹5,000 | Created: Jan 15, 2024                             │ │
+│ │ Description: Comprehensive course for Class 10 students...     │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────────┤
+│ 📚 Course Content (4 Subjects, 12 Chapters, 45 Topics)             │
+├─────────────────────────────────────────────────────────────────────┤
+│ ▼ 🔵 Physics - LearnEazy Inst (4 Chapters, 15 Topics)              │
+│   ├── 📖 Mechanics                                                 │
+│   │    ├── • Newton's Laws                                        │
+│   │    ├── • Motion Equations                                     │
+│   │    └── • Circular Motion                                      │
+│   ├── 📖 Thermodynamics                                            │
+│   │    ├── • Heat Transfer                                        │
+│   │    └── • Gas Laws                                             │
+│   └── 📖 Waves and Optics                                          │
+│        ├── • Light Reflection                                     │
+│        └── • Wave Properties                                      │
+│                                                                    │
+│ ▼ 🟢 Chemistry - LearnEazy Inst (3 Chapters, 12 Topics)            │
+│   ├── 📖 Organic Chemistry                                         │
+│   │    ├── • Alkanes                                              │
+│   │    └── • Functional Groups                                    │
+│   └── 📖 Inorganic Chemistry                                       │
+│        └── • Periodic Table                                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                   [Edit Course] [Close]             │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Features:**
+- Shows complete hierarchical view
+- Expandable/collapsible subjects
+- Summary counts at each level
+- Edit button redirects to edit page
+- Color-coded subject headers
+
+---
+
+## Part 5: Edit Course Page
+
+### File: `src/pages/teacher/courses/EditCoursePage.tsx` (NEW)
+
+**Similar to CreateCoursePage but:**
+- Pre-populates all existing selections
+- URL: `/teacher/courses/:courseId/edit`
+- Loads course data from mock/state
+- All checkboxes reflect current selections
+- Shows which chapters/topics were previously selected
+- "Save Changes" instead of "Create Course"
+- Shows visual diff (optional): what's being added/removed
+
+---
+
+## Part 6: Reusable Components
+
+### File: `src/components/teacher/courses/SubjectChapterSelector.tsx` (NEW)
+
+A reusable component for the hierarchical selection:
+
+```typescript
+interface SubjectChapterSelectorProps {
+  availableSubjects: SubjectWithChaptersTopics[];
+  selectedSubjects: CourseSubjectWithContent[];
+  onSelectionChange: (subjects: CourseSubjectWithContent[]) => void;
+}
+```
+
+**Features:**
+- Multi-select subject dropdown
+- Expandable chapter accordions
+- Topic checkboxes within chapters
+- "Select All Chapters" / "Select All Topics" per subject
+- Visual feedback for selection state
+- Counts display
+
+### File: `src/components/teacher/courses/ChapterTopicTree.tsx` (NEW)
+
+Tree view component for displaying/selecting chapters and topics:
+
+```typescript
+interface ChapterTopicTreeProps {
+  chapters: CourseChapter[];
+  onChapterToggle: (chapterId: string) => void;
+  onTopicToggle: (chapterId: string, topicId: string) => void;
+  readOnly?: boolean;  // For preview mode
+}
+```
+
+---
+
+## Part 7: Update Courses Main Page
+
+### File: `src/pages/teacher/courses/CoursesMainPage.tsx` (MODIFY)
+
+**Changes:**
+- "Add Course" button now navigates to `/teacher/courses/create`
+- Preview action opens CoursePreviewModal
+- Edit action navigates to `/teacher/courses/:courseId/edit`
+- Delete action shows confirmation dialog
+
+```typescript
+const navigate = useNavigate();
+
+const handleAddCourse = () => {
+  navigate('/teacher/courses/create');
+};
+
+const handlePreview = (courseId: string) => {
+  setPreviewCourseId(courseId);
+  setShowPreviewModal(true);
+};
+
+const handleEdit = (courseId: string) => {
+  navigate(`/teacher/courses/${courseId}/edit`);
+};
+```
+
+---
+
+## Part 8: Update Routing
+
+### File: `src/App.tsx` (MODIFY)
+
+Add new routes:
 
 ```typescript
 // Courses Routes
 <Route path="courses" element={<CoursesMainPage />} />
+<Route path="courses/create" element={<CreateCoursePage />} />
+<Route path="courses/:courseId/edit" element={<EditCoursePage />} />
 ```
-
-Import the new page component at the top.
 
 ---
 
-## Part 6: Visual Design Specifications
+## Part 9: Update Mock Data
 
-### Subject Badge Styling
-Following the wireframe exactly:
-- Blue background with left border accent
-- Format: "Subject - Institute (Owner)" or "Subject - Institute"
-- Flex wrap for multiple subjects
-- Gap between badges
+### File: `src/data/mockCourses.ts` (MODIFY)
 
-```typescript
-// Badge styling
-<Badge className="bg-blue-600 hover:bg-blue-700 text-white rounded-md 
-  border-l-4 border-l-blue-400 px-3 py-1 font-medium">
-  {subject.name} - {subject.institute} {subject.isOwner ? "(Owner)" : ""}
-</Badge>
-```
-
-### Table Header Styling
-- Uppercase text
-- Sortable indicators (up/down arrows)
-- Clean gray headers
-
-### Tab Styling
-- Active tab: Filled dark button style
-- Inactive tabs: Outline button style
-- Rounded corners
+Update existing courses to include full chapter/topic structure for preview functionality.
 
 ---
 
-## Part 7: Files Summary
+## Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/types/course.ts` | **CREATE** | Course type definitions |
-| `src/data/mockCourses.ts` | **CREATE** | Sample courses data |
-| `src/pages/teacher/courses/CoursesMainPage.tsx` | **CREATE** | Main courses listing page |
-| `src/components/teacher/TeacherSidebar.tsx` | **MODIFY** | Add Courses menu item |
-| `src/App.tsx` | **MODIFY** | Add /teacher/courses route |
+| `src/types/course.ts` | **MODIFY** | Add CourseTopic, CourseChapter, CourseSubjectWithContent types |
+| `src/data/mockCourseContent.ts` | **CREATE** | Comprehensive subjects/chapters/topics data |
+| `src/data/mockCourses.ts` | **MODIFY** | Update to include full hierarchical data |
+| `src/pages/teacher/courses/CreateCoursePage.tsx` | **CREATE** | Course creation page with hierarchical selection |
+| `src/pages/teacher/courses/EditCoursePage.tsx` | **CREATE** | Course edit page with pre-populated selections |
+| `src/components/teacher/courses/CoursePreviewModal.tsx` | **CREATE** | Modal showing course tree view |
+| `src/components/teacher/courses/SubjectChapterSelector.tsx` | **CREATE** | Reusable subject/chapter/topic selector |
+| `src/components/teacher/courses/ChapterTopicTree.tsx` | **CREATE** | Tree view for chapters and topics |
+| `src/pages/teacher/courses/CoursesMainPage.tsx` | **MODIFY** | Wire up navigation and modal |
+| `src/App.tsx` | **MODIFY** | Add create/edit routes |
 
 ---
 
-## Technical Details
+## User Interaction Flow
 
-### State Management
-```typescript
-const [activeTab, setActiveTab] = useState('courses');
-const [searchQuery, setSearchQuery] = useState('');
-const [courses, setCourses] = useState<Course[]>(mockCourses);
-```
-
-### Filtering
-```typescript
-const filteredCourses = courses.filter(course =>
-  course.programName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  course.className.toLowerCase().includes(searchQuery.toLowerCase())
-);
-```
-
-### Actions Handler Stubs
-```typescript
-const handlePreview = (courseId: string) => {
-  console.log('Preview course:', courseId);
-  // Future implementation
-};
-
-const handleEdit = (courseId: string) => {
-  console.log('Edit course:', courseId);
-  // Future implementation
-};
-
-const handleDelete = (courseId: string) => {
-  console.log('Delete course:', courseId);
-  // Future implementation
-};
-
-const handleAddCourse = () => {
-  console.log('Add new course');
-  // Future implementation
-};
+```text
+Courses Listing Page
+        │
+        ├──[Add Course]──→ Create Course Page
+        │                        │
+        │                        ├── Enter basic info (title, class, fee)
+        │                        ├── Select subjects from dropdown
+        │                        ├── For each subject: expand & select chapters
+        │                        ├── For each chapter: select topics
+        │                        └── Submit → Back to listing with new course
+        │
+        ├──[Preview]──→ Preview Modal
+        │                    │
+        │                    ├── View course summary
+        │                    ├── See all subjects → chapters → topics
+        │                    └── Option to Edit
+        │
+        └──[Edit]──→ Edit Course Page
+                         │
+                         ├── All existing selections pre-checked
+                         ├── Add/remove chapters
+                         ├── Add/remove topics
+                         └── Save → Back to listing with updates
 ```
 
 ---
 
-## Responsiveness
+## Technical Implementation Notes
 
-- Mobile: Stack subjects vertically, hide some columns
-- Tablet: Show all columns with horizontal scroll if needed
-- Desktop: Full table with all content visible
-
-Grid breakpoints:
-```typescript
-// Table wraps with overflow-x-auto on mobile
-// Tabs stack or scroll horizontally on small screens
-// Search input goes full width on mobile
-```
-
+1. **State Management**: Use React state for form data with proper type safety
+2. **Checkbox Logic**: Parent checkbox (chapter) controls children (topics) - tri-state (none, some, all)
+3. **Validation**: Require at least one subject with one chapter and one topic
+4. **Mock Data Updates**: Courses will be managed in local state for the UI demo
+5. **Responsive Design**: Mobile-friendly accordions and selection UI
+6. **Accessibility**: Proper ARIA labels for tree structure
