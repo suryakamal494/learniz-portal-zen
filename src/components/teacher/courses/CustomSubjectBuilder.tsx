@@ -299,7 +299,7 @@ export function CustomSubjectBuilder({
                 )}
               </div>
 
-              <div className="overflow-y-auto flex-1 p-3 space-y-2" style={{ minHeight: '200px', maxHeight: '400px' }}>
+              <div className="overflow-y-auto flex-1 p-3 space-y-2" style={{ minHeight: '300px', maxHeight: '55vh' }}>
                 {chapters.map((chapter) => (
                   <EditableChapterCard
                     key={chapter.id}
