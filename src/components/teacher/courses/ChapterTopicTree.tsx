@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Check, Minus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { CourseChapter, CourseTopic } from '@/types/course';
+import { CourseChapter } from '@/types/course';
 
 interface ChapterTopicTreeProps {
   chapters: CourseChapter[];
@@ -11,6 +12,7 @@ interface ChapterTopicTreeProps {
   onTopicToggle: (chapterId: string, topicId: string) => void;
   onSelectAllTopics?: (chapterId: string) => void;
   readOnly?: boolean;
+  showSourceInfo?: boolean; // Show source subject info for custom subjects
 }
 
 export function ChapterTopicTree({
@@ -19,6 +21,7 @@ export function ChapterTopicTree({
   onTopicToggle,
   onSelectAllTopics,
   readOnly = false,
+  showSourceInfo = false,
 }: ChapterTopicTreeProps) {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
 
@@ -52,6 +55,7 @@ export function ChapterTopicTree({
         const checkState = getChapterCheckState(chapter);
         const selectedCount = getSelectedTopicCount(chapter);
         const totalCount = chapter.topics.length;
+        const isRenamed = chapter.originalName && chapter.name !== chapter.originalName;
 
         return (
           <div key={chapter.id} className="border border-border rounded-lg overflow-hidden">
@@ -82,14 +86,28 @@ export function ChapterTopicTree({
                 )}
                 
                 <CollapsibleTrigger asChild>
-                  <button className="flex items-center gap-2 flex-1 text-left">
+                  <button className="flex items-center gap-2 flex-1 text-left min-w-0">
                     {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className="font-medium text-sm text-foreground">{chapter.name}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm text-foreground">{chapter.name}</span>
+                        {showSourceInfo && chapter.sourceSubjectName && (
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0 font-normal">
+                            from {chapter.sourceSubjectName}
+                          </Badge>
+                        )}
+                        {isRenamed && (
+                          <span className="text-xs text-muted-foreground italic">
+                            (originally: {chapter.originalName})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {readOnly ? `${totalCount} topics` : `${selectedCount}/${totalCount} topics`}
                     </span>
                   </button>
@@ -106,29 +124,38 @@ export function ChapterTopicTree({
                       {selectedCount === totalCount ? 'Deselect All' : 'Select All'}
                     </button>
                   )}
-                  {chapter.topics.map((topic) => (
-                    <div key={topic.id} className="flex items-center gap-2 py-1">
-                      {!readOnly ? (
-                        <Checkbox
-                          id={topic.id}
-                          checked={topic.isSelected}
-                          onCheckedChange={() => onTopicToggle(chapter.id, topic.id)}
-                          className="h-3.5 w-3.5"
-                        />
-                      ) : (
-                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-                      )}
-                      <label
-                        htmlFor={topic.id}
-                        className={cn(
-                          'text-sm cursor-pointer',
-                          topic.isSelected ? 'text-foreground' : 'text-muted-foreground'
+                  {chapter.topics.map((topic) => {
+                    const topicRenamed = topic.originalName && topic.name !== topic.originalName;
+
+                    return (
+                      <div key={topic.id} className="flex items-center gap-2 py-1">
+                        {!readOnly ? (
+                          <Checkbox
+                            id={topic.id}
+                            checked={topic.isSelected}
+                            onCheckedChange={() => onTopicToggle(chapter.id, topic.id)}
+                            className="h-3.5 w-3.5"
+                          />
+                        ) : (
+                          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
                         )}
-                      >
-                        {topic.name}
-                      </label>
-                    </div>
-                  ))}
+                        <label
+                          htmlFor={topic.id}
+                          className={cn(
+                            'text-sm cursor-pointer',
+                            topic.isSelected ? 'text-foreground' : 'text-muted-foreground'
+                          )}
+                        >
+                          {topic.name}
+                          {topicRenamed && (
+                            <span className="text-xs text-muted-foreground italic ml-1">
+                              (was: {topic.originalName})
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </CollapsibleContent>
             </Collapsible>

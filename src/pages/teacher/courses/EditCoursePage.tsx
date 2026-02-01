@@ -43,6 +43,11 @@ export default function EditCoursePage() {
         
         // Merge existing course subjects with available subjects structure
         const mergedSubjects: CourseSubjectWithContent[] = foundCourse.subjects.map((courseSubject) => {
+          // If it's a custom subject, keep it as-is
+          if (courseSubject.isCustom) {
+            return courseSubject;
+          }
+
           // Find the full subject data from available subjects
           const fullSubject = availableSubjects.find(
             (as) => as.name.toLowerCase() === courseSubject.name.toLowerCase()
@@ -55,6 +60,7 @@ export default function EditCoursePage() {
               name: courseSubject.name,
               institute: courseSubject.institute,
               isOwner: courseSubject.isOwner,
+              isCustom: false,
               chapters: fullSubject.chapters.map((availableChapter) => {
                 const courseChapter = courseSubject.chapters.find(
                   (cc) => cc.name === availableChapter.name
@@ -124,7 +130,12 @@ export default function EditCoursePage() {
       subject.chapters.some((chapter) => chapter.topics.some((topic) => topic.isSelected))
     );
 
-    if (!hasSelectedTopics) {
+    // For custom subjects, all topics are pre-selected when added
+    const hasCustomSubjectsWithTopics = formData.subjects.some((subject) =>
+      subject.isCustom && subject.chapters.some((ch) => ch.topics.length > 0)
+    );
+
+    if (!hasSelectedTopics && !hasCustomSubjectsWithTopics) {
       toast.error('Please select at least one topic from the subjects');
       return false;
     }

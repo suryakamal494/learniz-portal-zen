@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, ChevronDown, ChevronRight, BookOpen, Layers, FileText, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, Layers, FileText, Pencil, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -65,6 +65,15 @@ export function CoursePreviewModal({ course, open, onOpenChange }: CoursePreview
     const chapters = subject.chapters.length;
     const topics = subject.chapters.reduce((acc, ch) => acc + ch.topics.length, 0);
     return { chapters, topics };
+  };
+
+  // Get unique source subjects for custom subjects
+  const getCustomSubjectSources = (subject: CourseSubjectWithContent) => {
+    const sources = new Set<string>();
+    subject.chapters.forEach((ch) => {
+      if (ch.sourceSubjectName) sources.add(ch.sourceSubjectName);
+    });
+    return Array.from(sources);
   };
 
   const handleEdit = () => {
@@ -144,6 +153,7 @@ export function CoursePreviewModal({ course, open, onOpenChange }: CoursePreview
                 const isExpanded = expandedSubjects.has(subject.id);
                 const stats = getSubjectStats(subject);
                 const colorClass = subjectColors[index % subjectColors.length];
+                const sources = subject.isCustom ? getCustomSubjectSources(subject) : [];
 
                 return (
                   <Collapsible
@@ -151,22 +161,48 @@ export function CoursePreviewModal({ course, open, onOpenChange }: CoursePreview
                     open={isExpanded}
                     onOpenChange={() => toggleSubject(subject.id)}
                   >
-                    <div className="border border-border rounded-lg overflow-hidden">
+                    <div className={cn(
+                      "border rounded-lg overflow-hidden",
+                      subject.isCustom ? "border-primary/30" : "border-border"
+                    )}>
                       <CollapsibleTrigger asChild>
-                        <button className="w-full flex items-center gap-3 px-4 py-3 bg-muted/20 hover:bg-muted/40 transition-colors text-left">
+                        <button className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left",
+                          subject.isCustom ? "bg-primary/5" : "bg-muted/20"
+                        )}>
                           {isExpanded ? (
                             <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                           ) : (
                             <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                           )}
-                          <div className={cn('h-3 w-3 rounded-full flex-shrink-0', colorClass)} />
-                          <span className="font-medium text-foreground flex-1">
-                            {subject.name}
-                            <span className="text-muted-foreground font-normal">
-                              {' - '}{subject.institute}
-                            </span>
-                          </span>
-                          <span className="text-xs text-muted-foreground">
+                          
+                          {subject.isCustom ? (
+                            <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                          ) : (
+                            <div className={cn('h-3 w-3 rounded-full flex-shrink-0', colorClass)} />
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">
+                                {subject.name}
+                              </span>
+                              {subject.isCustom ? (
+                                <Badge variant="outline" className="text-xs">Custom</Badge>
+                              ) : (
+                                <span className="text-muted-foreground font-normal">
+                                  - {subject.institute}
+                                </span>
+                              )}
+                            </div>
+                            {subject.isCustom && sources.length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Content from: {sources.join(', ')}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {stats.chapters} Chapters, {stats.topics} Topics
                           </span>
                         </button>
@@ -174,25 +210,48 @@ export function CoursePreviewModal({ course, open, onOpenChange }: CoursePreview
 
                       <CollapsibleContent>
                         <div className="px-4 py-3 space-y-3 border-t border-border bg-background">
-                          {subject.chapters.map((chapter, chIndex) => (
-                            <div key={chapter.id} className="pl-8">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Layers className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium text-foreground">{chapter.name}</span>
+                          {subject.chapters.map((chapter) => {
+                            const isRenamed = chapter.originalName && chapter.name !== chapter.originalName;
+
+                            return (
+                              <div key={chapter.id} className="pl-8">
+                                <div className="flex items-center gap-2 text-sm flex-wrap">
+                                  <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  <span className="font-medium text-foreground">{chapter.name}</span>
+                                  {chapter.sourceSubjectName && (
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0 font-normal">
+                                      from {chapter.sourceSubjectName}
+                                    </Badge>
+                                  )}
+                                  {isRenamed && (
+                                    <span className="text-xs text-muted-foreground italic">
+                                      (originally: {chapter.originalName})
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="pl-6 mt-2 space-y-1">
+                                  {chapter.topics.map((topic) => {
+                                    const topicRenamed = topic.originalName && topic.name !== topic.originalName;
+
+                                    return (
+                                      <div
+                                        key={topic.id}
+                                        className="flex items-center gap-2 text-sm text-muted-foreground"
+                                      >
+                                        <FileText className="h-3 w-3 flex-shrink-0" />
+                                        <span>{topic.name}</span>
+                                        {topicRenamed && (
+                                          <span className="text-xs italic">
+                                            (was: {topic.originalName})
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                              <div className="pl-6 mt-2 space-y-1">
-                                {chapter.topics.map((topic) => (
-                                  <div
-                                    key={topic.id}
-                                    className="flex items-center gap-2 text-sm text-muted-foreground"
-                                  >
-                                    <FileText className="h-3 w-3" />
-                                    <span>{topic.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </CollapsibleContent>
                     </div>
