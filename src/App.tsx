@@ -66,6 +66,8 @@ import CreateNotesPage from './pages/teacher/lms/notes/CreateNotesPage';
 
 // Teacher Courses
 import CoursesMainPage from './pages/teacher/courses/CoursesMainPage';
+import CreateCoursePage from './pages/teacher/courses/CreateCoursePage';
+import EditCoursePage from './pages/teacher/courses/EditCoursePage';
 
 // Institute Analytics Pages
 import InstituteSnapshotPage from './pages/institute/InstituteSnapshotPage';
@@ -164,7 +166,10 @@ function App() {
           <Route path="lms/ai-ppt-generator" element={<AIPPTGeneratorPage />} />
 
           {/* Courses Routes */}
+          {/* Courses Routes */}
           <Route path="courses" element={<CoursesMainPage />} />
+          <Route path="courses/create" element={<CreateCoursePage />} />
+          <Route path="courses/:courseId/edit" element={<EditCoursePage />} />
         </Route>
 
         {/* Institute Analytics Routes */}
