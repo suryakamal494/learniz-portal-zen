@@ -45,6 +45,7 @@ const navigationItems = [
   { title: "Notifications", url: "/teacher/notifications", icon: Bell, badge: "3" },
   { title: "Messages", url: "/teacher/messages", icon: MessageCircle, badge: "7" },
   { title: "Institute Dashboard", url: "/institute/dashboard", icon: Building2, badge: null },
+  { title: "Courses", url: "/teacher/courses", icon: BookOpen, badge: null },
 ]
 
 const submenuItems = {
