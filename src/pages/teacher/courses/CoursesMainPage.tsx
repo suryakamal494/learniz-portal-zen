@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -28,8 +28,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { CoursePreviewModal } from '@/components/teacher/courses/CoursePreviewModal';
 import { mockCourses } from '@/data/mockCourses';
 import { Course } from '@/types/course';
+import { toast } from 'sonner';
 
 const tabs = [
   { id: 'courses', label: 'Courses' },
@@ -39,33 +51,48 @@ const tabs = [
 ];
 
 export default function CoursesMainPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('courses');
   const [searchQuery, setSearchQuery] = useState('');
-  const [courses] = useState<Course[]>(mockCourses);
+  const [courses, setCourses] = useState<Course[]>(mockCourses);
+  const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [deleteConfirmCourse, setDeleteConfirmCourse] = useState<Course | null>(null);
 
   const filteredCourses = courses.filter(course =>
     course.programName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.className.toLowerCase().includes(searchQuery.toLowerCase())
+    course.className.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePreview = (courseId: string) => {
-    console.log('Preview course:', courseId);
-    // Future implementation
+  const handlePreview = (course: Course) => {
+    setPreviewCourse(course);
+    setShowPreviewModal(true);
   };
 
   const handleEdit = (courseId: string) => {
-    console.log('Edit course:', courseId);
-    // Future implementation
+    navigate(`/teacher/courses/${courseId}/edit`);
   };
 
-  const handleDelete = (courseId: string) => {
-    console.log('Delete course:', courseId);
-    // Future implementation
+  const handleDeleteConfirm = (course: Course) => {
+    setDeleteConfirmCourse(course);
+  };
+
+  const handleDelete = () => {
+    if (deleteConfirmCourse) {
+      setCourses((prev) => prev.filter((c) => c.id !== deleteConfirmCourse.id));
+      toast.success(`Course "${deleteConfirmCourse.title}" deleted successfully`);
+      setDeleteConfirmCourse(null);
+    }
   };
 
   const handleAddCourse = () => {
-    console.log('Add new course');
-    // Future implementation
+    navigate('/teacher/courses/create');
+  };
+
+  // Get subject count for display
+  const getSubjectCount = (course: Course) => {
+    return course.subjects.length;
   };
 
   return (
@@ -208,7 +235,7 @@ export default function CoursesMainPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => handlePreview(course.id)}>
+                            <DropdownMenuItem onClick={() => handlePreview(course)}>
                               <Eye className="h-4 w-4 mr-2" />
                               Preview
                             </DropdownMenuItem>
@@ -217,7 +244,7 @@ export default function CoursesMainPage() {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => handleDelete(course.id)}
+                              onClick={() => handleDeleteConfirm(course)}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -241,6 +268,34 @@ export default function CoursesMainPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Preview Modal */}
+      <CoursePreviewModal
+        course={previewCourse}
+        open={showPreviewModal}
+        onOpenChange={setShowPreviewModal}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmCourse} onOpenChange={(open) => !open && setDeleteConfirmCourse(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteConfirmCourse?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
