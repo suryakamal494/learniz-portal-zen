@@ -13,57 +13,81 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ContentModeSelector } from '@/components/teacher/courses/ContentModeSelector';
+import { SharedCoursesSelector } from '@/components/teacher/courses/SharedCoursesSelector';
 import { SubjectChapterSelector } from '@/components/teacher/courses/SubjectChapterSelector';
 import { availableClasses, availableSubjects } from '@/data/mockCourseContent';
-import { CourseSubjectWithContent, CourseFormData } from '@/types/course';
+import { getSharedCourseStats } from '@/data/mockSharedCourses';
+import { CourseSubjectWithContent, ProgramFormData, SharedCourse } from '@/types/course';
 import { toast } from 'sonner';
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<CourseFormData>({
+  const [formData, setFormData] = useState<ProgramFormData>({
     title: '',
     className: '',
-    programName: '',
     fee: 0,
     description: '',
-    subjects: [],
+    contentMode: null,
+    selectedSharedCourses: [],
+    customSubjects: [],
   });
 
-  const handleInputChange = (field: keyof CourseFormData, value: string | number) => {
+  const handleInputChange = (field: keyof ProgramFormData, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubjectsChange = (subjects: CourseSubjectWithContent[]) => {
-    setFormData((prev) => ({ ...prev, subjects }));
+  const handleContentModeChange = (mode: 'existing' | 'custom') => {
+    setFormData((prev) => ({ ...prev, contentMode: mode }));
+  };
+
+  const handleSharedCoursesChange = (courses: SharedCourse[]) => {
+    setFormData((prev) => ({ ...prev, selectedSharedCourses: courses }));
+  };
+
+  const handleCustomSubjectsChange = (subjects: CourseSubjectWithContent[]) => {
+    setFormData((prev) => ({ ...prev, customSubjects: subjects }));
   };
 
   const validateForm = (): boolean => {
     if (!formData.title.trim()) {
-      toast.error('Please enter a course title');
+      toast.error('Please enter a program title');
       return false;
     }
     if (!formData.className) {
       toast.error('Please select a class');
       return false;
     }
-    if (formData.subjects.length === 0) {
-      toast.error('Please select at least one subject');
+    if (!formData.contentMode) {
+      toast.error('Please select a content mode');
       return false;
     }
 
-    // Check if at least one topic is selected
-    const hasSelectedTopics = formData.subjects.some((subject) =>
-      subject.chapters.some((chapter) => chapter.topics.some((topic) => topic.isSelected))
-    );
+    if (formData.contentMode === 'existing') {
+      if (formData.selectedSharedCourses.length === 0) {
+        toast.error('Please select at least one course');
+        return false;
+      }
+    } else {
+      if (formData.customSubjects.length === 0) {
+        toast.error('Please select at least one subject');
+        return false;
+      }
 
-    // For custom subjects, all topics are pre-selected when added
-    const hasCustomSubjectsWithTopics = formData.subjects.some((subject) =>
-      subject.isCustom && subject.chapters.some((ch) => ch.topics.length > 0)
-    );
+      // Check if at least one topic is selected
+      const hasSelectedTopics = formData.customSubjects.some((subject) =>
+        subject.chapters.some((chapter) => chapter.topics.some((topic) => topic.isSelected))
+      );
 
-    if (!hasSelectedTopics && !hasCustomSubjectsWithTopics) {
-      toast.error('Please select at least one topic from the subjects');
-      return false;
+      // For custom subjects, all topics are pre-selected when added
+      const hasCustomSubjectsWithTopics = formData.customSubjects.some((subject) =>
+        subject.isCustom && subject.chapters.some((ch) => ch.topics.length > 0)
+      );
+
+      if (!hasSelectedTopics && !hasCustomSubjectsWithTopics) {
+        toast.error('Please select at least one topic from the subjects');
+        return false;
+      }
     }
 
     return true;
@@ -72,27 +96,45 @@ export default function CreateCoursePage() {
   const handleSubmit = () => {
     if (!validateForm()) return;
 
-    // Filter out chapters and topics that aren't selected
-    const cleanedSubjects = formData.subjects
-      .map((subject) => ({
-        ...subject,
-        chapters: subject.chapters
-          .filter((chapter) => chapter.topics.some((t) => t.isSelected))
-          .map((chapter) => ({
-            ...chapter,
-            topics: chapter.topics.filter((t) => t.isSelected),
-          })),
-      }))
-      .filter((subject) => subject.chapters.length > 0);
+    let programData;
 
-    const courseData = {
-      ...formData,
-      programName: formData.title, // Use title as program name
-      subjects: cleanedSubjects,
-    };
+    if (formData.contentMode === 'existing') {
+      programData = {
+        title: formData.title,
+        className: formData.className,
+        programName: formData.title,
+        fee: formData.fee,
+        description: formData.description,
+        contentMode: 'existing',
+        courses: formData.selectedSharedCourses,
+      };
+    } else {
+      // Filter out chapters and topics that aren't selected
+      const cleanedSubjects = formData.customSubjects
+        .map((subject) => ({
+          ...subject,
+          chapters: subject.chapters
+            .filter((chapter) => chapter.topics.some((t) => t.isSelected))
+            .map((chapter) => ({
+              ...chapter,
+              topics: chapter.topics.filter((t) => t.isSelected),
+            })),
+        }))
+        .filter((subject) => subject.chapters.length > 0);
 
-    console.log('Creating course:', courseData);
-    toast.success('Course created successfully!');
+      programData = {
+        title: formData.title,
+        className: formData.className,
+        programName: formData.title,
+        fee: formData.fee,
+        description: formData.description,
+        contentMode: 'custom',
+        subjects: cleanedSubjects,
+      };
+    }
+
+    console.log('Creating program:', programData);
+    toast.success('Program created successfully!');
     navigate('/teacher/courses');
   };
 
@@ -100,20 +142,36 @@ export default function CreateCoursePage() {
     navigate('/teacher/courses');
   };
 
-  // Calculate summary stats
+  // Calculate summary stats based on content mode
   const getTotalStats = () => {
-    let subjects = formData.subjects.length;
-    let chapters = 0;
-    let topics = 0;
+    if (formData.contentMode === 'existing') {
+      let courses = formData.selectedSharedCourses.length;
+      let subjects = 0;
+      let chapters = 0;
+      let topics = 0;
 
-    formData.subjects.forEach((s) => {
-      s.chapters.forEach((ch) => {
-        if (ch.topics.some((t) => t.isSelected)) chapters++;
-        topics += ch.topics.filter((t) => t.isSelected).length;
+      formData.selectedSharedCourses.forEach((course) => {
+        const stats = getSharedCourseStats(course);
+        subjects += stats.subjectCount;
+        chapters += stats.chapterCount;
+        topics += stats.topicCount;
       });
-    });
 
-    return { subjects, chapters, topics };
+      return { courses, subjects, chapters, topics };
+    } else {
+      let subjects = formData.customSubjects.length;
+      let chapters = 0;
+      let topics = 0;
+
+      formData.customSubjects.forEach((s) => {
+        s.chapters.forEach((ch) => {
+          if (ch.topics.some((t) => t.isSelected)) chapters++;
+          topics += ch.topics.filter((t) => t.isSelected).length;
+        });
+      });
+
+      return { courses: 0, subjects, chapters, topics };
+    }
   };
 
   const stats = getTotalStats();
@@ -128,7 +186,7 @@ export default function CreateCoursePage() {
           </Link>
           <ChevronRight className="h-4 w-4 mx-2" />
           <Link to="/teacher/courses" className="hover:text-foreground transition-colors">
-            Courses
+            Programs
           </Link>
           <ChevronRight className="h-4 w-4 mx-2" />
           <span className="text-foreground font-medium">Create</span>
@@ -136,9 +194,9 @@ export default function CreateCoursePage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Create Course</h1>
+          <h1 className="text-2xl font-bold text-foreground">Create Program</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Set up a new course with detailed configuration
+            Set up a new program with courses and content
           </p>
         </div>
 
@@ -157,7 +215,7 @@ export default function CreateCoursePage() {
                 </Label>
                 <Input
                   id="title"
-                  placeholder="Enter Course Name"
+                  placeholder="Enter Program Name"
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                 />
@@ -186,7 +244,7 @@ export default function CreateCoursePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="fee">Fee For Course</Label>
+                <Label htmlFor="fee">Fee For Program</Label>
                 <Input
                   id="fee"
                   type="number"
@@ -211,7 +269,7 @@ export default function CreateCoursePage() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                placeholder="Enter course description..."
+                placeholder="Enter program description..."
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={3}
@@ -220,24 +278,42 @@ export default function CreateCoursePage() {
           </CardContent>
         </Card>
 
-        {/* Subject & Content Selection Card */}
+        {/* Course Content Card */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              📚 Subject & Content Selection
-              {stats.topics > 0 && (
+              📚 Course Content
+              {(stats.subjects > 0 || stats.courses > 0) && (
                 <span className="text-sm font-normal text-muted-foreground ml-auto">
-                  {stats.subjects} subjects • {stats.chapters} chapters • {stats.topics} topics
+                  {formData.contentMode === 'existing'
+                    ? `${stats.courses} courses • ${stats.subjects} subjects • ${stats.chapters} chapters`
+                    : `${stats.subjects} subjects • ${stats.chapters} chapters • ${stats.topics} topics`}
                 </span>
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <SubjectChapterSelector
-              availableSubjects={availableSubjects}
-              selectedSubjects={formData.subjects}
-              onSelectionChange={handleSubjectsChange}
+          <CardContent className="space-y-6">
+            <ContentModeSelector
+              mode={formData.contentMode}
+              onModeChange={handleContentModeChange}
             />
+
+            {formData.contentMode && (
+              <div className="pt-4 border-t">
+                {formData.contentMode === 'existing' ? (
+                  <SharedCoursesSelector
+                    selectedCourses={formData.selectedSharedCourses}
+                    onSelectionChange={handleSharedCoursesChange}
+                  />
+                ) : (
+                  <SubjectChapterSelector
+                    availableSubjects={availableSubjects}
+                    selectedSubjects={formData.customSubjects}
+                    onSelectionChange={handleCustomSubjectsChange}
+                  />
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -246,7 +322,7 @@ export default function CreateCoursePage() {
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Create Course</Button>
+          <Button onClick={handleSubmit}>Create Program</Button>
         </div>
       </div>
     </div>

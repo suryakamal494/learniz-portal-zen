@@ -72,3 +72,27 @@ export interface ClassOption {
   id: string;
   name: string;
 }
+
+// Pre-made course from Super Admin (read-only)
+export interface SharedCourse {
+  id: string;
+  name: string;
+  description?: string;
+  sharedBy: string;
+  className: string;
+  subjects: CourseSubjectWithContent[];
+  createdAt: string;
+}
+
+// Updated form data to support both paths
+export interface ProgramFormData {
+  title: string;
+  className: string;
+  fee: number;
+  description: string;
+  image?: string;
+  // Two exclusive content paths
+  contentMode: 'existing' | 'custom' | null;
+  selectedSharedCourses: SharedCourse[];
+  customSubjects: CourseSubjectWithContent[];
+}
