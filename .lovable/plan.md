@@ -1,344 +1,293 @@
 
-# Understanding Your Requirement
 
-## What You're Asking For
+# Implementation Plan: Configure Teaching Hours Feature
 
-You want to restructure the **Create Program** (formerly "Create Course") page to introduce a **hierarchical content selection system** with two distinct paths:
+## Overview
 
-### Current Flow (to be changed):
-```
-Create Course → Basic Info → Subject Selection → Custom Subject Builder
-```
-
-### New Flow:
-```
-Create Program → Basic Info → Choose Existing Courses OR Create Custom Course
-                                    ↓                          ↓
-                              (Pre-made courses          (Existing subject/
-                               from Super Admin)         custom subject flow)
-```
-
-### Key Requirements:
-
-1. **Rename "Add Course" to "Create Program"** on the main courses page
-2. **Two-path selection after Basic Information:**
-   - **Option A: Choose Existing Courses** - Select one or more pre-configured courses shared by Super Admin (read-only, with Preview option to see all subjects/chapters/topics)
-   - **Option B: Create Custom Course** - The current functionality (use existing subject or create custom subject)
-
-3. **Existing Courses behavior:**
-   - Multiple courses can be selected
-   - Cannot edit these courses - they are read-only
-   - Each course displays as a card with Preview button
-   - Preview shows detailed breakdown (subjects, chapters, topics)
-
-4. **Responsive UI built for scale:**
-   - Design for 5 subjects with 10 chapters each (50+ chapters total)
-   - Scrollable containers with explicit max-heights
-   - Expand All / Collapse All controls
-   - Won't break with more content
+Add a new action "Configure Hours" in the courses table that opens a modal where institutions can enter teaching hours for each topic. Chapter and subject hours are auto-calculated from topic totals.
 
 ---
-
-# Technical Implementation Plan
 
 ## Part 1: Type Definitions Update
 
 ### File: `src/types/course.ts` (MODIFY)
 
-Add new types to support the hierarchical program structure:
+Add `hours` field to CourseTopic and calculated fields for aggregation:
 
 ```typescript
-// Add to existing types:
-
-// Pre-made course from Super Admin (read-only)
-export interface SharedCourse {
+export interface CourseTopic {
   id: string;
   name: string;
-  description?: string;
-  sharedBy: string;          // Super Admin name/institute
-  className: string;
-  subjects: CourseSubjectWithContent[];
-  createdAt: string;
+  originalName?: string;
+  sourceSubjectId?: string;
+  isSelected?: boolean;
+  hours?: number;  // NEW: Teaching hours for this topic
 }
 
-// Updated form data to support both paths
-export interface ProgramFormData {
-  title: string;
-  className: string;
-  fee: number;
-  description: string;
-  image?: string;
-  // Two exclusive content paths
-  contentMode: 'existing' | 'custom' | null;
-  selectedSharedCourses: SharedCourse[];  // For "Choose Existing Courses"
-  customSubjects: CourseSubjectWithContent[];  // For "Create Custom Course"
+// Optional: Add computed types for display
+export interface TopicWithHours extends CourseTopic {
+  hours: number;
+}
+
+export interface ChapterHoursSummary {
+  chapterId: string;
+  chapterName: string;
+  totalHours: number;
+  topics: TopicWithHours[];
+}
+
+export interface SubjectHoursSummary {
+  subjectId: string;
+  subjectName: string;
+  totalHours: number;
+  chapters: ChapterHoursSummary[];
 }
 ```
 
 ---
 
-## Part 2: Mock Data for Shared Courses
+## Part 2: New Components
 
-### File: `src/data/mockSharedCourses.ts` (NEW)
+### Component 1: `ConfigureHoursModal.tsx` (NEW)
 
-Create mock data representing courses shared by Super Admin - designed to test UI with large data sets (5 subjects, 10 chapters each):
+**Purpose**: Main modal for configuring hours - displays all subjects/chapters/topics with input fields.
 
+**Wireframe**:
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Configure Teaching Hours                                              [×]  │
+│ Disha 2 - Class 6                                                          │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Set planned teaching hours for each topic. Chapter and subject totals     │
+│ will be calculated automatically.                                          │
+│                                                                            │
+│ Total Course Hours: 45.5 hrs                                              │
+│                                           [Expand All] [Collapse All]      │
+├────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ ▼ Physics                                               Total: 15 hrs │ │
+│ │   ┌──────────────────────────────────────────────────────────────────┐ │ │
+│ │   │ ▼ Mechanics                                          12 hrs     │ │ │
+│ │   │   ┌──────────────────────────────────────────────┐              │ │ │
+│ │   │   │ Newton's Laws of Motion          [  2  ] hrs │              │ │ │
+│ │   │   │ Equations of Motion              [  3  ] hrs │              │ │ │
+│ │   │   │ Friction and Its Types           [  2  ] hrs │              │ │ │
+│ │   │   │ Work, Energy and Power           [  2.5] hrs │              │ │ │
+│ │   │   │ Momentum and Collisions          [  2.5] hrs │              │ │ │
+│ │   │   └──────────────────────────────────────────────┘              │ │ │
+│ │   └──────────────────────────────────────────────────────────────────┘ │ │
+│ │   ┌──────────────────────────────────────────────────────────────────┐ │ │
+│ │   │ ▶ Thermodynamics                                      3 hrs     │ │ │
+│ │   └──────────────────────────────────────────────────────────────────┘ │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                            │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ ▶ Chemistry                                              Total: 12 hrs │ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                            │
+│ ┌────────────────────────────────────────────────────────────────────────┐ │
+│ │ ▶ Biology                                                Total: 18.5 hrs│ │
+│ └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                            │
+│ (Scrollable area - max-height: 55vh, min-height: 300px)                   │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                              [Cancel]  [Save Hours]        │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Features**:
+- Modal size: `max-w-4xl` with `max-h-[90vh]`
+- Scrollable content area with `min-h-[300px]` and `max-h-[55vh]`
+- Expand All / Collapse All controls
+- Subjects and chapters are collapsible
+- Topics show inline number input (0.5 step for half hours)
+- Real-time calculation of chapter and subject totals
+- Total course hours displayed at top
+
+### Component 2: `SubjectHoursAccordion.tsx` (NEW)
+
+**Purpose**: Collapsible subject section showing all chapters and topics with hours inputs.
+
+**Props**:
 ```typescript
-export const mockSharedCourses: SharedCourse[] = [
-  {
-    id: 'shared-1',
-    name: 'NEET Foundation 2025',
-    description: 'Comprehensive NEET preparation covering Physics, Chemistry, Biology',
-    sharedBy: 'LearnEazy Central',
-    className: 'Class 11',
-    subjects: [
-      { id: 'phy', name: 'Physics', chapters: [...10 chapters] },
-      { id: 'chem', name: 'Chemistry', chapters: [...10 chapters] },
-      { id: 'bio', name: 'Biology', chapters: [...10 chapters] },
-      { id: 'math', name: 'Mathematics', chapters: [...10 chapters] },
-      { id: 'eng', name: 'English', chapters: [...10 chapters] },
-    ]
-  },
-  // ... more shared courses
-];
+interface SubjectHoursAccordionProps {
+  subject: CourseSubjectWithContent;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onTopicHoursChange: (chapterId: string, topicId: string, hours: number) => void;
+  subjectTotalHours: number;
+}
+```
+
+### Component 3: `ChapterHoursRow.tsx` (NEW)
+
+**Purpose**: Collapsible chapter row with topics list.
+
+**Wireframe (expanded)**:
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│ ▼ Chapter Name                                         Total: 8 hrs  │
+├──────────────────────────────────────────────────────────────────────┤
+│   Topic 1 Name                                    [  2.0 ] hrs       │
+│   Topic 2 Name                                    [  1.5 ] hrs       │
+│   Topic 3 Name                                    [  2.0 ] hrs       │
+│   Topic 4 Name                                    [  2.5 ] hrs       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Component 4: `TopicHoursInput.tsx` (NEW)
+
+**Purpose**: Single topic row with inline hours input.
+
+**Features**:
+- Number input with step 0.5 (allows half hours)
+- Minimum value: 0
+- Maximum value: 24 (practical limit)
+- Shows "hrs" suffix
+- Compact design for mobile
+
+**Wireframe**:
+```text
+┌────────────────────────────────────────────────────────────────┐
+│  📄 Newton's Laws of Motion                    [  2.0  ] hrs   │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Part 3: New Components
-
-### Component 1: `SharedCourseCard.tsx` (NEW)
-
-A compact card for displaying a shared course with selection checkbox and preview button.
-
-Layout for small screens:
-```text
-┌────────────────────────────────────────────────────────┐
-│ ☑ NEET Foundation 2025                       [Preview] │
-│   Class 11 • 5 Subjects • 50 Chapters                  │
-│   Shared by: LearnEazy Central                         │
-└────────────────────────────────────────────────────────┘
-```
-
-### Component 2: `SharedCoursePreviewModal.tsx` (NEW)
-
-A preview modal showing all content of a shared course with Expand All/Collapse All.
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Preview: NEET Foundation 2025                                    [×]    │
-├─────────────────────────────────────────────────────────────────────────┤
-│ 📚 5 Subjects • 50 Chapters • 200 Topics     [Expand All] [Collapse All]│
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ ▼ Physics (10 chapters)                                             │ │
-│ │   ├── Mechanics (8 topics)                                          │ │
-│ │   │     • Newton's Laws                                             │ │
-│ │   │     • Motion                                                    │ │
-│ │   ├── Thermodynamics (5 topics)                                     │ │
-│ │   ...                                                               │ │
-│ │ ▼ Chemistry (10 chapters)                                           │ │
-│ │   ...                                                               │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│ (Scrollable area with max-height: 55vh)                                 │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                          [Close]        │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Component 3: `SharedCoursesSelector.tsx` (NEW)
-
-Grid of shared course cards with multi-select capability.
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Available Courses from Super Admin                                       │
-│ Select one or more courses to include in your program                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│ 🔍 Search courses...                                                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌────────────────────────┐  ┌────────────────────────┐                  │
-│ │ ☑ NEET Foundation 2025 │  │ ☐ JEE Mains 2025       │                  │
-│ │   Class 11 • 5 Subjects│  │   Class 11 • 4 Subjects│                  │
-│ │   [Preview]            │  │   [Preview]            │                  │
-│ └────────────────────────┘  └────────────────────────┘                  │
-│ ┌────────────────────────┐  ┌────────────────────────┐                  │
-│ │ ☐ Olympiad Foundation  │  │ ☐ Board Topper 2025    │                  │
-│ │   Class 10 • 3 Subjects│  │   Class 10 • 5 Subjects│                  │
-│ │   [Preview]            │  │   [Preview]            │                  │
-│ └────────────────────────┘  └────────────────────────┘                  │
-│                                                                         │
-│ (Scrollable grid, max-height: 400px, responsive columns)               │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Selected: 1 course • 5 subjects • 50 chapters                           │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Component 4: `ContentModeSelector.tsx` (NEW)
-
-Toggle between "Choose Existing Courses" and "Create Custom Course" modes.
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ How would you like to add content to this program?                      │
-│                                                                         │
-│ ┌─────────────────────────────────┐  ┌─────────────────────────────────┐│
-│ │      Choose Existing Courses    │  │       Create Custom Course      ││
-│ │                                 │  │                                 ││
-│ │      📋                        │  │      ✨                        ││
-│ │                                 │  │                                 ││
-│ │   Select pre-configured        │  │   Build your own course by     ││
-│ │   courses shared by            │  │   selecting subjects, chapters │││
-│ │   Super Admin                  │  │   and topics                   ││
-│ │                                 │  │                                 ││
-│ │   ● Selected                   │  │   ○ Not Selected               ││
-│ └─────────────────────────────────┘  └─────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Part 4: Update Existing Pages
+## Part 3: Update Courses Main Page
 
 ### File: `src/pages/teacher/courses/CoursesMainPage.tsx` (MODIFY)
 
-**Changes:**
-- Rename button from "ADD COURSE" to "CREATE PROGRAM"
-- Update header text accordingly
+**Changes**:
 
-### File: `src/pages/teacher/courses/CreateCoursePage.tsx` (MODIFY → renamed to CreateProgramPage.tsx)
+1. Add new state for hours configuration modal
+2. Add "Configure Hours" option to Actions dropdown
+3. Import and render ConfigureHoursModal
 
-**Complete restructure:**
-
+**Updated Actions Dropdown**:
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Dashboard > Programs > Create                                           │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Create Program                                                          │
-│ Set up a new program with courses and content                           │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 📋 Basic Information                                                │ │
-│ │ ┌──────────────────────┐  ┌──────────────────────┐                  │ │
-│ │ │ Title *              │  │ Class *              │                  │ │
-│ │ │ [________________]   │  │ [Select Class ▼]     │                  │ │
-│ │ └──────────────────────┘  └──────────────────────┘                  │ │
-│ │ ┌──────────────────────┐  ┌──────────────────────┐                  │ │
-│ │ │ Fee                  │  │ Image                │                  │ │
-│ │ │ [________________]   │  │ [Choose File]        │                  │ │
-│ │ └──────────────────────┘  └──────────────────────┘                  │ │
-│ │ Description: [________________________________]                      │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 📚 Course Content                                                   │ │
-│ │                                                                     │ │
-│ │ [ContentModeSelector - Choose Existing / Create Custom toggle]      │ │
-│ │                                                                     │ │
-│ │ ─────────────────────────────────────────────────────────────────── │ │
-│ │                                                                     │ │
-│ │ IF "Choose Existing Courses" selected:                              │ │
-│ │   [SharedCoursesSelector - Grid of course cards]                    │ │
-│ │                                                                     │ │
-│ │ IF "Create Custom Course" selected:                                 │ │
-│ │   [SubjectChapterSelector - Current custom subject flow]            │ │
-│ │                                                                     │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│                                           [Cancel] [Create Program]     │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────┐
+│ 👁 Preview       │
+│ ⏱ Configure Hours│  ← NEW
+│ ✏️ Edit          │
+│ 🗑️ Delete        │
+└──────────────────┘
 ```
 
 ---
 
-## Part 5: UI/UX Guidelines for Scalability
+## Part 4: Update Mock Data
 
-### Responsive Grid Patterns
-- Mobile: 1 column
-- Tablet: 2 columns
-- Desktop: 3-4 columns
+### File: `src/data/mockCourses.ts` (MODIFY)
 
-### Scrollable Container Specifications
-| Container | Min Height | Max Height | Purpose |
-|-----------|------------|------------|---------|
-| Shared Courses Grid | 200px | 400px | Browse available courses |
-| Course Preview Content | 300px | 55vh | View course details |
-| Custom Subject Builder | 300px | 55vh | Add/edit chapters |
+Add sample `hours` values to some topics to demonstrate the feature:
 
-### Expand/Collapse Controls
-- Present on every nested list with >3 items
-- "Expand All" / "Collapse All" buttons at section headers
-- Default state: collapsed for large lists (>5 items)
-
-### Touch-Friendly Design
-- Minimum touch target: 44px
-- Card selection: entire card is clickable
-- Preview button: separate, clearly visible
-- Checkbox + label: both clickable
+```typescript
+topics: [
+  { id: 'bio-t-1', name: 'Cell Structure and Function', isSelected: true, hours: 2 },
+  { id: 'bio-t-2', name: 'Cell Division - Mitosis', isSelected: true, hours: 1.5 },
+]
+```
 
 ---
 
-## Files Summary
+## Part 5: Utility Functions
+
+### File: `src/utils/courseHoursUtils.ts` (NEW)
+
+**Purpose**: Helper functions for hours calculations
+
+```typescript
+// Calculate total hours for a chapter (sum of topic hours)
+export function getChapterHours(chapter: CourseChapter): number {
+  return chapter.topics.reduce((sum, topic) => sum + (topic.hours || 0), 0);
+}
+
+// Calculate total hours for a subject (sum of chapter hours)
+export function getSubjectHours(subject: CourseSubjectWithContent): number {
+  return subject.chapters.reduce((sum, ch) => sum + getChapterHours(ch), 0);
+}
+
+// Calculate total hours for a course
+export function getCourseHours(course: Course): number {
+  return course.subjects.reduce((sum, s) => sum + getSubjectHours(s), 0);
+}
+
+// Format hours display (e.g., "2.5 hrs" or "2 hrs")
+export function formatHours(hours: number): string {
+  return hours % 1 === 0 ? `${hours} hrs` : `${hours.toFixed(1)} hrs`;
+}
+```
+
+---
+
+## Part 6: UI/UX Specifications
+
+### Responsive Design
+
+| Screen Size | Modal Width | Columns | Topic Input Width |
+|-------------|-------------|---------|-------------------|
+| Mobile (<640px) | Full width | 1 | 60px |
+| Tablet (640-1024px) | 90% | 1 | 70px |
+| Desktop (>1024px) | max-w-4xl | 1 | 80px |
+
+### Scroll Containers
+
+| Container | Min Height | Max Height |
+|-----------|------------|------------|
+| Modal content | 300px | 55vh |
+| Each subject (expanded) | auto | 400px |
+
+### Touch-Friendly Design
+- Input fields: `h-9` (36px)
+- Chapter/Subject rows: `min-h-[48px]`
+- All clickable areas: minimum 44px touch target
+
+### Keyboard Accessibility
+- Tab through all input fields
+- Enter to save
+- Escape to cancel
+
+---
+
+## Part 7: Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/types/course.ts` | MODIFY | Add SharedCourse, ProgramFormData types |
-| `src/data/mockSharedCourses.ts` | CREATE | Mock data for shared courses (5 subjects, 10 chapters each) |
-| `src/components/teacher/courses/SharedCourseCard.tsx` | CREATE | Card component for shared course display |
-| `src/components/teacher/courses/SharedCoursePreviewModal.tsx` | CREATE | Preview modal for shared course content |
-| `src/components/teacher/courses/SharedCoursesSelector.tsx` | CREATE | Grid selector for shared courses |
-| `src/components/teacher/courses/ContentModeSelector.tsx` | CREATE | Toggle between existing/custom mode |
-| `src/pages/teacher/courses/CoursesMainPage.tsx` | MODIFY | Rename button to "CREATE PROGRAM" |
-| `src/pages/teacher/courses/CreateCoursePage.tsx` | MODIFY | Restructure with two-path content selection |
+| `src/types/course.ts` | MODIFY | Add `hours?: number` to CourseTopic |
+| `src/utils/courseHoursUtils.ts` | CREATE | Helper functions for hours calculations |
+| `src/components/teacher/courses/TopicHoursInput.tsx` | CREATE | Single topic row with hours input |
+| `src/components/teacher/courses/ChapterHoursRow.tsx` | CREATE | Collapsible chapter with topics list |
+| `src/components/teacher/courses/SubjectHoursAccordion.tsx` | CREATE | Collapsible subject section |
+| `src/components/teacher/courses/ConfigureHoursModal.tsx` | CREATE | Main modal component |
+| `src/pages/teacher/courses/CoursesMainPage.tsx` | MODIFY | Add "Configure Hours" action |
+| `src/data/mockCourses.ts` | MODIFY | Add sample hours data |
 
 ---
 
-## User Flow Diagram
+## Part 8: Technical Implementation Order
 
-```text
-User clicks "CREATE PROGRAM"
-         │
-         ▼
-┌─────────────────────────┐
-│   Basic Information     │
-│   (Title, Class, Fee)   │
-└────────────┬────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Select Content Mode                             │
-│                                                              │
-│  ┌─────────────────────┐      ┌─────────────────────┐       │
-│  │ Choose Existing     │  OR  │ Create Custom       │       │
-│  │ Courses             │      │ Course              │       │
-│  └──────────┬──────────┘      └──────────┬──────────┘       │
-└─────────────│───────────────────────────│───────────────────┘
-              │                           │
-              ▼                           ▼
-┌─────────────────────────┐    ┌─────────────────────────────┐
-│ Grid of Shared Courses  │    │ Use Existing Subject        │
-│ (Multi-select)          │    │ OR                          │
-│ [Preview each course]   │    │ Create Custom Subject       │
-│                         │    │ (Existing functionality)    │
-└────────────┬────────────┘    └──────────────┬──────────────┘
-             │                                │
-             └────────────────┬───────────────┘
-                              │
-                              ▼
-                    ┌─────────────────────┐
-                    │  Submit Program     │
-                    │  (Validation)       │
-                    └─────────────────────┘
-```
+1. **Types & Utils** - Add hours field to types, create utility functions
+2. **Atomic Components** - TopicHoursInput (smallest unit)
+3. **Composite Components** - ChapterHoursRow, SubjectHoursAccordion
+4. **Main Modal** - ConfigureHoursModal (combines all)
+5. **Page Integration** - Add action to CoursesMainPage
+6. **Mock Data** - Add sample hours for demonstration
+7. **Testing** - Verify with courses having 5 subjects, 10 chapters each
 
 ---
 
-## Technical Implementation Order
+## Scalability Considerations
 
-1. **Types first** - Update course.ts with new interfaces
-2. **Mock data** - Create mockSharedCourses.ts with realistic test data
-3. **Atomic components** - SharedCourseCard, ContentModeSelector
-4. **Composite components** - SharedCoursePreviewModal, SharedCoursesSelector
-5. **Page updates** - CoursesMainPage (rename button), CreateCoursePage (restructure)
-6. **Testing** - Verify with 5 subjects, 10 chapters each to ensure UI doesn't break
+### Designed for Scale (5 subjects × 10 chapters × 10 topics = 500 topics):
+- Collapsible by default (only expanded on demand)
+- Virtual scrolling consideration for very large courses
+- Debounced input updates to prevent re-render storm
+- Local state for hours, only sync to parent on save
+
+### Performance Optimizations:
+- `React.memo` for TopicHoursInput to prevent unnecessary re-renders
+- Batch state updates on save
+- Lazy expansion of nested content
 
