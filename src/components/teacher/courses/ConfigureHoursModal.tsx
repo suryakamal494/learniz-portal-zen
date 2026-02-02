@@ -169,8 +169,8 @@ export function ConfigureHoursModal({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 min-h-[300px] max-h-[55vh] pr-4">
-          <div className="space-y-3 py-2">
+        <div className="flex-1 min-h-[300px] max-h-[55vh] overflow-y-auto pr-2 border rounded-lg">
+          <div className="space-y-3 p-3">
             {editableSubjects.map((subject) => (
               <SubjectHoursAccordion
                 key={subject.id}
@@ -185,7 +185,7 @@ export function ConfigureHoursModal({
               />
             ))}
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

@@ -85,7 +85,7 @@ export function SubjectHoursAccordion({
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="pl-4 sm:pl-6 pr-2 py-3 space-y-2 border-l-2 border-primary/20 ml-6 mt-2 max-h-[400px] overflow-y-auto">
+        <div className="pl-4 sm:pl-6 pr-2 py-3 space-y-2 border-l-2 border-primary/20 ml-6 mt-2">
           {subject.chapters.map((chapter) => (
             <ChapterHoursRow
               key={chapter.id}
