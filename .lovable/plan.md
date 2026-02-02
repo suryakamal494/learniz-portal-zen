@@ -1,264 +1,280 @@
 
+# Understanding Your Requirement
 
-# Plan: Custom Subject Creation with Multi-Source Content & Renaming
+## What You're Asking For
 
-## Overview
-Transform the course creation system to support two modes of adding subjects:
-1. **Use Existing Subject**: Add a subject as-is (current behavior)
-2. **Create Custom Subject**: Create a new subject name, pull chapters/topics from multiple source subjects, and optionally rename them
+You want to restructure the **Create Program** (formerly "Create Course") page to introduce a **hierarchical content selection system** with two distinct paths:
+
+### Current Flow (to be changed):
+```
+Create Course → Basic Info → Subject Selection → Custom Subject Builder
+```
+
+### New Flow:
+```
+Create Program → Basic Info → Choose Existing Courses OR Create Custom Course
+                                    ↓                          ↓
+                              (Pre-made courses          (Existing subject/
+                               from Super Admin)         custom subject flow)
+```
+
+### Key Requirements:
+
+1. **Rename "Add Course" to "Create Program"** on the main courses page
+2. **Two-path selection after Basic Information:**
+   - **Option A: Choose Existing Courses** - Select one or more pre-configured courses shared by Super Admin (read-only, with Preview option to see all subjects/chapters/topics)
+   - **Option B: Create Custom Course** - The current functionality (use existing subject or create custom subject)
+
+3. **Existing Courses behavior:**
+   - Multiple courses can be selected
+   - Cannot edit these courses - they are read-only
+   - Each course displays as a card with Preview button
+   - Preview shows detailed breakdown (subjects, chapters, topics)
+
+4. **Responsive UI built for scale:**
+   - Design for 5 subjects with 10 chapters each (50+ chapters total)
+   - Scrollable containers with explicit max-heights
+   - Expand All / Collapse All controls
+   - Won't break with more content
 
 ---
 
-## Part 1: Update Type Definitions
+# Technical Implementation Plan
+
+## Part 1: Type Definitions Update
 
 ### File: `src/types/course.ts` (MODIFY)
 
-Add new types to support custom subjects with renaming:
+Add new types to support the hierarchical program structure:
 
 ```typescript
-// Enhanced topic with original name tracking
-export interface CourseTopic {
-  id: string;
-  name: string;                    // Display name (can be customized)
-  originalName?: string;           // Original name from source
-  sourceSubjectId?: string;        // Which subject this came from
-  isSelected?: boolean;
-}
+// Add to existing types:
 
-// Enhanced chapter with original name tracking
-export interface CourseChapter {
-  id: string;
-  name: string;                    // Display name (can be customized)
-  originalName?: string;           // Original name from source
-  sourceSubjectId?: string;        // Which subject this came from
-  sourceSubjectName?: string;      // Source subject name for reference
-  isSelected?: boolean;
-  topics: CourseTopic[];
-}
-
-// Enhanced subject to support custom subjects
-export interface CourseSubjectWithContent {
+// Pre-made course from Super Admin (read-only)
+export interface SharedCourse {
   id: string;
   name: string;
-  institute: string;
-  isOwner: boolean;
-  isCustom?: boolean;              // NEW: Is this a custom-created subject?
-  chapters: CourseChapter[];
+  description?: string;
+  sharedBy: string;          // Super Admin name/institute
+  className: string;
+  subjects: CourseSubjectWithContent[];
+  createdAt: string;
+}
+
+// Updated form data to support both paths
+export interface ProgramFormData {
+  title: string;
+  className: string;
+  fee: number;
+  description: string;
+  image?: string;
+  // Two exclusive content paths
+  contentMode: 'existing' | 'custom' | null;
+  selectedSharedCourses: SharedCourse[];  // For "Choose Existing Courses"
+  customSubjects: CourseSubjectWithContent[];  // For "Create Custom Course"
 }
 ```
 
 ---
 
-## Part 2: Create Subject Builder Component
+## Part 2: Mock Data for Shared Courses
 
-### File: `src/components/teacher/courses/CustomSubjectBuilder.tsx` (NEW)
+### File: `src/data/mockSharedCourses.ts` (NEW)
 
-A modal/panel for creating custom subjects with content from multiple sources.
+Create mock data representing courses shared by Super Admin - designed to test UI with large data sets (5 subjects, 10 chapters each):
 
-**Layout:**
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Create Custom Subject                                           [×]    │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Subject Name *                                                          │
-│ ┌─────────────────────────────────────────────────────────────────┐     │
-│ │ Science                                                         │     │
-│ └─────────────────────────────────────────────────────────────────┘     │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Add Content from Source Subjects                                        │
-│ ┌────────────────────────────┐                                          │
-│ │ Select Source Subject ▼   │  [+ Add Chapters]                         │
-│ └────────────────────────────┘                                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Added Chapters                                           [Expand All]   │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 📖 Mechanics                    (from Physics)              [×]     │ │
-│ │    Display Name: [Mechanics________] → [1D Motion__________] ✏️     │ │
-│ │    ┌─────────────────────────────────────────────────────────────┐  │ │
-│ │    │ ☑ Newton's Laws → [Laws of Motion] ✏️                       │  │ │
-│ │    │ ☑ Motion Equations → [Motion Equations]                     │  │ │
-│ │    │ ☐ Friction → [Friction]                                     │  │ │
-│ │    │ ☑ Circular Motion → [Circular Motion]                       │  │ │
-│ │    └─────────────────────────────────────────────────────────────┘  │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 📖 Organic Chemistry            (from Chemistry)            [×]     │ │
-│ │    Display Name: [Organic Chemistry] → [Basic Chemistry] ✏️         │ │
-│ │    ┌─────────────────────────────────────────────────────────────┐  │ │
-│ │    │ ☑ Alkanes and Alkenes → [Hydrocarbons] ✏️                    │  │ │
-│ │    │ ☑ Functional Groups → [Functional Groups]                   │  │ │
-│ │    └─────────────────────────────────────────────────────────────┘  │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                                                         │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 📖 Cell Biology                 (from Biology)              [×]     │ │
-│ │    Display Name: [Cell Biology] → [Introduction to Cells] ✏️        │ │
-│ │    (Topics list...)                                                 │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Summary: 3 chapters, 12 topics from 3 source subjects                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                        [Cancel] [Create Subject]        │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-**Key Features:**
-- Enter custom subject name
-- Select source subject from dropdown
-- Browse and select specific chapters from that source
-- Each added chapter shows:
-  - Original name with editable "Display Name" field
-  - Source subject badge (e.g., "from Physics")
-  - List of topics with individual rename capability
-  - Remove button
-- Can add chapters from multiple source subjects
-- Summary showing total counts
-
----
-
-## Part 3: Create Chapter Picker Modal
-
-### File: `src/components/teacher/courses/ChapterPickerModal.tsx` (NEW)
-
-A modal to browse and select chapters from a specific source subject.
-
-**Layout:**
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Select Chapters from Physics                                    [×]     │
-├─────────────────────────────────────────────────────────────────────────┤
-│ 🔍 Search chapters...                                                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ☐ Select All                                                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ☑ Mechanics (5 topics)                                                  │
-│ ☑ Thermodynamics (4 topics)                                             │
-│ ☐ Waves and Optics (5 topics)                                           │
-│ ☐ Electromagnetism (5 topics)                                           │
-│ ☐ Modern Physics (4 topics)                                             │
-│ ☐ Gravitation (4 topics)                                                │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                [Cancel] [Add 2 Chapters]                │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Part 4: Create Editable Chapter Card Component
-
-### File: `src/components/teacher/courses/EditableChapterCard.tsx` (NEW)
-
-A card component for displaying an added chapter with rename functionality.
-
-**Features:**
-- Shows chapter with editable display name
-- "from [Source Subject]" badge
-- Collapsible topic list
-- Each topic has:
-  - Checkbox for selection
-  - Inline editable name field
-  - Original name shown as placeholder/hint
-- Delete button to remove entire chapter
-
-**State Management:**
 ```typescript
-interface EditableChapterProps {
-  chapter: CourseChapter;
-  onNameChange: (newName: string) => void;
-  onTopicNameChange: (topicId: string, newName: string) => void;
-  onTopicToggle: (topicId: string) => void;
-  onRemove: () => void;
-}
+export const mockSharedCourses: SharedCourse[] = [
+  {
+    id: 'shared-1',
+    name: 'NEET Foundation 2025',
+    description: 'Comprehensive NEET preparation covering Physics, Chemistry, Biology',
+    sharedBy: 'LearnEazy Central',
+    className: 'Class 11',
+    subjects: [
+      { id: 'phy', name: 'Physics', chapters: [...10 chapters] },
+      { id: 'chem', name: 'Chemistry', chapters: [...10 chapters] },
+      { id: 'bio', name: 'Biology', chapters: [...10 chapters] },
+      { id: 'math', name: 'Mathematics', chapters: [...10 chapters] },
+      { id: 'eng', name: 'English', chapters: [...10 chapters] },
+    ]
+  },
+  // ... more shared courses
+];
 ```
 
 ---
 
-## Part 5: Update Subject Chapter Selector
+## Part 3: New Components
 
-### File: `src/components/teacher/courses/SubjectChapterSelector.tsx` (MODIFY)
+### Component 1: `SharedCourseCard.tsx` (NEW)
 
-Add dual-mode functionality:
+A compact card for displaying a shared course with selection checkbox and preview button.
 
-**New Layout:**
+Layout for small screens:
+```text
+┌────────────────────────────────────────────────────────┐
+│ ☑ NEET Foundation 2025                       [Preview] │
+│   Class 11 • 5 Subjects • 50 Chapters                  │
+│   Shared by: LearnEazy Central                         │
+└────────────────────────────────────────────────────────┘
+```
+
+### Component 2: `SharedCoursePreviewModal.tsx` (NEW)
+
+A preview modal showing all content of a shared course with Expand All/Collapse All.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Subject Selection                                                        │
-│                                                                         │
-│ [Use Existing Subject ▼]  OR  [+ Create Custom Subject]                 │
-│                                                                         │
-│ ─────────────────────────────────────────────────────────────────────── │
-│                                                                         │
-│ Added Subjects:                                                         │
-│                                                                         │
-│ ┌───────────────────────────────────────────────────────────────────┐   │
-│ │ 🔵 Physics - LearnEazy Inst (Owner)                          [×]  │   │
-│ │ Type: Existing Subject                                            │   │
-│ │ 3/6 chapters • 12/27 topics selected                              │   │
-│ │ (Expandable chapter tree - current behavior)                      │   │
-│ └───────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│ ┌───────────────────────────────────────────────────────────────────┐   │
-│ │ 🟢 Science - Custom                                    [Edit] [×]  │   │
-│ │ Type: Custom Subject (content from Physics, Chemistry, Biology)   │   │
-│ │ 5 chapters • 18 topics                                            │   │
-│ │ ┌─────────────────────────────────────────────────────────────┐   │   │
-│ │ │ ▼ 1D Motion (originally: Mechanics, from Physics)          │   │   │
-│ │ │   • Laws of Motion (originally: Newton's Laws)             │   │   │
-│ │ │   • Motion Equations                                       │   │   │
-│ │ │   • Circular Motion                                        │   │   │
-│ │ │ ▼ Basic Chemistry (originally: Organic Chemistry)          │   │   │
-│ │ │   • Hydrocarbons (originally: Alkanes and Alkenes)         │   │   │
-│ │ └─────────────────────────────────────────────────────────────┘   │   │
-│ └───────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
+│ Preview: NEET Foundation 2025                                    [×]    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 📚 5 Subjects • 50 Chapters • 200 Topics     [Expand All] [Collapse All]│
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ ▼ Physics (10 chapters)                                             │ │
+│ │   ├── Mechanics (8 topics)                                          │ │
+│ │   │     • Newton's Laws                                             │ │
+│ │   │     • Motion                                                    │ │
+│ │   ├── Thermodynamics (5 topics)                                     │ │
+│ │   ...                                                               │ │
+│ │ ▼ Chemistry (10 chapters)                                           │ │
+│ │   ...                                                               │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│ (Scrollable area with max-height: 55vh)                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                          [Close]        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Changes:**
-- Two action buttons: "Use Existing Subject" (dropdown) and "+ Create Custom Subject" (opens builder)
-- Existing subjects work as before
-- Custom subjects show with "Custom" badge and "Edit" button
-- Custom subjects display chapters with original name in parentheses if renamed
-- Edit button reopens the CustomSubjectBuilder with pre-populated data
+### Component 3: `SharedCoursesSelector.tsx` (NEW)
+
+Grid of shared course cards with multi-select capability.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Available Courses from Super Admin                                       │
+│ Select one or more courses to include in your program                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 🔍 Search courses...                                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────┐  ┌────────────────────────┐                  │
+│ │ ☑ NEET Foundation 2025 │  │ ☐ JEE Mains 2025       │                  │
+│ │   Class 11 • 5 Subjects│  │   Class 11 • 4 Subjects│                  │
+│ │   [Preview]            │  │   [Preview]            │                  │
+│ └────────────────────────┘  └────────────────────────┘                  │
+│ ┌────────────────────────┐  ┌────────────────────────┐                  │
+│ │ ☐ Olympiad Foundation  │  │ ☐ Board Topper 2025    │                  │
+│ │   Class 10 • 3 Subjects│  │   Class 10 • 5 Subjects│                  │
+│ │   [Preview]            │  │   [Preview]            │                  │
+│ └────────────────────────┘  └────────────────────────┘                  │
+│                                                                         │
+│ (Scrollable grid, max-height: 400px, responsive columns)               │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Selected: 1 course • 5 subjects • 50 chapters                           │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Component 4: `ContentModeSelector.tsx` (NEW)
+
+Toggle between "Choose Existing Courses" and "Create Custom Course" modes.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ How would you like to add content to this program?                      │
+│                                                                         │
+│ ┌─────────────────────────────────┐  ┌─────────────────────────────────┐│
+│ │      Choose Existing Courses    │  │       Create Custom Course      ││
+│ │                                 │  │                                 ││
+│ │      📋                        │  │      ✨                        ││
+│ │                                 │  │                                 ││
+│ │   Select pre-configured        │  │   Build your own course by     ││
+│ │   courses shared by            │  │   selecting subjects, chapters │││
+│ │   Super Admin                  │  │   and topics                   ││
+│ │                                 │  │                                 ││
+│ │   ● Selected                   │  │   ○ Not Selected               ││
+│ └─────────────────────────────────┘  └─────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Part 6: Update Create Course Page
+## Part 4: Update Existing Pages
 
-### File: `src/pages/teacher/courses/CreateCoursePage.tsx` (MODIFY)
+### File: `src/pages/teacher/courses/CoursesMainPage.tsx` (MODIFY)
 
 **Changes:**
-- Integrate the new dual-mode SubjectChapterSelector
-- Add state for managing the CustomSubjectBuilder modal
-- Update form data structure to handle both subject types
-- Update validation logic
+- Rename button from "ADD COURSE" to "CREATE PROGRAM"
+- Update header text accordingly
+
+### File: `src/pages/teacher/courses/CreateCoursePage.tsx` (MODIFY → renamed to CreateProgramPage.tsx)
+
+**Complete restructure:**
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Dashboard > Programs > Create                                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Create Program                                                          │
+│ Set up a new program with courses and content                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ 📋 Basic Information                                                │ │
+│ │ ┌──────────────────────┐  ┌──────────────────────┐                  │ │
+│ │ │ Title *              │  │ Class *              │                  │ │
+│ │ │ [________________]   │  │ [Select Class ▼]     │                  │ │
+│ │ └──────────────────────┘  └──────────────────────┘                  │ │
+│ │ ┌──────────────────────┐  ┌──────────────────────┐                  │ │
+│ │ │ Fee                  │  │ Image                │                  │ │
+│ │ │ [________________]   │  │ [Choose File]        │                  │ │
+│ │ └──────────────────────┘  └──────────────────────┘                  │ │
+│ │ Description: [________________________________]                      │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ 📚 Course Content                                                   │ │
+│ │                                                                     │ │
+│ │ [ContentModeSelector - Choose Existing / Create Custom toggle]      │ │
+│ │                                                                     │ │
+│ │ ─────────────────────────────────────────────────────────────────── │ │
+│ │                                                                     │ │
+│ │ IF "Choose Existing Courses" selected:                              │ │
+│ │   [SharedCoursesSelector - Grid of course cards]                    │ │
+│ │                                                                     │ │
+│ │ IF "Create Custom Course" selected:                                 │ │
+│ │   [SubjectChapterSelector - Current custom subject flow]            │ │
+│ │                                                                     │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│                                           [Cancel] [Create Program]     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Part 7: Update Edit Course Page
+## Part 5: UI/UX Guidelines for Scalability
 
-### File: `src/pages/teacher/courses/EditCoursePage.tsx` (MODIFY)
+### Responsive Grid Patterns
+- Mobile: 1 column
+- Tablet: 2 columns
+- Desktop: 3-4 columns
 
-**Changes:**
-- Support editing both existing and custom subjects
-- For custom subjects, clicking "Edit" opens the CustomSubjectBuilder with current data
-- Allow renaming chapters/topics during edit
+### Scrollable Container Specifications
+| Container | Min Height | Max Height | Purpose |
+|-----------|------------|------------|---------|
+| Shared Courses Grid | 200px | 400px | Browse available courses |
+| Course Preview Content | 300px | 55vh | View course details |
+| Custom Subject Builder | 300px | 55vh | Add/edit chapters |
 
----
+### Expand/Collapse Controls
+- Present on every nested list with >3 items
+- "Expand All" / "Collapse All" buttons at section headers
+- Default state: collapsed for large lists (>5 items)
 
-## Part 8: Update Preview Modal
-
-### File: `src/components/teacher/courses/CoursePreviewModal.tsx` (MODIFY)
-
-**Changes:**
-- Show "(Custom)" badge for custom subjects
-- Display renamed items with original name hint: "1D Motion (originally: Mechanics)"
-- Show source subject info: "from Physics"
+### Touch-Friendly Design
+- Minimum touch target: 44px
+- Card selection: entire card is clickable
+- Preview button: separate, clearly visible
+- Checkbox + label: both clickable
 
 ---
 
@@ -266,74 +282,63 @@ Add dual-mode functionality:
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/types/course.ts` | **MODIFY** | Add originalName, sourceSubjectId, isCustom fields |
-| `src/components/teacher/courses/CustomSubjectBuilder.tsx` | **CREATE** | Modal for creating custom subjects with multi-source content |
-| `src/components/teacher/courses/ChapterPickerModal.tsx` | **CREATE** | Modal to select chapters from a source subject |
-| `src/components/teacher/courses/EditableChapterCard.tsx` | **CREATE** | Card with inline rename for chapter and topics |
-| `src/components/teacher/courses/SubjectChapterSelector.tsx` | **MODIFY** | Add dual-mode (existing vs custom) with new UI |
-| `src/components/teacher/courses/ChapterTopicTree.tsx` | **MODIFY** | Support showing original names when renamed |
-| `src/pages/teacher/courses/CreateCoursePage.tsx` | **MODIFY** | Integrate custom subject creation flow |
-| `src/pages/teacher/courses/EditCoursePage.tsx` | **MODIFY** | Support editing custom subjects |
-| `src/components/teacher/courses/CoursePreviewModal.tsx` | **MODIFY** | Show custom subject info and renamed items |
+| `src/types/course.ts` | MODIFY | Add SharedCourse, ProgramFormData types |
+| `src/data/mockSharedCourses.ts` | CREATE | Mock data for shared courses (5 subjects, 10 chapters each) |
+| `src/components/teacher/courses/SharedCourseCard.tsx` | CREATE | Card component for shared course display |
+| `src/components/teacher/courses/SharedCoursePreviewModal.tsx` | CREATE | Preview modal for shared course content |
+| `src/components/teacher/courses/SharedCoursesSelector.tsx` | CREATE | Grid selector for shared courses |
+| `src/components/teacher/courses/ContentModeSelector.tsx` | CREATE | Toggle between existing/custom mode |
+| `src/pages/teacher/courses/CoursesMainPage.tsx` | MODIFY | Rename button to "CREATE PROGRAM" |
+| `src/pages/teacher/courses/CreateCoursePage.tsx` | MODIFY | Restructure with two-path content selection |
 
 ---
 
-## User Interaction Flow
+## User Flow Diagram
 
 ```text
-Course Creation Page
-        │
-        ├── [Use Existing Subject ▼]
-        │         │
-        │         └── Select "Physics" → Add with all chapters
-        │              └── Expand, select specific chapters/topics
-        │              └── (Cannot rename - it's the original subject)
-        │
-        └── [+ Create Custom Subject]
-                  │
-                  └── Opens CustomSubjectBuilder Modal
-                            │
-                            ├── Enter name: "Science"
-                            │
-                            ├── Select source: "Physics"
-                            │     └── Opens ChapterPickerModal
-                            │           └── Select "Mechanics", "Thermodynamics"
-                            │           └── [Add Chapters]
-                            │
-                            ├── Mechanics appears in list
-                            │     ├── Rename to "1D Motion"
-                            │     ├── Select topics, rename if needed
-                            │     └── (Shows "from Physics" badge)
-                            │
-                            ├── Select another source: "Chemistry"
-                            │     └── Add "Organic Chemistry"
-                            │     └── Rename to "Basic Chemistry"
-                            │
-                            └── [Create Subject]
-                                  └── "Science" added to course
-                                  └── Contains chapters from Physics + Chemistry
-                                  └── All with custom names
+User clicks "CREATE PROGRAM"
+         │
+         ▼
+┌─────────────────────────┐
+│   Basic Information     │
+│   (Title, Class, Fee)   │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Select Content Mode                             │
+│                                                              │
+│  ┌─────────────────────┐      ┌─────────────────────┐       │
+│  │ Choose Existing     │  OR  │ Create Custom       │       │
+│  │ Courses             │      │ Course              │       │
+│  └──────────┬──────────┘      └──────────┬──────────┘       │
+└─────────────│───────────────────────────│───────────────────┘
+              │                           │
+              ▼                           ▼
+┌─────────────────────────┐    ┌─────────────────────────────┐
+│ Grid of Shared Courses  │    │ Use Existing Subject        │
+│ (Multi-select)          │    │ OR                          │
+│ [Preview each course]   │    │ Create Custom Subject       │
+│                         │    │ (Existing functionality)    │
+└────────────┬────────────┘    └──────────────┬──────────────┘
+             │                                │
+             └────────────────┬───────────────┘
+                              │
+                              ▼
+                    ┌─────────────────────┐
+                    │  Submit Program     │
+                    │  (Validation)       │
+                    └─────────────────────┘
 ```
 
 ---
 
-## Technical Implementation Notes
+## Technical Implementation Order
 
-1. **ID Generation**: Custom subjects get unique IDs like `custom-subject-${timestamp}`
-
-2. **Tracking Original Data**: Each chapter/topic stores:
-   - `originalName`: The name from the source
-   - `sourceSubjectId`: Which subject it came from
-   - `sourceSubjectName`: Human-readable source name
-
-3. **Inline Editing**: Use Input fields that appear on hover/click for renaming
-
-4. **Validation**: 
-   - Custom subject name is required
-   - At least one chapter with one topic must be selected
-   - Duplicate chapter IDs within a subject are prevented
-
-5. **Preview Display**: Shows both current name and original name for clarity
-
-6. **Edit Mode**: CustomSubjectBuilder can receive existing custom subject data for editing
+1. **Types first** - Update course.ts with new interfaces
+2. **Mock data** - Create mockSharedCourses.ts with realistic test data
+3. **Atomic components** - SharedCourseCard, ContentModeSelector
+4. **Composite components** - SharedCoursePreviewModal, SharedCoursesSelector
+5. **Page updates** - CoursesMainPage (rename button), CreateCoursePage (restructure)
+6. **Testing** - Verify with 5 subjects, 10 chapters each to ensure UI doesn't break
 
