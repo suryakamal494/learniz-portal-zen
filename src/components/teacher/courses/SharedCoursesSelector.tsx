@@ -34,13 +34,15 @@ export function SharedCoursesSelector({
     [selectedCourses]
   );
 
-  const handleToggleSelect = (courseId: string) => {
+  const handleSelect = (courseId: string) => {
     if (selectedIds.has(courseId)) {
-      onSelectionChange(selectedCourses.filter((c) => c.id !== courseId));
+      // Deselect if already selected
+      onSelectionChange([]);
     } else {
+      // Single selection - replace any existing selection
       const course = mockSharedCourses.find((c) => c.id === courseId);
       if (course) {
-        onSelectionChange([...selectedCourses, course]);
+        onSelectionChange([course]);
       }
     }
   };
@@ -69,9 +71,9 @@ export function SharedCoursesSelector({
     <div className="space-y-4">
       <div className="flex flex-col gap-3">
         <div>
-          <h3 className="font-medium text-foreground">Available Courses from Super Admin</h3>
+          <h3 className="font-medium text-foreground">Available Courses</h3>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Select one or more courses to include in your program
+            Select a course to include in your program
           </p>
         </div>
         <div className="relative max-w-sm">
@@ -94,7 +96,7 @@ export function SharedCoursesSelector({
             key={course.id}
             course={course}
             isSelected={selectedIds.has(course.id)}
-            onToggleSelect={handleToggleSelect}
+            onToggleSelect={handleSelect}
             onPreview={handlePreview}
           />
         ))}
@@ -109,8 +111,7 @@ export function SharedCoursesSelector({
         <div className="pt-3 border-t">
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">Selected:</span>{' '}
-            {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''} •{' '}
-            {totalStats.subjects} subjects • {totalStats.chapters} chapters
+            {selectedCourses[0].name} • {totalStats.subjects} subjects • {totalStats.chapters} chapters
           </p>
         </div>
       )}

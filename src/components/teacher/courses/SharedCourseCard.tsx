@@ -1,6 +1,5 @@
-import { Eye } from 'lucide-react';
+import { Eye, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { SharedCourse } from '@/types/course';
 import { getSharedCourseStats } from '@/data/mockSharedCourses';
 import { cn } from '@/lib/utils';
@@ -32,12 +31,17 @@ export function SharedCourseCard({
       onClick={() => onToggleSelect(course.id)}
     >
       <div className="flex items-start gap-3">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleSelect(course.id)}
-          className="mt-1 h-5 w-5"
+        <div 
+          className={cn(
+            "mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+            isSelected 
+              ? "border-primary bg-primary text-primary-foreground" 
+              : "border-muted-foreground/50"
+          )}
           onClick={(e) => e.stopPropagation()}
-        />
+        >
+          {isSelected && <Check className="h-3 w-3" />}
+        </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
