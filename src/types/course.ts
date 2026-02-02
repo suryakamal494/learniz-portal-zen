@@ -4,6 +4,26 @@ export interface CourseTopic {
   originalName?: string;           // Original name from source (for renamed topics)
   sourceSubjectId?: string;        // Which subject this came from
   isSelected?: boolean;
+  hours?: number;                  // Teaching hours for this topic
+}
+
+// Computed types for hours display
+export interface TopicWithHours extends CourseTopic {
+  hours: number;
+}
+
+export interface ChapterHoursSummary {
+  chapterId: string;
+  chapterName: string;
+  totalHours: number;
+  topics: TopicWithHours[];
+}
+
+export interface SubjectHoursSummary {
+  subjectId: string;
+  subjectName: string;
+  totalHours: number;
+  chapters: ChapterHoursSummary[];
 }
 
 export interface CourseChapter {

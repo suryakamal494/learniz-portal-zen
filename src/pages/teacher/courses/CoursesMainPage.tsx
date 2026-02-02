@@ -8,7 +8,8 @@ import {
   Pencil, 
   Trash2,
   ArrowUpDown,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { CoursePreviewModal } from '@/components/teacher/courses/CoursePreviewModal';
+import { ConfigureHoursModal } from '@/components/teacher/courses/ConfigureHoursModal';
 import { mockCourses } from '@/data/mockCourses';
 import { Course } from '@/types/course';
 import { toast } from 'sonner';
@@ -58,6 +60,8 @@ export default function CoursesMainPage() {
   const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [deleteConfirmCourse, setDeleteConfirmCourse] = useState<Course | null>(null);
+  const [hoursConfigCourse, setHoursConfigCourse] = useState<Course | null>(null);
+  const [showHoursModal, setShowHoursModal] = useState(false);
 
   const filteredCourses = courses.filter(course =>
     course.programName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,6 +92,17 @@ export default function CoursesMainPage() {
 
   const handleAddCourse = () => {
     navigate('/teacher/courses/create');
+  };
+
+  const handleConfigureHours = (course: Course) => {
+    setHoursConfigCourse(course);
+    setShowHoursModal(true);
+  };
+
+  const handleSaveHours = (updatedCourse: Course) => {
+    setCourses((prev) =>
+      prev.map((c) => (c.id === updatedCourse.id ? updatedCourse : c))
+    );
   };
 
   // Get subject count for display
@@ -234,10 +249,14 @@ export default function CoursesMainPage() {
                               <span className="sr-only">Actions</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuContent align="end" className="w-44">
                             <DropdownMenuItem onClick={() => handlePreview(course)}>
                               <Eye className="h-4 w-4 mr-2" />
                               Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleConfigureHours(course)}>
+                              <Clock className="h-4 w-4 mr-2" />
+                              Configure Hours
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(course.id)}>
                               <Pencil className="h-4 w-4 mr-2" />
@@ -274,6 +293,14 @@ export default function CoursesMainPage() {
         course={previewCourse}
         open={showPreviewModal}
         onOpenChange={setShowPreviewModal}
+      />
+
+      {/* Configure Hours Modal */}
+      <ConfigureHoursModal
+        course={hoursConfigCourse}
+        open={showHoursModal}
+        onOpenChange={setShowHoursModal}
+        onSave={handleSaveHours}
       />
 
       {/* Delete Confirmation Dialog */}

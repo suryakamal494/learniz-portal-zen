@@ -21,8 +21,8 @@ export const mockCourses: Course[] = [
             name: 'Cell Biology',
             isSelected: true,
             topics: [
-              { id: 'bio-t-1', name: 'Cell Structure and Function', isSelected: true },
-              { id: 'bio-t-2', name: 'Cell Division - Mitosis', isSelected: true },
+              { id: 'bio-t-1', name: 'Cell Structure and Function', isSelected: true, hours: 2 },
+              { id: 'bio-t-2', name: 'Cell Division - Mitosis', isSelected: true, hours: 1.5 },
             ],
           },
           {
@@ -30,8 +30,8 @@ export const mockCourses: Course[] = [
             name: 'Genetics',
             isSelected: true,
             topics: [
-              { id: 'bio-t-5', name: "Mendel's Laws", isSelected: true },
-              { id: 'bio-t-6', name: 'DNA Structure and Replication', isSelected: true },
+              { id: 'bio-t-5', name: "Mendel's Laws", isSelected: true, hours: 2.5 },
+              { id: 'bio-t-6', name: 'DNA Structure and Replication', isSelected: true, hours: 3 },
             ],
           },
         ],
@@ -47,8 +47,8 @@ export const mockCourses: Course[] = [
             name: 'Organic Chemistry',
             isSelected: true,
             topics: [
-              { id: 'chem-t-1', name: 'Alkanes and Alkenes', isSelected: true },
-              { id: 'chem-t-2', name: 'Functional Groups', isSelected: true },
+              { id: 'chem-t-1', name: 'Alkanes and Alkenes', isSelected: true, hours: 2 },
+              { id: 'chem-t-2', name: 'Functional Groups', isSelected: true, hours: 2.5 },
             ],
           },
         ],
