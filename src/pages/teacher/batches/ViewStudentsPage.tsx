@@ -154,7 +154,7 @@ export default function ViewStudentsPage() {
       
       toast({
         title: "Success",
-        description: `Student assignments updated successfully for ${currentBatch?.name || 'batch'}`,
+        description: `Student assignments updated successfully for ${currentBatch?.name || 'section'}`,
       })
     } catch (error) {
       toast({
@@ -198,7 +198,7 @@ export default function ViewStudentsPage() {
                 Manage Students
               </h1>
               <p className="text-gray-600 mt-1">
-                {currentBatch?.name || 'Batch'} - {selectionState.currentSelections.size} students assigned
+                {currentBatch?.name || 'Section'} - {selectionState.currentSelections.size} students assigned
               </p>
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function ViewStudentsPage() {
                 <TableHead className="font-semibold">Roll Number</TableHead>
                 <TableHead className="font-semibold">Class</TableHead>
                 <TableHead className="font-semibold text-center">Current Status</TableHead>
-                <TableHead className="font-semibold text-center">Assign to Batch</TableHead>
+                <TableHead className="font-semibold text-center">Assign to Section</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

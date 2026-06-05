@@ -186,12 +186,12 @@ export const mockStudents: Student[] = [
 
 // Mock batch assignments - some students are already assigned to batches
 export const mockBatchAssignments: StudentBatchAssignment[] = [
-  { studentId: 'std-001', batchId: 'batch-1', assignedDate: '2024-01-15', status: 'active' },
-  { studentId: 'std-002', batchId: 'batch-1', assignedDate: '2024-01-16', status: 'active' },
-  { studentId: 'std-004', batchId: 'batch-1', assignedDate: '2024-01-18', status: 'active' },
-  { studentId: 'std-006', batchId: 'batch-2', assignedDate: '2024-01-20', status: 'active' },
-  { studentId: 'std-008', batchId: 'batch-2', assignedDate: '2024-01-22', status: 'active' },
-  { studentId: 'std-010', batchId: 'batch-3', assignedDate: '2024-01-24', status: 'active' },
+  { studentId: 'std-001', batchId: 'section-1', assignedDate: '2024-01-15', status: 'active' },
+  { studentId: 'std-002', batchId: 'section-1', assignedDate: '2024-01-16', status: 'active' },
+  { studentId: 'std-004', batchId: 'section-1', assignedDate: '2024-01-18', status: 'active' },
+  { studentId: 'std-006', batchId: 'section-2', assignedDate: '2024-01-20', status: 'active' },
+  { studentId: 'std-008', batchId: 'section-2', assignedDate: '2024-01-22', status: 'active' },
+  { studentId: 'std-010', batchId: 'section-3', assignedDate: '2024-01-24', status: 'active' },
 ]
 
 export const getStudentsAssignedToBatch = (batchId: string): string[] => {
@@ -209,7 +209,7 @@ export const updateBatchAssignments = async (batchId: string, studentIds: string
   await new Promise(resolve => setTimeout(resolve, 1000))
   
   // In a real implementation, this would make an API call
-  console.log(`Updating batch ${batchId} with students:`, studentIds)
+  console.log(`Updating section ${batchId} with students:`, studentIds)
   
   // Mock successful update
   return Promise.resolve()

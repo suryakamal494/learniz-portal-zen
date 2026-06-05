@@ -37,7 +37,7 @@ export function TeacherDashboard() {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-6">
-              {/* Batch Reports */}
+              {/* Section Reports */}
               <div className="animate-slide-up stagger-3">
                 <ModernBatchReports />
               </div>

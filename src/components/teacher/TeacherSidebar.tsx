@@ -36,7 +36,7 @@ import { SidebarHoverMenu } from "./sidebar/SidebarHoverMenu"
 
 const navigationItems = [
   { title: "Dashboard", url: "/teacher", icon: LayoutDashboard, badge: null },
-  { title: "Student Batches", url: "/teacher/batches", icon: Users, badge: "8" },
+  { title: "Student Sections", url: "/teacher/batches", icon: Users, badge: "8" },
   { title: "Question Bank", url: "/teacher/question-bank", icon: FileText, badge: null, hasSubmenu: true },
   { title: "Assessment", url: "/teacher/exams", icon: Calendar, badge: null, hasSubmenu: true },
   { title: "Classroom", url: "/teacher/classroom", icon: GraduationCap, badge: "2", hasSubmenu: true },
@@ -69,7 +69,7 @@ const submenuItems = {
   ],
   "Reports": [
     { title: "Attendance", url: "/teacher/reports/attendance", emoji: "📊" },
-    { title: "Batch Reports", url: "/teacher/reports/batch", emoji: "📈" },
+    { title: "Section Reports", url: "/teacher/reports/batch", emoji: "📈" },
     { title: "Chapter Analytics", url: "/teacher/reports/chapter-analytics", emoji: "📚" },
   ]
 }

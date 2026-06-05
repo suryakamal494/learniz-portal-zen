@@ -45,8 +45,8 @@ const UpdateBatchesPage: React.FC = () => {
     const assignedBatches = assignType === 'all' ? availableBatches.length : selectedBatches.length
     
     toast({
-      title: "Batches Updated Successfully",
-      description: `Exam "${exam?.title}" has been assigned to ${assignedBatches} batch(es).`,
+      title: "Sections Updated Successfully",
+      description: `Exam "${exam?.title}" has been assigned to ${assignedBatches} section(es).`,
     })
     
     setIsUpdating(false)
@@ -88,9 +88,9 @@ const UpdateBatchesPage: React.FC = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Update Batches</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Update Sections</h1>
           <p className="text-gray-600 mt-1">
-            Assign exam to batches
+            Assign exam to sections
           </p>
         </div>
       </div>
@@ -118,7 +118,7 @@ const UpdateBatchesPage: React.FC = () => {
       {/* Assignment Configuration */}
       <Card>
         <CardHeader>
-          <CardTitle>Batch Assignment</CardTitle>
+          <CardTitle>Section Assignment</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Assign To Filter */}
@@ -129,8 +129,8 @@ const UpdateBatchesPage: React.FC = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Batches</SelectItem>
-                <SelectItem value="specific">Specific Batches</SelectItem>
+                <SelectItem value="all">All Sections</SelectItem>
+                <SelectItem value="specific">Specific Sections</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -139,9 +139,9 @@ const UpdateBatchesPage: React.FC = () => {
           {assignType === 'specific' && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Batches</label>
+                <label className="text-sm font-medium">Select Sections</label>
                 <p className="text-xs text-muted-foreground">
-                  Choose one or more batches to assign this exam to
+                  Choose one or more sections to assign this exam to
                 </p>
               </div>
 
@@ -169,7 +169,7 @@ const UpdateBatchesPage: React.FC = () => {
                   ))
                 ) : (
                   <p className="text-center text-muted-foreground py-4">
-                    No active batches available
+                    No active sections available
                   </p>
                 )}
               </div>
@@ -200,10 +200,10 @@ const UpdateBatchesPage: React.FC = () => {
                 <p className="font-medium text-blue-900">Assignment Summary</p>
                 <p className="text-sm text-blue-700 mt-1">
                   {assignType === 'all' 
-                    ? `This exam will be assigned to all ${availableBatches.length} active batches.`
+                    ? `This exam will be assigned to all ${availableBatches.length} active sections.`
                     : selectedBatches.length > 0
-                    ? `This exam will be assigned to ${selectedBatches.length} selected batch(es).`
-                    : 'Please select at least one batch to proceed.'
+                    ? `This exam will be assigned to ${selectedBatches.length} selected section(es).`
+                    : 'Please select at least one section to proceed.'
                   }
                 </p>
               </div>
@@ -216,7 +216,7 @@ const UpdateBatchesPage: React.FC = () => {
             disabled={isUpdating || (assignType === 'specific' && selectedBatches.length === 0)}
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl focus:ring-2 focus:ring-primary focus:ring-offset-2 font-semibold"
           >
-            {isUpdating ? 'Updating...' : 'Update Batch Assignment'}
+            {isUpdating ? 'Updating...' : 'Update Section Assignment'}
           </Button>
         </CardContent>
       </Card>

@@ -152,7 +152,7 @@ const ExamsMainPage: React.FC = () => {
                 <p className="text-2xl font-bold">
                   {exams.reduce((sum, exam) => sum + exam.batchCount, 0)}
                 </p>
-                <p className="text-xs text-muted-foreground">Assigned Batches</p>
+                <p className="text-xs text-muted-foreground">Assigned Sections</p>
               </div>
             </div>
           </CardContent>
@@ -174,7 +174,7 @@ const ExamsMainPage: React.FC = () => {
                   <TableHead>Total Marks</TableHead>
                   <TableHead>Exam Type</TableHead>
                   <TableHead>Questions</TableHead>
-                  <TableHead>Batches</TableHead>
+                  <TableHead>Sections</TableHead>
                   <TableHead className="w-16">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -248,7 +248,7 @@ const ExamsMainPage: React.FC = () => {
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleUpdateBatches(exam.id)}>
                               <Users className="h-4 w-4 mr-2" />
-                              Update Batches
+                              Update Sections
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEditExam(exam.id)}>
                               <Edit className="h-4 w-4 mr-2" />

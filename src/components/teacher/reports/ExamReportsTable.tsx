@@ -28,7 +28,7 @@ export function ExamReportsTable({ reports, onViewReport }: ExamReportsTableProp
         <TableHeader>
           <TableRow>
             <TableHead>Date</TableHead>
-            <TableHead>Batch Name</TableHead>
+            <TableHead>Section Name</TableHead>
             <TableHead>Exam Title</TableHead>
             <TableHead>Average Performance</TableHead>
             <TableHead>Pass Percentage</TableHead>

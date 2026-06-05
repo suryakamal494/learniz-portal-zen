@@ -105,12 +105,12 @@ export default function ScheduleTrackingPage() {
       <ScheduleOverviewCards stats={stats} />
 
       {/* Tabbed Content */}
-      <Tabs defaultValue="batch-wise" className="space-y-4">
+      <Tabs defaultValue="section-wise" className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="batch-wise" className="flex items-center gap-2">
+          <TabsTrigger value="section-wise" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Batch-wise</span>
-            <span className="sm:hidden">Batches</span>
+            <span className="hidden sm:inline">Section-wise</span>
+            <span className="sm:hidden">Sections</span>
           </TabsTrigger>
           <TabsTrigger value="teacher-wise" className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -119,7 +119,7 @@ export default function ScheduleTrackingPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="batch-wise" className="mt-4">
+        <TabsContent value="section-wise" className="mt-4">
           <BatchWiseTracking classProgress={classProgress} />
         </TabsContent>
 

@@ -92,7 +92,7 @@ export function TodaysClasses() {
             <TableHeader>
               <TableRow>
                 <TableHead>Time</TableHead>
-                <TableHead>Batch</TableHead>
+                <TableHead>Section</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>Topic</TableHead>
                 <TableHead>Teaching Status</TableHead>

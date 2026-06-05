@@ -209,9 +209,9 @@ export default function TeacherDetailPage() {
 
       {/* Class-Based Hierarchy: Class → Batch → Subject → Chapter */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Performance by Class & Batch</h2>
+        <h2 className="text-lg font-semibold">Performance by Class & Section</h2>
         <p className="text-sm text-muted-foreground">
-          View detailed breakdown: Class → Batch → Subject → Chapter
+          View detailed breakdown: Class → Section → Subject → Chapter
         </p>
 
         {classBasedData.length === 0 ? (

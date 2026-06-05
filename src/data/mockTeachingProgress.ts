@@ -204,7 +204,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
-    teachingNotes: 'EMI fundamentals covered for Science B batch. Good class participation.',
+    teachingNotes: 'EMI fundamentals covered for Science B section. Good class participation.',
     markedAt: '2024-01-18T15:05:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-12T10:00:00Z',

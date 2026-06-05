@@ -128,24 +128,24 @@ function App() {
           {/* Reports Routes - Enhanced */}
           <Route path="reports" element={<ReportsMainPage />} />
           <Route path="reports/attendance" element={<AttendancePage />} />
-          <Route path="reports/batch" element={<BatchReportsPage />} />
-          <Route path="reports/batch/:batchId/exam/:examId" element={<DetailedExamReportPage />} />
+          <Route path="reports/section" element={<BatchReportsPage />} />
+          <Route path="reports/section/:batchId/exam/:examId" element={<DetailedExamReportPage />} />
           <Route path="reports/chapter-analytics" element={<ChapterAnalyticsListPage />} />
           <Route path="reports/chapter-analytics/:chapterId" element={<ChapterAnalyticsPage />} />
 
           {/* Batches */}
-          <Route path="batches" element={<BatchListingPage />} />
-          <Route path="batches/add" element={<AddBatchPage />} />
-          <Route path="batches/:batchId/students" element={<ViewStudentsPage />} />
-          <Route path="batches/:batchId/assign-lms" element={<AssignLMSPage />} />
-          <Route path="batches/:batchId/assign-notes" element={<BatchNotesAssignmentPage />} />
+          <Route path="sections" element={<BatchListingPage />} />
+          <Route path="sections/add" element={<AddBatchPage />} />
+          <Route path="sections/:batchId/students" element={<ViewStudentsPage />} />
+          <Route path="sections/:batchId/assign-lms" element={<AssignLMSPage />} />
+          <Route path="sections/:batchId/assign-notes" element={<BatchNotesAssignmentPage />} />
 
           {/* Exams */}
           <Route path="exams" element={<ExamsMainPage />} />
           <Route path="exams/create" element={<CreateExamPage />} />
           <Route path="exams/:examId/edit" element={<EditExamPage />} />
           <Route path="exams/:examId/update-questions" element={<UpdateQuestionsPage />} />
-          <Route path="exams/:examId/update-batches" element={<UpdateBatchesPage />} />
+          <Route path="exams/:examId/update-sections" element={<UpdateBatchesPage />} />
           <Route path="exams/directory" element={<DirectoryPage />} />
           <Route path="exams/instructions" element={<InstructionsPage />} />
           <Route path="exams/instructions/create" element={<CreateInstructionPage />} />

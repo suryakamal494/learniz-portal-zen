@@ -18,9 +18,9 @@ interface ReportFiltersProps {
 
 export function ReportFilters({ filters, onFiltersChange, onReset }: ReportFiltersProps) {
   const batches = [
-    { id: 'batch-1', name: 'Physics - Grade 12A' },
-    { id: 'batch-2', name: 'Chemistry - Grade 12B' },
-    { id: 'batch-3', name: 'Mathematics - Grade 11A' }
+    { id: 'section-1', name: 'Physics - Grade 12A' },
+    { id: 'section-2', name: 'Chemistry - Grade 12B' },
+    { id: 'section-3', name: 'Mathematics - Grade 11A' }
   ]
 
   const handleBatchChange = (batchId: string) => {
@@ -51,13 +51,13 @@ export function ReportFilters({ filters, onFiltersChange, onReset }: ReportFilte
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Batch</label>
+            <label className="text-sm font-medium">Section</label>
             <Select value={filters.batchId || 'all'} onValueChange={handleBatchChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Select batch" />
+                <SelectValue placeholder="Select section" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Batches</SelectItem>
+                <SelectItem value="all">All Sections</SelectItem>
                 {batches.map((batch) => (
                   <SelectItem key={batch.id} value={batch.id}>
                     {batch.name}

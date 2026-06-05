@@ -43,7 +43,7 @@ export default function AttendancePage() {
 
   const handleSearch = () => {
     if (!selectedBatch) {
-      alert('Please select a batch to generate the report.')
+      alert('Please select a section to generate the report.')
       return
     }
     
@@ -147,7 +147,7 @@ export default function AttendancePage() {
               {/* Batch Filter (Required) */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-1">
-                  Batch
+                  Section
                   <span className="text-red-500 text-xs">*required</span>
                 </label>
                 <Select value={selectedBatch} onValueChange={setSelectedBatch}>
@@ -155,7 +155,7 @@ export default function AttendancePage() {
                     "glass border-border/40",
                     !selectedBatch && "border-red-200 focus:border-red-400"
                   )}>
-                    <SelectValue placeholder="Select batch" />
+                    <SelectValue placeholder="Select section" />
                   </SelectTrigger>
                   <SelectContent>
                     {batches.map((batch) => (

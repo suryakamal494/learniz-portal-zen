@@ -11,7 +11,7 @@ import { Search, BookOpen, TrendingUp, Users } from 'lucide-react';
 
 export default function ChapterAnalyticsListPage() {
   const navigate = useNavigate();
-  const [batchFilter, setBatchFilter] = useState('batch-10a');
+  const [batchFilter, setBatchFilter] = useState('section-10a');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [search, setSearch] = useState('');
 
@@ -33,7 +33,7 @@ export default function ChapterAnalyticsListPage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <Select value={batchFilter} onValueChange={setBatchFilter}>
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Select Batch" />
+            <SelectValue placeholder="Select Section" />
           </SelectTrigger>
           <SelectContent>
             {mockBatchesForFilter.map(b => (
