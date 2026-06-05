@@ -1,6 +1,6 @@
 
 import { TeacherDashboardHeader } from "./TeacherDashboardHeader"
-import { ModernTeacherStats } from "./ModernTeacherStats"
+
 import { ModernQuickActions } from "./ModernQuickActions"
 import { ModernUpcomingClasses } from "./ModernUpcomingClasses"
 import { ModernBatchReports } from "./ModernBatchReports"
