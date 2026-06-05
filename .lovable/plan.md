@@ -1,293 +1,76 @@
-
-
-# Implementation Plan: Configure Teaching Hours Feature
-
-## Overview
-
-Add a new action "Configure Hours" in the courses table that opens a modal where institutions can enter teaching hours for each topic. Chapter and subject hours are auto-calculated from topic totals.
-
----
-
-## Part 1: Type Definitions Update
-
-### File: `src/types/course.ts` (MODIFY)
-
-Add `hours` field to CourseTopic and calculated fields for aggregation:
-
-```typescript
-export interface CourseTopic {
-  id: string;
-  name: string;
-  originalName?: string;
-  sourceSubjectId?: string;
-  isSelected?: boolean;
-  hours?: number;  // NEW: Teaching hours for this topic
-}
-
-// Optional: Add computed types for display
-export interface TopicWithHours extends CourseTopic {
-  hours: number;
-}
-
-export interface ChapterHoursSummary {
-  chapterId: string;
-  chapterName: string;
-  totalHours: number;
-  topics: TopicWithHours[];
-}
-
-export interface SubjectHoursSummary {
-  subjectId: string;
-  subjectName: string;
-  totalHours: number;
-  chapters: ChapterHoursSummary[];
-}
-```
-
----
-
-## Part 2: New Components
-
-### Component 1: `ConfigureHoursModal.tsx` (NEW)
-
-**Purpose**: Main modal for configuring hours - displays all subjects/chapters/topics with input fields.
-
-**Wireframe**:
-```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│ Configure Teaching Hours                                              [×]  │
-│ Disha 2 - Class 6                                                          │
-├────────────────────────────────────────────────────────────────────────────┤
-│ Set planned teaching hours for each topic. Chapter and subject totals     │
-│ will be calculated automatically.                                          │
-│                                                                            │
-│ Total Course Hours: 45.5 hrs                                              │
-│                                           [Expand All] [Collapse All]      │
-├────────────────────────────────────────────────────────────────────────────┤
-│ ┌────────────────────────────────────────────────────────────────────────┐ │
-│ │ ▼ Physics                                               Total: 15 hrs │ │
-│ │   ┌──────────────────────────────────────────────────────────────────┐ │ │
-│ │   │ ▼ Mechanics                                          12 hrs     │ │ │
-│ │   │   ┌──────────────────────────────────────────────┐              │ │ │
-│ │   │   │ Newton's Laws of Motion          [  2  ] hrs │              │ │ │
-│ │   │   │ Equations of Motion              [  3  ] hrs │              │ │ │
-│ │   │   │ Friction and Its Types           [  2  ] hrs │              │ │ │
-│ │   │   │ Work, Energy and Power           [  2.5] hrs │              │ │ │
-│ │   │   │ Momentum and Collisions          [  2.5] hrs │              │ │ │
-│ │   │   └──────────────────────────────────────────────┘              │ │ │
-│ │   └──────────────────────────────────────────────────────────────────┘ │ │
-│ │   ┌──────────────────────────────────────────────────────────────────┐ │ │
-│ │   │ ▶ Thermodynamics                                      3 hrs     │ │ │
-│ │   └──────────────────────────────────────────────────────────────────┘ │ │
-│ └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                            │
-│ ┌────────────────────────────────────────────────────────────────────────┐ │
-│ │ ▶ Chemistry                                              Total: 12 hrs │ │
-│ └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                            │
-│ ┌────────────────────────────────────────────────────────────────────────┐ │
-│ │ ▶ Biology                                                Total: 18.5 hrs│ │
-│ └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                            │
-│ (Scrollable area - max-height: 55vh, min-height: 300px)                   │
-├────────────────────────────────────────────────────────────────────────────┤
-│                                              [Cancel]  [Save Hours]        │
-└────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Features**:
-- Modal size: `max-w-4xl` with `max-h-[90vh]`
-- Scrollable content area with `min-h-[300px]` and `max-h-[55vh]`
-- Expand All / Collapse All controls
-- Subjects and chapters are collapsible
-- Topics show inline number input (0.5 step for half hours)
-- Real-time calculation of chapter and subject totals
-- Total course hours displayed at top
-
-### Component 2: `SubjectHoursAccordion.tsx` (NEW)
-
-**Purpose**: Collapsible subject section showing all chapters and topics with hours inputs.
-
-**Props**:
-```typescript
-interface SubjectHoursAccordionProps {
-  subject: CourseSubjectWithContent;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onTopicHoursChange: (chapterId: string, topicId: string, hours: number) => void;
-  subjectTotalHours: number;
-}
-```
-
-### Component 3: `ChapterHoursRow.tsx` (NEW)
-
-**Purpose**: Collapsible chapter row with topics list.
-
-**Wireframe (expanded)**:
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ ▼ Chapter Name                                         Total: 8 hrs  │
-├──────────────────────────────────────────────────────────────────────┤
-│   Topic 1 Name                                    [  2.0 ] hrs       │
-│   Topic 2 Name                                    [  1.5 ] hrs       │
-│   Topic 3 Name                                    [  2.0 ] hrs       │
-│   Topic 4 Name                                    [  2.5 ] hrs       │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-### Component 4: `TopicHoursInput.tsx` (NEW)
-
-**Purpose**: Single topic row with inline hours input.
-
-**Features**:
-- Number input with step 0.5 (allows half hours)
-- Minimum value: 0
-- Maximum value: 24 (practical limit)
-- Shows "hrs" suffix
-- Compact design for mobile
-
-**Wireframe**:
-```text
-┌────────────────────────────────────────────────────────────────┐
-│  📄 Newton's Laws of Motion                    [  2.0  ] hrs   │
-└────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Part 3: Update Courses Main Page
-
-### File: `src/pages/teacher/courses/CoursesMainPage.tsx` (MODIFY)
-
-**Changes**:
-
-1. Add new state for hours configuration modal
-2. Add "Configure Hours" option to Actions dropdown
-3. Import and render ConfigureHoursModal
-
-**Updated Actions Dropdown**:
-```text
-┌──────────────────┐
-│ 👁 Preview       │
-│ ⏱ Configure Hours│  ← NEW
-│ ✏️ Edit          │
-│ 🗑️ Delete        │
-└──────────────────┘
-```
-
----
-
-## Part 4: Update Mock Data
-
-### File: `src/data/mockCourses.ts` (MODIFY)
-
-Add sample `hours` values to some topics to demonstrate the feature:
-
-```typescript
-topics: [
-  { id: 'bio-t-1', name: 'Cell Structure and Function', isSelected: true, hours: 2 },
-  { id: 'bio-t-2', name: 'Cell Division - Mitosis', isSelected: true, hours: 1.5 },
-]
-```
-
----
-
-## Part 5: Utility Functions
-
-### File: `src/utils/courseHoursUtils.ts` (NEW)
-
-**Purpose**: Helper functions for hours calculations
-
-```typescript
-// Calculate total hours for a chapter (sum of topic hours)
-export function getChapterHours(chapter: CourseChapter): number {
-  return chapter.topics.reduce((sum, topic) => sum + (topic.hours || 0), 0);
-}
-
-// Calculate total hours for a subject (sum of chapter hours)
-export function getSubjectHours(subject: CourseSubjectWithContent): number {
-  return subject.chapters.reduce((sum, ch) => sum + getChapterHours(ch), 0);
-}
-
-// Calculate total hours for a course
-export function getCourseHours(course: Course): number {
-  return course.subjects.reduce((sum, s) => sum + getSubjectHours(s), 0);
-}
-
-// Format hours display (e.g., "2.5 hrs" or "2 hrs")
-export function formatHours(hours: number): string {
-  return hours % 1 === 0 ? `${hours} hrs` : `${hours.toFixed(1)} hrs`;
-}
-```
-
----
-
-## Part 6: UI/UX Specifications
-
-### Responsive Design
-
-| Screen Size | Modal Width | Columns | Topic Input Width |
-|-------------|-------------|---------|-------------------|
-| Mobile (<640px) | Full width | 1 | 60px |
-| Tablet (640-1024px) | 90% | 1 | 70px |
-| Desktop (>1024px) | max-w-4xl | 1 | 80px |
-
-### Scroll Containers
-
-| Container | Min Height | Max Height |
-|-----------|------------|------------|
-| Modal content | 300px | 55vh |
-| Each subject (expanded) | auto | 400px |
-
-### Touch-Friendly Design
-- Input fields: `h-9` (36px)
-- Chapter/Subject rows: `min-h-[48px]`
-- All clickable areas: minimum 44px touch target
-
-### Keyboard Accessibility
-- Tab through all input fields
-- Enter to save
-- Escape to cancel
-
----
-
-## Part 7: Files Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/types/course.ts` | MODIFY | Add `hours?: number` to CourseTopic |
-| `src/utils/courseHoursUtils.ts` | CREATE | Helper functions for hours calculations |
-| `src/components/teacher/courses/TopicHoursInput.tsx` | CREATE | Single topic row with hours input |
-| `src/components/teacher/courses/ChapterHoursRow.tsx` | CREATE | Collapsible chapter with topics list |
-| `src/components/teacher/courses/SubjectHoursAccordion.tsx` | CREATE | Collapsible subject section |
-| `src/components/teacher/courses/ConfigureHoursModal.tsx` | CREATE | Main modal component |
-| `src/pages/teacher/courses/CoursesMainPage.tsx` | MODIFY | Add "Configure Hours" action |
-| `src/data/mockCourses.ts` | MODIFY | Add sample hours data |
-
----
-
-## Part 8: Technical Implementation Order
-
-1. **Types & Utils** - Add hours field to types, create utility functions
-2. **Atomic Components** - TopicHoursInput (smallest unit)
-3. **Composite Components** - ChapterHoursRow, SubjectHoursAccordion
-4. **Main Modal** - ConfigureHoursModal (combines all)
-5. **Page Integration** - Add action to CoursesMainPage
-6. **Mock Data** - Add sample hours for demonstration
-7. **Testing** - Verify with courses having 5 subjects, 10 chapters each
-
----
-
-## Scalability Considerations
-
-### Designed for Scale (5 subjects × 10 chapters × 10 topics = 500 topics):
-- Collapsible by default (only expanded on demand)
-- Virtual scrolling consideration for very large courses
-- Debounced input updates to prevent re-render storm
-- Local state for hours, only sync to parent on save
-
-### Performance Optimizations:
-- `React.memo` for TopicHoursInput to prevent unnecessary re-renders
-- Batch state updates on save
-- Lazy expansion of nested content
-
+# Plan: Rename "Batches" → "Sections" Platform-Wide
+
+## Scope
+Replace all user-facing occurrences of the word "Batch / Batches / batch / batches" with "Section / Sections / section / sections" across the entire platform (teacher, institute, and any shared pages).
+
+This is a **UI/terminology-only** change. No data models, route paths, file names, variable names, type names, prop names, mock data keys, or component names will be renamed — only the visible text strings shown to users.
+
+## What Will Change
+
+### 1. Visible Text Strings
+All hardcoded user-facing strings in JSX/TSX:
+- "Batch" → "Section"
+- "Batches" → "Sections"
+- "batch" → "section" (mid-sentence)
+- "batches" → "sections" (mid-sentence)
+- "Batch-wise" → "Section-wise"
+- "batch-wise" → "section-wise"
+- "Add Batch" → "Add Section"
+- "Create Batch" → "Create Section"
+- "View Batch" → "View Section"
+- "Select Batches" / "All Batches" / "Specific Batches" → Sections equivalents
+- "Batch Reports" → "Section Reports"
+- "Batch Assignment" → "Section Assignment"
+- "Batch Name" → "Section Name"
+- Toast/notification messages mentioning batch
+- Tooltips, placeholders, empty-state messages, summary banners
+
+### 2. Areas Affected (high-level)
+- **Teacher → Sections (formerly Batches)** module
+  - `BatchListingPage`, `AddBatchPage`, `ViewStudentsPage`, `AssignLMSPage`, `BatchNotesAssignmentPage`
+- **Teacher Sidebar / Navigation** — menu label "Batches" → "Sections"
+- **Teacher Dashboard** — "Batch Reports" card, upcoming-class "batch" labels, stats
+- **Teacher Reports** — `BatchReportsPage`, batch report cards, headers
+- **Teacher Exams** — `UpdateBatchesPage` (page title, summary text, button labels), exam → batch assignment screens
+- **Teacher Schedule** — any "batch" column / filter labels
+- **Institute → Schedule Tracking** — `BatchProgressTable` ("Batch-wise Progress", "X batches"), `BatchWiseTracking`
+- **Institute → Class Overview / Student Reports / Teacher Performance / Section Students** — any "batch" mentions (e.g., "Batch 11-A", "Batch Accuracy", batch tiles)
+- **Institute Dashboard** — alerts, stats, recent grand tests referencing batches
+- **Login page / Brochure / any marketing copy** — if "batch" appears
+- **Toast messages, modal titles, button labels, table headers, badges** throughout
+
+### 3. What Will NOT Change
+- File names (e.g., `BatchListingPage.tsx`, `mockBatches.ts`) — kept to avoid breaking imports and routing
+- Route paths (e.g., `/teacher/batches`) — kept to avoid breaking bookmarks/links
+- TypeScript types & interfaces (`Batch`, `BatchFormData`, `BatchProgress`, `BatchStudent`, etc.)
+- Variable names, prop names, state names, function names
+- Mock data field keys (`batchId`, `batchName`, `currentStudents`, etc.)
+- CSS class names, test IDs
+- Database/backend identifiers (none exist yet, but principle stands)
+
+> Rationale: Renaming internal identifiers is a large, risky refactor with no user-visible benefit. The terminology change is fully achieved by updating display strings only. If you want route paths renamed too (e.g., `/teacher/sections`), I can do that as a follow-up.
+
+## Approach
+
+1. **Sweep the codebase** with case-sensitive search for the four forms: `Batches`, `Batch`, `batches`, `batch`.
+2. **Filter to user-facing strings only** — JSX text nodes, string literals passed to `title`, `label`, `placeholder`, `description`, toast `title`/`description`, `<CardTitle>`, `<Badge>` children, table headers, button text, alt text, aria-labels.
+3. **Skip code identifiers** — anything inside variable names, type references, import paths, object keys, file paths, route paths, CSS classes, comments (unless the comment is misleading after rename).
+4. **Handle compound phrases** carefully:
+   - "Batch-wise" → "Section-wise"
+   - "batch(es)" → "section(s)"
+   - Pluralization preserved (Batches → Sections, batch → section)
+5. **Special-case checks**:
+   - "Grand Test Batch" or domain-specific compounds — confirm they read naturally as "Section"
+   - Singular "a batch" / plural "batches" grammar stays correct
+6. **Verify** by re-running the search after edits to confirm only intentional remaining instances (identifiers, file names, types).
+
+## Deliverable
+A single sweep updating all user-visible text. No functional behavior changes. Build and routes continue working unchanged.
+
+## Confirmation Needed
+Please confirm two things before I proceed:
+
+1. **Internal identifiers stay as-is** (recommended) — types, props, file names, route paths keep the word "batch". Only displayed text changes. ✅ proceed
+2. **Or full rename** — also rename routes (`/teacher/batches` → `/teacher/sections`), file names, types, and variables. This is much larger and riskier.
+
+If you don't specify, I'll proceed with option **1 (UI text only)**.
