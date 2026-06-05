@@ -177,7 +177,7 @@ export function TeacherScheduleFilters({
           )}
           {filters.batch && (
             <div className="flex items-center gap-1 px-2 py-1 bg-muted text-muted-foreground rounded-md text-sm">
-              Batch: {filters.batch}
+              Section: {filters.batch}
               <button
                 onClick={() => onFiltersChange({ batch: undefined })}
                 className="ml-1 hover:bg-muted-foreground/20 rounded p-0.5"
