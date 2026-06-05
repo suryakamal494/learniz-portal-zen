@@ -65,7 +65,7 @@ export default function CreateClassPage() {
   const handleClassChange = (value: string) => {
     setSelectedClass(value);
     form.setValue('class', value);
-    form.setValue('section', ''); // Reset batch when class changes
+    form.setValue('batch', ''); // Reset batch when class changes
   };
 
   const onSubmit = (data: CreateClassFormData) => {
@@ -142,7 +142,7 @@ export default function CreateClassPage() {
 
                 <FormField
                   control={form.control}
-                  name="section"
+                  name="batch"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Section *</FormLabel>

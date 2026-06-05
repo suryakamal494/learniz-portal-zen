@@ -186,7 +186,7 @@ export default function EditSchedulePage() {
                 {/* Batch */}
                 <FormField
                   control={form.control}
-                  name="section"
+                  name="batch"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Section</FormLabel>
