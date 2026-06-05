@@ -1,76 +1,77 @@
-# Plan: Rename "Batches" → "Sections" Platform-Wide
+# Redesign: /teacher/batches → Sections Workspace (UI-only)
 
-## Scope
-Replace all user-facing occurrences of the word "Batch / Batches / batch / batches" with "Section / Sections / section / sections" across the entire platform (teacher, institute, and any shared pages).
+## Intent
+Turn the current single dense page into a **two-level drill-down**. Level 1 is a clean gallery of the teacher's sections. Level 2 is a focused workspace for one section where every action that belongs to *that* section lives together.
 
-This is a **UI/terminology-only** change. No data models, route paths, file names, variable names, type names, prop names, mock data keys, or component names will be renamed — only the visible text strings shown to users.
+**Important constraint:** This is a UI/navigation redesign only. All existing deep pages (Assign Lesson Plan, Assign Study Notes, Assessments, Schedule, Attendance, Reports, View Students) keep their current implementation and backend wiring. We only change *how* the teacher gets to them and how the entry surface is composed.
 
-## What Will Change
+## Level 1 — My Sections (gallery)
+Route: `/teacher/batches` (kept)
 
-### 1. Visible Text Strings
-All hardcoded user-facing strings in JSX/TSX:
-- "Batch" → "Section"
-- "Batches" → "Sections"
-- "batch" → "section" (mid-sentence)
-- "batches" → "sections" (mid-sentence)
-- "Batch-wise" → "Section-wise"
-- "batch-wise" → "section-wise"
-- "Add Batch" → "Add Section"
-- "Create Batch" → "Create Section"
-- "View Batch" → "View Section"
-- "Select Batches" / "All Batches" / "Specific Batches" → Sections equivalents
-- "Batch Reports" → "Section Reports"
-- "Batch Assignment" → "Section Assignment"
-- "Batch Name" → "Section Name"
-- Toast/notification messages mentioning batch
-- Tooltips, placeholders, empty-state messages, summary banners
+Replace the table with a polished card grid (reference image 2 as starting point).
 
-### 2. Areas Affected (high-level)
-- **Teacher → Sections (formerly Batches)** module
-  - `BatchListingPage`, `AddBatchPage`, `ViewStudentsPage`, `AssignLMSPage`, `BatchNotesAssignmentPage`
-- **Teacher Sidebar / Navigation** — menu label "Batches" → "Sections"
-- **Teacher Dashboard** — "Batch Reports" card, upcoming-class "batch" labels, stats
-- **Teacher Reports** — `BatchReportsPage`, batch report cards, headers
-- **Teacher Exams** — `UpdateBatchesPage` (page title, summary text, button labels), exam → batch assignment screens
-- **Teacher Schedule** — any "batch" column / filter labels
-- **Institute → Schedule Tracking** — `BatchProgressTable` ("Batch-wise Progress", "X batches"), `BatchWiseTracking`
-- **Institute → Class Overview / Student Reports / Teacher Performance / Section Students** — any "batch" mentions (e.g., "Batch 11-A", "Batch Accuracy", batch tiles)
-- **Institute Dashboard** — alerts, stats, recent grand tests referencing batches
-- **Login page / Brochure / any marketing copy** — if "batch" appears
-- **Toast messages, modal titles, button labels, table headers, badges** throughout
+Each card:
+- Color accent strip (rotating pastel: blue / green / purple / peach)
+- Class + Course chip (e.g. "Class 10 · SSC")
+- Section name + ID
+- Two compact metrics: `Students x/capacity`, `Attendance %` (Green ≥70 / Amber 40–69 / Red <40, no decimals)
+- Tiny status row: Lesson plan · Study Notes · Assessments (with assigned counts)
+- Primary CTA: **Open section** → Level 2
 
-### 3. What Will NOT Change
-- File names (e.g., `BatchListingPage.tsx`, `mockBatches.ts`) — kept to avoid breaking imports and routing
-- Route paths (e.g., `/teacher/batches`) — kept to avoid breaking bookmarks/links
-- TypeScript types & interfaces (`Batch`, `BatchFormData`, `BatchProgress`, `BatchStudent`, etc.)
-- Variable names, prop names, state names, function names
-- Mock data field keys (`batchId`, `batchName`, `currentStudents`, etc.)
-- CSS class names, test IDs
-- Database/backend identifiers (none exist yet, but principle stands)
+Page chrome: "My Sections" title + subtitle, search, count chip, "Create Section" button.
+States: loading skeletons, empty, error.
 
-> Rationale: Renaming internal identifiers is a large, risky refactor with no user-visible benefit. The terminology change is fully achieved by updating display strings only. If you want route paths renamed too (e.g., `/teacher/sections`), I can do that as a follow-up.
+## Level 2 — Section Workspace
+Route: `/teacher/batches/:batchId` (new container page)
 
-## Approach
+1. **Breadcrumb header** — `← My Sections / Star batch`
+2. **Section identity card** — avatar tile, name, Class · Course · ID, plus 3 KPIs (Students, Attendance %, Assessments) with one-line "what it means" microcopy following the Data WITH Understanding pattern.
+3. **Quick Actions row** (5 tiles, equal-width, touch-friendly, wraps 2-col on mobile):
+   - Assign Lesson Plan
+   - Assign Study Notes
+   - Assign Assessment
+   - Schedule Class
+   - Mark Attendance
 
-1. **Sweep the codebase** with case-sensitive search for the four forms: `Batches`, `Batch`, `batches`, `batch`.
-2. **Filter to user-facing strings only** — JSX text nodes, string literals passed to `title`, `label`, `placeholder`, `description`, toast `title`/`description`, `<CardTitle>`, `<Badge>` children, table headers, button text, alt text, aria-labels.
-3. **Skip code identifiers** — anything inside variable names, type references, import paths, object keys, file paths, route paths, CSS classes, comments (unless the comment is misleading after rename).
-4. **Handle compound phrases** carefully:
-   - "Batch-wise" → "Section-wise"
-   - "batch(es)" → "section(s)"
-   - Pluralization preserved (Batches → Sections, batch → section)
-5. **Special-case checks**:
-   - "Grand Test Batch" or domain-specific compounds — confirm they read naturally as "Section"
-   - Singular "a batch" / plural "batches" grammar stays correct
-6. **Verify** by re-running the search after edits to confirm only intentional remaining instances (identifiers, file names, types).
+   Each tile **navigates to the existing page** with the current section pre-selected via route param / query string. The destination pages are not modified.
 
-## Deliverable
-A single sweep updating all user-visible text. No functional behavior changes. Build and routes continue working unchanged.
+4. **Tabs** — Students | Reports | Attendance | Content
+   - **Students** — embeds existing ViewStudents listing for this section
+   - **Reports** — embeds existing BatchReports filtered to this section
+   - **Attendance** — embeds existing attendance summary filtered to this section
+   - **Content** — read-only view of Lesson Plans / Study Notes / Assessments currently assigned to this section, with links into the existing detail pages
 
-## Confirmation Needed
-Please confirm two things before I proceed:
+   All panels lazy-load with loading/empty/error states. No business logic added — we read from the same mock/data sources already in use.
 
-1. **Internal identifiers stay as-is** (recommended) — types, props, file names, route paths keep the word "batch". Only displayed text changes. ✅ proceed
-2. **Or full rename** — also rename routes (`/teacher/batches` → `/teacher/sections`), file names, types, and variables. This is much larger and riskier.
+## Navigation wiring
+- `BatchListingPage` card click → `/teacher/batches/${id}`
+- New route added in `App.tsx`: `/teacher/batches/:batchId` → `SectionWorkspacePage`
+- Existing routes (`add`, `:id/assign-lms`, notes, exams update-batches, schedule create/edit, attendance) remain unchanged. Quick-action tiles deep-link into them with the section preselected.
 
-If you don't specify, I'll proceed with option **1 (UI text only)**.
+## Design system
+- Pastel surfaces on `bg-gray-50`, white cards, blue/indigo primary buttons
+- Terminology already aligned: Sections, Lesson Plan, Study Notes, Assessment
+- Mobile-first: 1 → 2 → 3 column gallery; tabs horizontally scrollable on small screens
+- Metric thresholds and no-decimals rule applied throughout
+
+## Files
+
+**New**
+- `src/pages/teacher/batches/SectionWorkspacePage.tsx`
+- `src/components/teacher/batches/SectionCard.tsx`
+- `src/components/teacher/batches/SectionIdentityCard.tsx`
+- `src/components/teacher/batches/SectionQuickActions.tsx`
+- `src/components/teacher/batches/SectionTabs.tsx` (+ StudentsPanel, ReportsPanel, AttendancePanel, ContentPanel sub-components)
+
+**Edited**
+- `src/pages/teacher/batches/BatchListingPage.tsx` — replace table with card grid
+- `src/App.tsx` — register `/teacher/batches/:batchId`
+
+**Untouched (backend / functionality preserved)**
+- AddBatchPage, AssignLMSPage, BatchNotesAssignmentPage, ViewStudentsPage
+- UpdateBatchesPage (exams), CreateClassPage, EditSchedulePage, AttendancePage, BatchReportsPage
+- All `src/data/*` mocks and `src/types/*`
+
+## Out of scope (your "next step")
+- Any change to the destination pages' logic or backend
+- Further refinement of tab contents — awaiting your detailed requirements after this drill-down shell lands
