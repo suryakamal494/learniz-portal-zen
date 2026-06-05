@@ -72,15 +72,16 @@ export function SectionCard({
           <span className="inline-flex items-center gap-1"><ClipboardList className="h-3 w-3 text-purple-600" /> {assessmentCount} Assess.</span>
         </div>
 
-        <Button
-          onClick={() => navigate(`/teacher/batches/${batch.id}`)}
-          className="mt-auto pt-0 h-9 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
-          style={{ marginTop: 'auto' }}
-        >
-          <span className="mt-3 sr-only" />
-          Open section
-          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-        </Button>
+        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+          <Button
+            onClick={() => navigate(`/teacher/batches/${batch.id}`)}
+            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium inline-flex items-center gap-1.5"
+          >
+            Open section
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
       </div>
     </div>
   )
