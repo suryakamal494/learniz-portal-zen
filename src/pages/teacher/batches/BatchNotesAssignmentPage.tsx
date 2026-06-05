@@ -116,7 +116,7 @@ export default function BatchNotesAssignmentPage() {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 Add LMS Notes To Class 6 Disha
               </h1>
-              <p className="text-gray-600 mt-1">Select and assign notes to your batch</p>
+              <p className="text-gray-600 mt-1">Select and assign notes to your section</p>
             </div>
           </div>
           <Button className="bg-blue-900 hover:bg-blue-800 text-white">

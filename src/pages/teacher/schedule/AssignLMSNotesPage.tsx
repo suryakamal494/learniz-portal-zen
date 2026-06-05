@@ -104,9 +104,9 @@ export default function AssignLMSNotesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="batch">Batch</Label>
+                  <Label htmlFor="section">Section</Label>
                   <Input
-                    id="batch"
+                    id="section"
                     value={classData.batch}
                     disabled
                     className="bg-muted/50"

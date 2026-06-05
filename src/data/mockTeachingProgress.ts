@@ -204,7 +204,7 @@ export const mockTeacherScheduleWithStatus: TeacherScheduleClass[] = [
     assignments: { lmsAssigned: true, notesAssigned: true, liveQuizAssigned: false },
     status: 'completed',
     teachingStatus: 'completed',
-    teachingNotes: 'EMI fundamentals covered for Science B batch. Good class participation.',
+    teachingNotes: 'EMI fundamentals covered for Science B section. Good class participation.',
     markedAt: '2024-01-18T15:05:00Z',
     markedBy: 'Dr. Rajesh Kumar',
     createdAt: '2024-01-12T10:00:00Z',
@@ -548,7 +548,7 @@ export function calculateBatchProgress(classes: TeacherScheduleClass[]): BatchPr
   const batchMap = new Map<string, BatchProgress>();
 
   classes.forEach(cls => {
-    const key = `${cls.class}-${cls.batch}`;
+    const key = `${cls.class}-${cls.section}`;
     if (!batchMap.has(key)) {
       batchMap.set(key, {
         batchId: key,
@@ -704,7 +704,7 @@ export function calculateClassBatchSubjectProgress(classes: TeacherScheduleClass
     let batch = classData.batches.find(b => b.batchName === cls.batch);
     if (!batch) {
       batch = {
-        batchId: `${cls.class}-${cls.batch}`.replace(/\s+/g, '-').toLowerCase(),
+        batchId: `${cls.class}-${cls.section}`.replace(/\s+/g, '-').toLowerCase(),
         batchName: cls.batch,
         className: cls.class,
         totalHours: 0,
@@ -724,7 +724,7 @@ export function calculateClassBatchSubjectProgress(classes: TeacherScheduleClass
     let subject = batch.subjects.find(s => s.subjectName === cls.subject);
     if (!subject) {
       subject = {
-        subjectId: `${cls.batch}-${cls.subject}`.replace(/\s+/g, '-').toLowerCase(),
+        subjectId: `${cls.section}-${cls.subject}`.replace(/\s+/g, '-').toLowerCase(),
         subjectName: cls.subject,
         totalHours: 0,
         completedHours: 0,
@@ -830,7 +830,7 @@ export function calculateTeacherClassProgress(classes: TeacherScheduleClass[]): 
     const teacher = teacherMap.get(cls.faculty)!;
 
     // Find or create class/batch combo
-    const classBatchKey = `${cls.class}-${cls.batch}`;
+    const classBatchKey = `${cls.class}-${cls.section}`;
     let classBatch = teacher.classBatches.find(cb => `${cb.className}-${cb.batchName}` === classBatchKey);
     if (!classBatch) {
       classBatch = {

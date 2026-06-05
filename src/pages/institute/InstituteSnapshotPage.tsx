@@ -66,7 +66,7 @@ export default function InstituteSnapshotPage() {
         <MetricCard
           title="Total Classes"
           value={snapshot.totalClasses}
-          subtitle={`${mockInstituteClasses.reduce((acc, cls) => acc + cls.batches.length, 0)} batches`}
+          subtitle={`${mockInstituteClasses.reduce((acc, cls) => acc + cls.sections.length, 0)} sections`}
           icon={BookOpen}
           iconColor="text-green-500"
         />
@@ -171,7 +171,7 @@ export default function InstituteSnapshotPage() {
       <div>
         <h2 className="text-lg font-semibold mb-4">Classes</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Select a class to view detailed performance by subject and batch
+          Select a class to view detailed performance by subject and section
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {mockInstituteClasses.map((classItem) => (
@@ -226,7 +226,7 @@ export default function InstituteSnapshotPage() {
 
                   {/* Batches Preview */}
                   <div className="pt-2 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Batches</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Sections</p>
                     <div className="flex flex-wrap gap-2">
                       {classItem.batches.map((batch) => (
                         <span

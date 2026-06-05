@@ -102,11 +102,11 @@ export function TeacherDesktopScheduleTable({
               </TableHead>
               <TableHead 
                 className="cursor-pointer hover:bg-muted transition-colors font-medium"
-                onClick={() => onSortChange('batch')}
+                onClick={() => onSortChange('section')}
               >
                 <div className="flex items-center gap-2">
                   BATCH
-                  {getSortIcon('batch')}
+                  {getSortIcon('section')}
                 </div>
               </TableHead>
               <TableHead 

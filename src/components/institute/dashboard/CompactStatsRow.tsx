@@ -34,7 +34,7 @@ export const CompactStatsRow: React.FC<CompactStatsRowProps> = ({ batches, stude
       <StatCard
         icon={<GraduationCap className="h-5 w-5" />}
         value={batches}
-        label="Active Batches"
+        label="Active Sections"
         iconBg="bg-blue-50"
         iconColor="text-blue-600"
       />

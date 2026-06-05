@@ -251,7 +251,7 @@ export const mockChapterAnalytics: ChapterAnalytics[] = [
     chapterName: 'Linear Equations',
     subjectId: 'sub-math',
     subjectName: 'Mathematics',
-    batchId: 'batch-10a',
+    batchId: 'section-10a',
     batchName: 'Class 10-A',
     
     overallMetrics: createMetrics(58, 42, 12, [
@@ -368,7 +368,7 @@ export const mockChapterAnalytics: ChapterAnalytics[] = [
     chapterName: 'Quadratic Equations',
     subjectId: 'sub-math',
     subjectName: 'Mathematics',
-    batchId: 'batch-10a',
+    batchId: 'section-10a',
     batchName: 'Class 10-A',
     
     overallMetrics: createMetrics(45, 48, 15, [
@@ -462,7 +462,7 @@ export const mockChapterAnalytics: ChapterAnalytics[] = [
     chapterName: 'Motion and Force',
     subjectId: 'sub-physics',
     subjectName: 'Physics',
-    batchId: 'batch-10a',
+    batchId: 'section-10a',
     batchName: 'Class 10-A',
     
     overallMetrics: createMetrics(52, 38, 10, [
@@ -556,7 +556,7 @@ export const mockChapterAnalytics: ChapterAnalytics[] = [
     chapterName: 'Chemical Reactions',
     subjectId: 'sub-chemistry',
     subjectName: 'Chemistry',
-    batchId: 'batch-10a',
+    batchId: 'section-10a',
     batchName: 'Class 10-A',
     
     overallMetrics: createMetrics(48, 42, 8, [
@@ -662,9 +662,9 @@ export const mockChapterSummaries: ChapterSummary[] = mockChapterAnalytics.map(c
 
 // Available batches and subjects for filters
 export const mockBatchesForFilter = [
-  { id: 'batch-10a', name: 'Class 10-A' },
-  { id: 'batch-10b', name: 'Class 10-B' },
-  { id: 'batch-9a', name: 'Class 9-A' },
+  { id: 'section-10a', name: 'Class 10-A' },
+  { id: 'section-10b', name: 'Class 10-B' },
+  { id: 'section-9a', name: 'Class 9-A' },
 ];
 
 export const mockSubjectsForFilter = [

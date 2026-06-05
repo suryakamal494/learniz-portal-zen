@@ -17,9 +17,9 @@ export default function ReportsMainPage() {
       path: '/teacher/reports/attendance'
     },
     {
-      id: 'batch',
-      title: 'Batch Reports',
-      description: 'Performance and analytics for each batch',
+      id: 'section',
+      title: 'Section Reports',
+      description: 'Performance and analytics for each section',
       icon: <Users className="h-8 w-8 text-green-500" />,
       path: '/teacher/reports/batch'
     }
@@ -66,7 +66,7 @@ export default function ReportsMainPage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">12</div>
-              <div className="text-sm text-muted-foreground">Active Batches</div>
+              <div className="text-sm text-muted-foreground">Active Sections</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">156</div>

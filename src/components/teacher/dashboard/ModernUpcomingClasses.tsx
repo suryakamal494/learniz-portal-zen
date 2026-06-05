@@ -69,7 +69,7 @@ export function ModernUpcomingClasses() {
             <TableHeader>
               <TableRow className="bg-slate-50/50">
                 <TableHead className="font-semibold text-slate-700 w-24">Time</TableHead>
-                <TableHead className="font-semibold text-slate-700">Batch</TableHead>
+                <TableHead className="font-semibold text-slate-700">Section</TableHead>
                 <TableHead className="font-semibold text-slate-700">Class</TableHead>
                 <TableHead className="font-semibold text-slate-700">Topic</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">Teaching Status</TableHead>
@@ -103,7 +103,7 @@ export function ModernUpcomingClasses() {
                   
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="font-medium text-slate-900">{classItem.batch}</div>
+                      <div className="font-medium text-slate-900">{classItem.section}</div>
                       <div className="flex items-center gap-2">
                         <Badge className={`text-xs ${getSubjectColor(classItem.subject)}`}>
                           {classItem.subject}

@@ -100,7 +100,7 @@ export default function ClassOverviewPage() {
             <GraduationCap className="h-6 w-6 text-primary" />
             Class Overview
           </h1>
-          <p className="text-muted-foreground mt-1">Academic health by class and batch</p>
+          <p className="text-muted-foreground mt-1">Academic health by class and section</p>
         </div>
         <TimeFilterBar value={timeFilter} onChange={setTimeFilter} />
       </div>
@@ -109,7 +109,7 @@ export default function ClassOverviewPage() {
       <InstituteInsightCard
         type="info"
         title="What This Shows"
-        message="Class-level performance with drill-down to batches, subjects, and chapters. Click on any batch to see detailed subject and chapter performance with teacher attribution."
+        message="Class-level performance with drill-down to sections, subjects, and chapters. Click on any section to see detailed subject and chapter performance with teacher attribution."
       />
 
       {/* Class Cards */}
@@ -190,7 +190,7 @@ export default function ClassOverviewPage() {
 
                   {/* Batch Drill-down */}
                   <div className="space-y-3">
-                    <h4 className="font-medium text-sm text-muted-foreground">Batch Details (Click to expand)</h4>
+                    <h4 className="font-medium text-sm text-muted-foreground">Section Details (Click to expand)</h4>
                     <div className="space-y-3">
                       {cls.batches.map((batch) => {
                         const batchSubjects = getBatchSubjectData(batch.id, batch.name, cls.name);
@@ -244,15 +244,15 @@ export default function ClassOverviewPage() {
                                 <div className="px-3 pb-3 space-y-3 border-t pt-3">
                                   {batchSubjects.length === 0 ? (
                                     <p className="text-sm text-muted-foreground text-center py-2">
-                                      No subject data available for this batch
+                                      No subject data available for this section
                                     </p>
                                   ) : (
                                     batchSubjects.map((subject) => (
                                       <Collapsible
-                                        key={`${batch.id}-${subject.subjectId}`}
-                                        open={expandedSubject === `${batch.id}-${subject.subjectId}`}
+                                        key={`${section.id}-${subject.subjectId}`}
+                                        open={expandedSubject === `${section.id}-${subject.subjectId}`}
                                         onOpenChange={(open) => 
-                                          setExpandedSubject(open ? `${batch.id}-${subject.subjectId}` : null)
+                                          setExpandedSubject(open ? `${section.id}-${subject.subjectId}` : null)
                                         }
                                       >
                                         <CollapsibleTrigger asChild>
@@ -270,7 +270,7 @@ export default function ClassOverviewPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <span className="font-medium text-sm">{subject.accuracy.toFixed(1)}%</span>
-                                              {expandedSubject === `${batch.id}-${subject.subjectId}` ? (
+                                              {expandedSubject === `${section.id}-${subject.subjectId}` ? (
                                                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                               ) : (
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground" />

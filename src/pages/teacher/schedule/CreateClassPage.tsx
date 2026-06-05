@@ -22,7 +22,7 @@ import { getUniqueClasses, getUniqueSubjects } from '@/data/mockTeacherSchedule'
 const createClassSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
   class: z.string().min(1, 'Class is required'),
-  batch: z.string().min(1, 'Batch is required'),
+  batch: z.string().min(1, 'Section is required'),
   url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   subject: z.string().min(1, 'Subject is required'),
   topic: z.string().min(1, 'Topic name is required').max(200, 'Topic must be less than 200 characters'),
@@ -65,7 +65,7 @@ export default function CreateClassPage() {
   const handleClassChange = (value: string) => {
     setSelectedClass(value);
     form.setValue('class', value);
-    form.setValue('batch', ''); // Reset batch when class changes
+    form.setValue('section', ''); // Reset batch when class changes
   };
 
   const onSubmit = (data: CreateClassFormData) => {
@@ -142,14 +142,14 @@ export default function CreateClassPage() {
 
                 <FormField
                   control={form.control}
-                  name="batch"
+                  name="section"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Batch *</FormLabel>
+                      <FormLabel>Section *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!selectedClass}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select batch" />
+                            <SelectValue placeholder="Select section" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>

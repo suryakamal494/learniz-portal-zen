@@ -29,7 +29,7 @@ export interface ScheduleFilters {
   class?: string;
 }
 
-export type SortField = 'date' | 'time' | 'class' | 'batch' | 'subject' | 'topic' | 'faculty';
+export type SortField = 'date' | 'time' | 'class' | 'section' | 'subject' | 'topic' | 'faculty';
 export type SortDirection = 'asc' | 'desc';
 
 export interface ScheduleSort {

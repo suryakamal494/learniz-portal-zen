@@ -71,7 +71,7 @@ export function ModernBatchReports() {
               <BarChart3 className="h-5 w-5 text-blue-600" />
             </div>
             <CardTitle className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Recent Batch Reports
+              Recent Section Reports
             </CardTitle>
           </div>
           <Button 

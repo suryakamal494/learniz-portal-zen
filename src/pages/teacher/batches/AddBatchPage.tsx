@@ -31,7 +31,7 @@ export default function AddBatchPage() {
   const validateForm = () => {
     const newErrors: Partial<Record<keyof BatchFormData, string>> = {}
     
-    if (!formData.name.trim()) newErrors.name = 'Batch name is required'
+    if (!formData.name.trim()) newErrors.name = 'Section name is required'
     if (!formData.class) newErrors.class = 'Class is required'
     if (!formData.course) newErrors.course = 'Course is required'
     if (!formData.startDate) newErrors.startDate = 'Start date is required'
@@ -52,7 +52,7 @@ export default function AddBatchPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
-      console.log('Creating batch:', formData)
+      console.log('Creating section:', formData)
       // Future: API call to create batch
       navigate('/teacher/batches')
     }
@@ -78,27 +78,27 @@ export default function AddBatchPage() {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create New Batch</h1>
-              <p className="text-gray-600 mt-1">Fill in the details to create a new student batch</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create New Section</h1>
+              <p className="text-gray-600 mt-1">Fill in the details to create a new student section</p>
             </div>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Batch Information</CardTitle>
+            <CardTitle>Section Information</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Batch Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="name">Batch Name *</Label>
+                  <Label htmlFor="name">Section Name *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter batch name"
+                    placeholder="Enter section name"
                     className={errors.name ? 'border-red-500' : ''}
                   />
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
@@ -153,7 +153,7 @@ export default function AddBatchPage() {
                     type="number"
                     value={formData.capacity || ''}
                     onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
-                    placeholder="Enter batch capacity"
+                    placeholder="Enter section capacity"
                     min="1"
                   />
                 </div>
@@ -270,7 +270,7 @@ export default function AddBatchPage() {
                   disabled={!isFormValid()}
                   className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium"
                 >
-                  Create Batch
+                  Create Section
                 </Button>
               </div>
             </form>

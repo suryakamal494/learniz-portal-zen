@@ -209,9 +209,9 @@ export default function TeacherDetailPage() {
 
       {/* Class-Based Hierarchy: Class → Batch → Subject → Chapter */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Performance by Class & Batch</h2>
+        <h2 className="text-lg font-semibold">Performance by Class & Section</h2>
         <p className="text-sm text-muted-foreground">
-          View detailed breakdown: Class → Batch → Subject → Chapter
+          View detailed breakdown: Class → Section → Subject → Chapter
         </p>
 
         {classBasedData.length === 0 ? (
@@ -280,10 +280,10 @@ export default function TeacherDetailPage() {
                           {/* Subjects within Batch */}
                           {batch.subjects.map((subject) => (
                             <Collapsible
-                              key={`${batch.batchId}-${subject.subjectId}`}
-                              open={expandedSubject === `${batch.batchId}-${subject.subjectId}`}
+                              key={`${section.batchId}-${subject.subjectId}`}
+                              open={expandedSubject === `${section.batchId}-${subject.subjectId}`}
                               onOpenChange={(open) => 
-                                setExpandedSubject(open ? `${batch.batchId}-${subject.subjectId}` : null)
+                                setExpandedSubject(open ? `${section.batchId}-${subject.subjectId}` : null)
                               }
                             >
                               <CollapsibleTrigger asChild>
@@ -300,7 +300,7 @@ export default function TeacherDetailPage() {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {expandedSubject === `${batch.batchId}-${subject.subjectId}` ? (
+                                    {expandedSubject === `${section.batchId}-${subject.subjectId}` ? (
                                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     ) : (
                                       <ChevronRight className="h-4 w-4 text-muted-foreground" />

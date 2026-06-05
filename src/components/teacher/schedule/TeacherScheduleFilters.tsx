@@ -77,16 +77,16 @@ export function TeacherScheduleFilters({
 
         {/* Batch Filter */}
         <div className="space-y-2">
-          <Label htmlFor="batch" className="text-sm font-medium">Batch</Label>
+          <Label htmlFor="section" className="text-sm font-medium">Section</Label>
           <Select
             value={filters.batch || 'all'}
             onValueChange={(value) => onFiltersChange({ batch: value === 'all' ? undefined : value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All Batches" />
+              <SelectValue placeholder="All Sections" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Batches</SelectItem>
+              <SelectItem value="all">All Sections</SelectItem>
               {batches.map((batch) => (
                 <SelectItem key={batch} value={batch}>{batch}</SelectItem>
               ))}

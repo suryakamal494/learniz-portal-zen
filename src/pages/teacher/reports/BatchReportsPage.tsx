@@ -72,8 +72,8 @@ export default function BatchReportsPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Batch Reports</h1>
-          <p className="text-muted-foreground">Comprehensive performance analytics for each batch</p>
+          <h1 className="text-3xl font-bold text-foreground">Section Reports</h1>
+          <p className="text-muted-foreground">Comprehensive performance analytics for each section</p>
         </div>
         <Button onClick={() => navigate('/teacher/reports')}>
           Back to Reports

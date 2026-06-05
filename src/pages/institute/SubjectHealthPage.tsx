@@ -149,10 +149,10 @@ export default function SubjectHealthPage() {
                 disabled={availableBatches.length === 0}
               >
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="All Batches" />
+                  <SelectValue placeholder="All Sections" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Batches</SelectItem>
+                  <SelectItem value="all">All Sections</SelectItem>
                   {availableBatches.map((batch) => (
                     <SelectItem key={batch.id} value={batch.id}>
                       {batch.name}
@@ -185,7 +185,7 @@ export default function SubjectHealthPage() {
         message={
           selectedClass !== 'all' || selectedBatch !== 'all'
             ? `Showing subject performance filtered by ${selectedClass !== 'all' ? mockInstituteClasses.find(c => c.id === selectedClass)?.name : 'all classes'}${selectedBatch !== 'all' ? ` → ${availableBatches.find(b => b.id === selectedBatch)?.name}` : ''}. Teacher attribution shows who teaches each chapter.`
-            : 'Subject health is aggregated across all teachers and classes. Use filters above to drill down to specific class or batch performance.'
+            : 'Subject health is aggregated across all teachers and classes. Use filters above to drill down to specific class or section performance.'
         }
       />
 
@@ -276,11 +276,11 @@ export default function SubjectHealthPage() {
                         {chapter.batchBreakdown && chapter.batchBreakdown.length > 0 && (
                           <div className="mt-3 pt-3 border-t">
                             <p className="text-xs text-muted-foreground mb-2">
-                              {selectedBatch !== 'all' ? 'Teacher & Performance' : 'Batch Performance & Teachers'}
+                              {selectedBatch !== 'all' ? 'Teacher & Performance' : 'Section Performance & Teachers'}
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                               {chapter.batchBreakdown.map((batch, idx) => (
-                                <div key={`${batch.batchId}-${idx}`} className="text-xs p-2 rounded bg-muted/50 flex items-center justify-between">
+                                <div key={`${section.batchId}-${idx}`} className="text-xs p-2 rounded bg-muted/50 flex items-center justify-between">
                                   <div>
                                     <p className="font-medium">{batch.batchName}</p>
                                     <Link 

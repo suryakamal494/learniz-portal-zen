@@ -264,7 +264,7 @@ export default function BrochurePage() {
           </SectionTitle>
           
           <SectionSubtitle className="mb-8">
-            Structured lesson plans with animations, videos, and notes. Assign to batches with one click — students access content anytime, anywhere.
+            Structured lesson plans with animations, videos, and notes. Assign to sections with one click — students access content anytime, anywhere.
           </SectionSubtitle>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -582,7 +582,7 @@ export default function BrochurePage() {
             <FeatureCard
               icon={<Users className="w-5 h-5" />}
               title="Teacher Performance"
-              description="Track teaching effectiveness across batches"
+              description="Track teaching effectiveness across sections"
             />
             <FeatureCard
               icon={<BookOpen className="w-5 h-5" />}
@@ -592,7 +592,7 @@ export default function BrochurePage() {
             <FeatureCard
               icon={<BarChart3 className="w-5 h-5" />}
               title="Class Analytics"
-              description="Compare batch performance instantly"
+              description="Compare section performance instantly"
             />
             <FeatureCard
               icon={<AlertTriangle className="w-5 h-5" />}

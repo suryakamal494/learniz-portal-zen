@@ -4,7 +4,7 @@ import { Batch } from '@/types/batch'
 export const mockBatches: Batch[] = [
   {
     id: '1',
-    name: 'Physics Advanced Batch A',
+    name: 'Physics Advanced Section A',
     class: 'Class 12',
     course: 'Science Stream',
     capacity: 30,
@@ -64,7 +64,7 @@ export const mockBatches: Batch[] = [
   },
   {
     id: '5',
-    name: 'JEE Preparation Batch',
+    name: 'JEE Preparation Section',
     class: 'Class 12',
     course: 'JEE Preparation',
     capacity: 35,

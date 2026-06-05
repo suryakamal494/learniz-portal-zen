@@ -44,7 +44,7 @@ export function BatchProgressTable({ batchProgress }: BatchProgressTableProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Batch-wise Progress</CardTitle>
+        <CardTitle className="text-lg font-semibold">Section-wise Progress</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {Object.entries(groupedByClass).map(([className, batches]) => {

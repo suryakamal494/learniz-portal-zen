@@ -18,7 +18,7 @@ const editScheduleSchema = z.object({
   time: z.string().min(1, 'Time is required'),
   duration: z.string().min(1, 'Duration is required'),
   class: z.string().min(1, 'Class is required'),
-  batch: z.string().min(1, 'Batch is required'),
+  batch: z.string().min(1, 'Section is required'),
   subject: z.string().min(1, 'Subject is required'),
   topic: z.string().min(1, 'Topic is required'),
   faculty: z.string().min(1, 'Faculty is required'),
@@ -186,14 +186,14 @@ export default function EditSchedulePage() {
                 {/* Batch */}
                 <FormField
                   control={form.control}
-                  name="batch"
+                  name="section"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Batch</FormLabel>
+                      <FormLabel>Section</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select Batch" />
+                            <SelectValue placeholder="Select Section" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>

@@ -136,7 +136,7 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
               <CollapsibleContent>
                 <div className="border-t border-border">
                   {classData.batches.map(batch => {
-                    const batchKey = `${classData.classId}-${batch.batchId}`;
+                    const batchKey = `${classData.classId}-${section.batchId}`;
                     const isBatchExpanded = expandedBatches.has(batchKey);
                     const batchCompletion = getCompletionPercentage(batch.completedHours, batch.totalHours);
 
@@ -234,7 +234,7 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                                         isExpanded={isChapterExpanded}
                                                         hasMultipleTeachers={hasMultipleTeachers}
                                                         subjectName={subject.subjectName}
-                                                        batchContext={`${classData.className} - ${batch.batchName}`}
+                                                        batchContext={`${classData.className} - ${section.batchName}`}
                                                         onNotesClick={openNotesPanel}
                                                       />
                                                     </CollapsibleTrigger>
@@ -248,7 +248,7 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                                     isExpanded={false}
                                                     hasMultipleTeachers={false}
                                                     subjectName={subject.subjectName}
-                                                    batchContext={`${classData.className} - ${batch.batchName}`}
+                                                    batchContext={`${classData.className} - ${section.batchName}`}
                                                     onNotesClick={openNotesPanel}
                                                   />
                                                 )}

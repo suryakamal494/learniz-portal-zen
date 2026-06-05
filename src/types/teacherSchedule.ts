@@ -36,7 +36,7 @@ export interface TeacherScheduleFilters {
   batch?: string;
 }
 
-export type TeacherScheduleSortField = 'date' | 'time' | 'class' | 'batch' | 'subject' | 'topic' | 'faculty';
+export type TeacherScheduleSortField = 'date' | 'time' | 'class' | 'section' | 'subject' | 'topic' | 'faculty';
 export type SortDirection = 'asc' | 'desc';
 
 export interface TeacherScheduleSort {

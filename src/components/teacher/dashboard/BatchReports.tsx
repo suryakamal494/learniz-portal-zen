@@ -31,7 +31,7 @@ export function BatchReports() {
         <div className="flex items-center gap-2">
           <FileBarChart className="h-5 w-5 text-primary" />
           <div>
-            <CardTitle className="text-lg font-bold text-foreground">Batch Reports</CardTitle>
+            <CardTitle className="text-lg font-bold text-foreground">Section Reports</CardTitle>
             <p className="text-body-sm text-muted-foreground">Latest exam performance</p>
           </div>
         </div>
@@ -81,7 +81,7 @@ export function BatchReports() {
         {latestReports.length === 0 && (
           <div className="text-center py-6 text-muted-foreground">
             <FileBarChart className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No batch reports available</p>
+            <p className="text-sm">No section reports available</p>
           </div>
         )}
       </CardContent>

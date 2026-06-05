@@ -64,15 +64,15 @@ export default function BatchListingPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Student Batches</h1>
-            <p className="text-gray-600 mt-1">Manage and organize your student batches</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Student Sections</h1>
+            <p className="text-gray-600 mt-1">Manage and organize your student sections</p>
           </div>
           <Button 
             onClick={() => navigate('/teacher/batches/add')}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
           >
             <Plus className="h-4 w-4" />
-            Create Batch
+            Create Section
           </Button>
         </div>
 
@@ -103,7 +103,7 @@ export default function BatchListingPage() {
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search batches..."
+              placeholder="Search sections..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"

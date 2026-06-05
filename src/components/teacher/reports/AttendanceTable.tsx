@@ -65,7 +65,7 @@ export function AttendanceTable({ data, isLoading }: AttendanceTableProps) {
               <TableHead className="font-semibold">Date</TableHead>
               <TableHead className="font-semibold">Time</TableHead>
               <TableHead className="font-semibold">Class Title</TableHead>
-              <TableHead className="font-semibold">Batch</TableHead>
+              <TableHead className="font-semibold">Section</TableHead>
               <TableHead className="font-semibold text-center">Attendance</TableHead>
               <TableHead className="font-semibold text-center">Absents</TableHead>
               <TableHead className="font-semibold text-center">Action</TableHead>
