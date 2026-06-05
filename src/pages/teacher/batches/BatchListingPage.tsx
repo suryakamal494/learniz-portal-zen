@@ -33,50 +33,50 @@ export default function BatchListingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-3 md:p-5">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Sections</h1>
-            <p className="text-gray-600 mt-1">
-              Open a section to manage its students, lessons, notes, assessments and attendance in one place.
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">My Sections</h1>
+            <p className="text-sm text-gray-600 mt-0.5">
+              Open a section to manage its students, lessons, notes, assessments and attendance.
             </p>
           </div>
           <Button
             onClick={() => navigate('/teacher/batches/add')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium inline-flex items-center gap-2 self-start sm:self-auto"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             Create Section
           </Button>
         </div>
 
         {/* Search row */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search sections by name, class or course..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white"
+              className="pl-10 h-9 bg-white"
             />
           </div>
-          <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-md px-3 py-2">
-            <LayoutGrid className="h-4 w-4 text-gray-400" />
+          <div className="inline-flex items-center gap-2 text-xs text-gray-600 bg-white border border-gray-200 rounded-md px-3 h-9">
+            <LayoutGrid className="h-3.5 w-3.5 text-gray-400" />
             {filteredBatches.length} sections
           </div>
         </div>
 
         {/* Grid */}
         {filteredBatches.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
+          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
             <p className="text-gray-700 font-medium">No sections match your search</p>
             <p className="text-gray-500 text-sm mt-1">Try a different name, class or course.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredBatches.map(batch => {
               const c = deriveCounts(batch.id)
               return (
@@ -96,3 +96,4 @@ export default function BatchListingPage() {
     </div>
   )
 }
+
