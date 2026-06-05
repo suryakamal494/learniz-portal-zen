@@ -136,7 +136,7 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
               <CollapsibleContent>
                 <div className="border-t border-border">
                   {classData.batches.map(batch => {
-                    const batchKey = `${classData.classId}-${section.batchId}`;
+                    const batchKey = `${classData.classId}-${batch.batchId}`;
                     const isBatchExpanded = expandedBatches.has(batchKey);
                     const batchCompletion = getCompletionPercentage(batch.completedHours, batch.totalHours);
 
