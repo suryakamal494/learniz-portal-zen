@@ -16,6 +16,7 @@ import QuestionBankPage from './pages/teacher/QuestionBankPage';
 // Teacher Batches
 import BatchListingPage from './pages/teacher/batches/BatchListingPage';
 import AddBatchPage from './pages/teacher/batches/AddBatchPage';
+import SectionWorkspacePage from './pages/teacher/batches/SectionWorkspacePage';
 import ViewStudentsPage from './pages/teacher/batches/ViewStudentsPage';
 import AssignLMSPage from './pages/teacher/batches/AssignLMSPage';
 import BatchNotesAssignmentPage from './pages/teacher/batches/BatchNotesAssignmentPage';
@@ -136,6 +137,7 @@ function App() {
           {/* Batches */}
           <Route path="batches" element={<BatchListingPage />} />
           <Route path="batches/add" element={<AddBatchPage />} />
+          <Route path="batches/:batchId" element={<SectionWorkspacePage />} />
           <Route path="batches/:batchId/students" element={<ViewStudentsPage />} />
           <Route path="batches/:batchId/assign-lms" element={<AssignLMSPage />} />
           <Route path="batches/:batchId/assign-notes" element={<BatchNotesAssignmentPage />} />
