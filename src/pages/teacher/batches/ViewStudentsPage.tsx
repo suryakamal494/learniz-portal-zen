@@ -43,7 +43,7 @@ export default function ViewStudentsPage() {
   const { toast } = useToast()
   
   // Find the current batch
-  const currentBatch = mockBatches.find(batch => section.id === batchId)
+  const currentBatch = mockBatches.find(batch => batch.id === batchId)
   
   // State management
   const [filters, setFilters] = useState<StudentFilters>({ search: '', class: 'all' })

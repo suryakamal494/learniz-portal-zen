@@ -280,10 +280,10 @@ export default function TeacherDetailPage() {
                           {/* Subjects within Batch */}
                           {batch.subjects.map((subject) => (
                             <Collapsible
-                              key={`${section.batchId}-${subject.subjectId}`}
-                              open={expandedSubject === `${section.batchId}-${subject.subjectId}`}
+                              key={`${batch.batchId}-${subject.subjectId}`}
+                              open={expandedSubject === `${batch.batchId}-${subject.subjectId}`}
                               onOpenChange={(open) => 
-                                setExpandedSubject(open ? `${section.batchId}-${subject.subjectId}` : null)
+                                setExpandedSubject(open ? `${batch.batchId}-${subject.subjectId}` : null)
                               }
                             >
                               <CollapsibleTrigger asChild>
@@ -300,7 +300,7 @@ export default function TeacherDetailPage() {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {expandedSubject === `${section.batchId}-${subject.subjectId}` ? (
+                                    {expandedSubject === `${batch.batchId}-${subject.subjectId}` ? (
                                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     ) : (
                                       <ChevronRight className="h-4 w-4 text-muted-foreground" />

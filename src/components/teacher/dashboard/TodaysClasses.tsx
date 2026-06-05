@@ -106,7 +106,7 @@ export function TodaysClasses() {
               {displayClasses.map((classItem) => (
                 <TableRow key={classItem.id}>
                   <TableCell className="font-medium">{classItem.time}</TableCell>
-                  <TableCell>{classItem.section}</TableCell>
+                  <TableCell>{classItem.batch}</TableCell>
                   <TableCell>{classItem.class}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{classItem.topic}</TableCell>
                   <TableCell>
@@ -150,7 +150,7 @@ export function TodaysClasses() {
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="font-medium text-foreground">{classItem.section}</h4>
+                    <h4 className="font-medium text-foreground">{classItem.batch}</h4>
                     <p className="text-sm text-muted-foreground">{classItem.class} • {classItem.time}</p>
                   </div>
                   <Button

@@ -103,7 +103,7 @@ export function ModernUpcomingClasses() {
                   
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="font-medium text-slate-900">{classItem.section}</div>
+                      <div className="font-medium text-slate-900">{classItem.batch}</div>
                       <div className="flex items-center gap-2">
                         <Badge className={`text-xs ${getSubjectColor(classItem.subject)}`}>
                           {classItem.subject}

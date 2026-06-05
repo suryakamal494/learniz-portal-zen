@@ -66,7 +66,7 @@ export default function InstituteSnapshotPage() {
         <MetricCard
           title="Total Classes"
           value={snapshot.totalClasses}
-          subtitle={`${mockInstituteClasses.reduce((acc, cls) => acc + cls.sections.length, 0)} sections`}
+          subtitle={`${mockInstituteClasses.reduce((acc, cls) => acc + cls.batches.length, 0)} sections`}
           icon={BookOpen}
           iconColor="text-green-500"
         />

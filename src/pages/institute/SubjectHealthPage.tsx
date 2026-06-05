@@ -280,7 +280,7 @@ export default function SubjectHealthPage() {
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                               {chapter.batchBreakdown.map((batch, idx) => (
-                                <div key={`${section.batchId}-${idx}`} className="text-xs p-2 rounded bg-muted/50 flex items-center justify-between">
+                                <div key={`${batch.batchId}-${idx}`} className="text-xs p-2 rounded bg-muted/50 flex items-center justify-between">
                                   <div>
                                     <p className="font-medium">{batch.batchName}</p>
                                     <Link 

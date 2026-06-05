@@ -249,10 +249,10 @@ export default function ClassOverviewPage() {
                                   ) : (
                                     batchSubjects.map((subject) => (
                                       <Collapsible
-                                        key={`${section.id}-${subject.subjectId}`}
-                                        open={expandedSubject === `${section.id}-${subject.subjectId}`}
+                                        key={`${batch.id}-${subject.subjectId}`}
+                                        open={expandedSubject === `${batch.id}-${subject.subjectId}`}
                                         onOpenChange={(open) => 
-                                          setExpandedSubject(open ? `${section.id}-${subject.subjectId}` : null)
+                                          setExpandedSubject(open ? `${batch.id}-${subject.subjectId}` : null)
                                         }
                                       >
                                         <CollapsibleTrigger asChild>
@@ -270,7 +270,7 @@ export default function ClassOverviewPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <span className="font-medium text-sm">{subject.accuracy.toFixed(1)}%</span>
-                                              {expandedSubject === `${section.id}-${subject.subjectId}` ? (
+                                              {expandedSubject === `${batch.id}-${subject.subjectId}` ? (
                                                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                               ) : (
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground" />

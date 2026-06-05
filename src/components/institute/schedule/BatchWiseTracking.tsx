@@ -234,7 +234,7 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                                         isExpanded={isChapterExpanded}
                                                         hasMultipleTeachers={hasMultipleTeachers}
                                                         subjectName={subject.subjectName}
-                                                        batchContext={`${classData.className} - ${section.batchName}`}
+                                                        batchContext={`${classData.className} - ${batch.batchName}`}
                                                         onNotesClick={openNotesPanel}
                                                       />
                                                     </CollapsibleTrigger>
@@ -248,7 +248,7 @@ export function BatchWiseTracking({ classProgress }: BatchWiseTrackingProps) {
                                                     isExpanded={false}
                                                     hasMultipleTeachers={false}
                                                     subjectName={subject.subjectName}
-                                                    batchContext={`${classData.className} - ${section.batchName}`}
+                                                    batchContext={`${classData.className} - ${batch.batchName}`}
                                                     onNotesClick={openNotesPanel}
                                                   />
                                                 )}

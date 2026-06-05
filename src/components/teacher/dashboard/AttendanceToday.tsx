@@ -68,7 +68,7 @@ export function AttendanceToday() {
                 {record.classTitle}
               </h4>
               <p className="text-xs text-muted-foreground mt-1">
-                {record.section} • {record.class}
+                {record.batch} • {record.class}
               </p>
               <p className="text-xs text-muted-foreground">
                 {record.time} • {format(parseISO(record.date), 'MMM dd')}
