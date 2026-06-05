@@ -1,6 +1,6 @@
 
 import { TeacherDashboardHeader } from "./TeacherDashboardHeader"
-import { ModernTeacherStats } from "./ModernTeacherStats"
+
 import { ModernQuickActions } from "./ModernQuickActions"
 import { ModernUpcomingClasses } from "./ModernUpcomingClasses"
 import { ModernBatchReports } from "./ModernBatchReports"
@@ -14,20 +14,11 @@ export function TeacherDashboard() {
       
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-          {/* Optimized Top Section - Quick Actions and Stats in a more compact layout */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 animate-slide-up stagger-1">
-            {/* Quick Actions - Compact Version */}
-            <div className="xl:col-span-2">
-              <ModernQuickActions />
-            </div>
-            
-            {/* Stats - More compact grid */}
-            <div className="xl:col-span-1">
-              <div className="grid grid-cols-2 gap-3">
-                <ModernTeacherStats />
-              </div>
-            </div>
+          {/* Quick Actions */}
+          <div className="animate-slide-up stagger-1">
+            <ModernQuickActions />
           </div>
+
           
           {/* Today's Schedule */}
           <div className="animate-slide-up stagger-2">
