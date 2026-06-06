@@ -20,8 +20,7 @@ import SectionWorkspacePage from './pages/teacher/batches/SectionWorkspacePage';
 import ViewStudentsPage from './pages/teacher/batches/ViewStudentsPage';
 import AssignLMSPage from './pages/teacher/batches/AssignLMSPage';
 import BatchNotesAssignmentPage from './pages/teacher/batches/BatchNotesAssignmentPage';
-import BatchProgramsPage from './pages/teacher/batches/BatchProgramsPage';
-import BatchProgressTrackerPage from './pages/teacher/batches/BatchProgressTrackerPage';
+import BatchCurriculumPage from './pages/teacher/batches/BatchCurriculumPage';
 
 // Teacher Exams
 import ExamsMainPage from './pages/teacher/exams/ExamsMainPage';
@@ -143,8 +142,9 @@ function App() {
           <Route path="batches/:batchId/students" element={<ViewStudentsPage />} />
           <Route path="batches/:batchId/assign-lms" element={<AssignLMSPage />} />
           <Route path="batches/:batchId/assign-notes" element={<BatchNotesAssignmentPage />} />
-          <Route path="batches/:batchId/programs" element={<BatchProgramsPage />} />
-          <Route path="batches/:batchId/progress" element={<BatchProgressTrackerPage />} />
+          <Route path="batches/:batchId/curriculum" element={<BatchCurriculumPage />} />
+          <Route path="batches/:batchId/programs" element={<Navigate to="../curriculum" replace />} />
+          <Route path="batches/:batchId/progress" element={<Navigate to="../curriculum" replace />} />
 
           {/* Exams */}
           <Route path="exams" element={<ExamsMainPage />} />

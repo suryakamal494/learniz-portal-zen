@@ -58,12 +58,12 @@ export default function SectionWorkspacePage() {
 
         <SectionProgramsSummary batchId={batch.id} />
 
+        <SectionTabs batch={batch} attendancePct={attendancePct} counts={counts} />
+
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Quick actions</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Other quick actions</h3>
           <SectionQuickActions batchId={batch.id} />
         </div>
-
-        <SectionTabs batch={batch} attendancePct={attendancePct} counts={counts} />
       </div>
     </div>
   )
