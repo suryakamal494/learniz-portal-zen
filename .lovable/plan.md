@@ -1,119 +1,94 @@
-# Programs & Progress for Section Workspace
+## What I understood
 
-Bring two missing things into a teacher's section view (`/teacher/batches/:batchId`):
-1. **Programs** assigned to the batch — Subject (only if 2+) → Chapters → Lesson Plans (with Preview).
-2. **My Progress** for this batch — chapter-wise % completion driven by teaching status logs.
+You want me to:
 
-Shown as an **inline summary card** on the workspace, with **dedicated pages** for drill-down. A new **"Programs"** Quick Action becomes the first tile.
+1. **Rename** the `✨ AI Test Generator` button on `/teacher/exams` to `✨ AI Exam Generator`.
+2. **Replace the 3-page flow** (Step 1 Config → Step 2 Preview → Step 3 Test Info) with a **single-page workspace** that:
+   - Captures **test metadata first** (Name, Duration, Marks/Q, Negative Marking, Exam Type, Instructions) — the natural starting point for a teacher.
+   - Then the **AI configuration** (Subject, Chapter, Topics, Number of Questions, Difficulty, Question Type, Categories, Custom Instructions).
+   - Then the **generated questions list** which **accumulates** across multiple Generate clicks (new questions append to the existing list; nothing gets wiped).
+   - Lets the teacher select, delete, or regenerate individual questions.
+   - One final **Create Exam** action submits everything.
+3. **Layout** must work well on desktop AND mobile, feel spacious (not cramped, not empty), and avoid forcing teachers between pages.
 
----
-
-## Program structure (canonical)
-
-```text
-Program (per batch)
-└── Subject tab        ← only rendered if batch has 2+ subjects
-    └── Chapter (collapsible)
-        └── Lesson Plan card  [ Preview ]
-                └── (in modal) PPTs · HTML · Videos · etc.
-```
-
-No topics. No subject header when there's only one subject — just go straight to chapters.
-
----
-
-## What the teacher sees on the workspace
+## Proposed UX: Two-pane workspace (desktop) / Stacked accordion (mobile)
 
 ```text
-┌─ Programs & Progress ─────────────────────────────────┐
-│  2 programs · 42% overall completion                  │
-│                                                       │
-│  ● Chemistry      ████████░░  68%                     │
-│  ● Physics        ████░░░░░░  35%                     │
-│                                                       │
-│  What it means: On track in Chemistry; Physics        │
-│  needs attention this week.                           │
-│                                                       │
-│  [ View programs → ]   [ Open progress tracker → ]    │
-└───────────────────────────────────────────────────────┘
+Desktop ≥ lg                                  Mobile / Tablet
+┌─────────────────────┬──────────────────────┐  ┌──────────────────┐
+│ LEFT PANE (sticky)  │ RIGHT PANE (scroll)  │  │ Sticky top bar:  │
+│ ~38% width          │ ~62% width           │  │ counters + CTA   │
+│                     │                      │  ├──────────────────┤
+│ 1. Test Details     │ Generated Questions  │  │ Accordion:       │
+│    (collapsible)    │  ─ Counter strip     │  │  ▸ Test Details  │
+│                     │    (Total / Selected │  │  ▸ AI Config     │
+│ 2. AI Configuration │     / Deleted)       │  │  ▸ Questions (N) │
+│    (collapsible)    │  ─ Bulk actions      │  ├──────────────────┤
+│                     │  ─ Question cards    │  │ Bottom action    │
+│ [Generate +N Qs]    │    (accumulate)      │  │ bar: Generate /  │
+│ [Reset]             │  ─ Empty state when  │  │ Create Exam      │
+│                     │    none yet          │  │                  │
+│ Sticky footer:      │                      │  │                  │
+│ Create Exam (N Qs)  │                      │  │                  │
+└─────────────────────┴──────────────────────┘  └──────────────────┘
 ```
 
-Quick Actions row reorders so **Programs** is the first tile, before Assign Lesson Plan.
+**Why this layout**
+- Teachers see config + output simultaneously — no page hops.
+- Left pane stays sticky so they can tweak topic/difficulty and click Generate without losing the question list on the right.
+- On mobile the same sections collapse into an accordion with a sticky bottom action bar, preserving touch-friendly targets (≥48px).
 
----
+### Key interaction rules
+- **Generate is additive.** Clicking Generate appends new questions to the existing list with a fresh batch tag (e.g. "Batch 2 · 5 Qs · Easy · Conceptual") so teachers can see provenance. Nothing is cleared.
+- **Per-question actions:** select (checkbox), delete (soft remove → goes to "Deleted" with Restore), regenerate single (replaces that one question using the same config).
+- **Bulk actions:** Select all in batch, delete selected, regenerate deleted.
+- **Test Summary chip** in the right pane header always shows live counters: Total / Selected / Deleted / Total Marks (selected × marks per Q).
+- **Create Exam** is enabled only when: test name filled, marks/Q > 0, at least 1 question selected. Disabled state shows tooltip listing missing fields.
+- **Validation inline** in the left pane (red ring + helper text), not blocking modals.
+- **Unsaved changes guard** when leaving the page with selected questions.
 
-## New pages
+### Visual style (matches existing pastel system)
+- Left pane = white card with subtle Blue/Green/Purple section dividers reusing the existing Content Selection / Question Configuration / Additional Requirements color cues from screenshot 1.
+- Right pane = light gray surface with white question cards (same look as screenshot 2).
+- Primary buttons: existing Blue/Indigo. Generate button: existing violet gradient.
 
-### 1. Programs page — `/teacher/batches/:batchId/programs`
-- **Subject tabs** at top — rendered only when batch has 2+ subjects. Single-subject batches skip tabs.
-- Under the active subject: **chapter accordion list**.
-  - Chapter header: name, chapter number, lesson-plan count, chapter % complete pill (Green/Amber/Red per thresholds).
-  - Expanded: vertical stack of **Lesson Plan cards**.
-- **Lesson Plan card** contents:
-  - Title, short summary, item counts (e.g. "3 PPTs · 1 video · 2 HTML"), status badge.
-  - **Preview** button → opens `LessonPlanPreviewModal` listing every content item inside the lesson plan with type icon, title, and a "View" link that opens the existing MediaViewer.
+## Phase-wise implementation plan
 
-### 2. Progress Tracker page — `/teacher/batches/:batchId/progress`
-- Top summary: overall %, hours completed vs planned ("18h 30m of 44h"), sessions completed/partial/missed.
-- Subject tabs (same rule: only if 2+ subjects) → per-chapter rows with progress bar, % complete, hours spent, last-taught date.
-- Filter: status (All / In progress / Not started / Done).
-- Reuses pastel pill thresholds and the "Data WITH Understanding" pattern.
+### Phase 1 — Rename + entry point
+- `src/pages/teacher/exams/ExamsMainPage.tsx`: rename button label `AI Test Generator` → `AI Exam Generator`, wire `onClick` to navigate to `/teacher/exams/ai-generator`.
+- Register route in `src/App.tsx`.
 
----
+### Phase 2 — Types & mock service
+- `src/types/aiExamGenerator.ts`: `AIExamConfig`, `AIQuestionBatch`, `GeneratedQuestion` (extends existing `Question`), `TestDetails`, `QuestionStatus` (`active | selected | deleted`).
+- `src/data/mockAIGenerator.ts`: a `generateMockQuestions(config)` that returns 1–15 fake MCQs derived from existing `mockQuestionBank` filtered by subject/chapter, tagged with batch id and difficulty.
 
-## Phased implementation
+### Phase 3 — Page shell & layout
+- `src/pages/teacher/exams/AIExamGeneratorPage.tsx` with responsive two-pane / accordion layout, sticky CTAs, breadcrumb back to Assessment.
+- Hook `useAIExamGenerator` to centralize state: `testDetails`, `aiConfig`, `batches[]`, `questions[]` (with status), derived counters.
 
-### Phase 1 — Data model & mocks
-- `src/types/program.ts`:
-  - `Program { id, batchId, subjects: ProgramSubject[] }`
-  - `ProgramSubject { id, name, chapters: ProgramChapter[] }`
-  - `ProgramChapter { id, name, order, lessonPlans: ProgramLessonPlan[] }`
-  - `ProgramLessonPlan { id, title, summary, contents: LessonPlanContent[], lmsSeriesId? }`
-  - `LessonPlanContent { id, type: 'ppt'|'html'|'video'|'pdf'|'note', title, url? }`
-- `src/data/mockPrograms.ts` — mix of single-subject and 2-subject batches; reuses existing chapter/lesson-plan names from `mockLMSSeries` / `mockCourses`.
-- `src/utils/programProgress.ts` — joins `mockPrograms` with `mockTeachingProgress` to compute:
-  - `getProgramSummary(batchId)` → list for the workspace card.
-  - `getChapterProgress(batchId, subjectId, chapterId)` → % + hours + sessions.
+### Phase 4 — Left pane components
+- `TestDetailsSection.tsx` — Test Name, Duration, Marks/Q, Negative Marking, Exam Type (select), Test Instructions (select). Reuse field components from existing `CreateExamPage`.
+- `AIConfigurationSection.tsx` — Subject/Chapter/Topics dropdowns (driven by `questionBankService`), Number of Questions, Difficulty (multi-checkbox), Question Type, Question Category (multi-checkbox), Custom Instructions textarea. Color-coded sub-cards mirroring screenshot 1.
+- `GenerateActionBar.tsx` — Generate button (shows "+N questions"), Reset Config button, validation hints.
 
-### Phase 2 — Inline summary on Section Workspace
-- `src/components/teacher/batches/SectionProgramsSummary.tsx` — the card shown above.
-- Inserted in `SectionWorkspacePage.tsx` between the Identity card and Quick Actions.
-- Add **Programs** as the first tile in `SectionQuickActions.tsx` (BookOpenCheck icon, blue) → routes to Programs page.
+### Phase 5 — Right pane components
+- `GeneratedQuestionsPanel.tsx` — header with counters strip (Total / Available / Selected / Deleted / Total Marks), Select All, Regenerate Deleted, Show Answers toggle.
+- `GeneratedQuestionCard.tsx` — same card visual as screenshot 2 with: checkbox, batch chip, difficulty chip, category chip, marks/min meta, per-card menu (Regenerate / Delete / Restore / Preview). Uses existing `QuestionPreviewModal`.
+- `BatchDivider.tsx` — subtle separator labeled "Batch 2 · 5 Qs · Hard · Logical · 14:23" so teachers can trace what each generate call produced.
+- `EmptyQuestionsState.tsx` — friendly empty state shown before first Generate.
 
-### Phase 3 — Programs page
-- `src/pages/teacher/batches/BatchProgramsPage.tsx` at `/teacher/batches/:batchId/programs`.
-- Components:
-  - `ProgramSubjectTabs.tsx` — only renders when `subjects.length > 1`; otherwise returns children directly.
-  - `ProgramChapterAccordion.tsx` — chapter rows with % pill + collapsible body.
-  - `LessonPlanCard.tsx` — title, content-type counts, status badge, **Preview** button.
-  - `LessonPlanPreviewModal.tsx` — lists every content item with type icon; "View" hooks into the existing `MediaViewer` for PPT/HTML/video.
-- Wire route in `App.tsx`.
+### Phase 6 — Submit flow
+- Sticky footer button `Create Exam (N selected · M marks)` → validates, then calls a mock `createExamFromAI(testDetails, selectedQuestions)` and navigates back to `/teacher/exams` with a success toast. Wire to existing exam list mock so the new exam appears at the top.
 
-### Phase 4 — Progress Tracker page
-- `src/pages/teacher/batches/BatchProgressTrackerPage.tsx` at `/teacher/batches/:batchId/progress`.
-- Components:
-  - `ProgressOverviewCards.tsx` (overall %, hours, sessions).
-  - `ChapterProgressList.tsx` (per-chapter rows, reuses the subject-tabs rule).
-  - `ProgressFilters.tsx` (status only).
-- "Open progress tracker" button on the workspace card links here.
+### Phase 7 — Polish & responsive QA
+- Mobile accordion behavior, sticky bottom action bar, keyboard scroll into newly added batch, loading skeletons during Generate (~1s simulated), toast on rate-limit-like failures.
+- Verify spacing matches existing pastel theme; no cramped/empty feel; touch targets ≥48px.
 
-### Phase 5 — Polish & verification
-- Empty states: no programs assigned, no lesson plans in a chapter.
-- Loading skeletons via `TeacherLoadingSkeleton`.
-- Verify pastel theme, Blue/Indigo primary buttons, `Xh Ym` time format, integer percentages.
-- Update `mem://features/program-management` to document the per-batch program shape: subject-tab-only-if-needed, no topics, Preview modal on lesson plans.
+## What stays the same
+- The original 3 pages (if they exist) are not touched outside the rename + new route; we add a brand-new page and only the button entry point changes.
+- All existing components (`QuestionPreviewModal`, `questionBankService`, exam mocks) are reused.
 
----
-
-## Technical notes
-- All progress is **read-only** here — ticking lesson plans as taught stays out of scope (driven by existing schedule status logs).
-- `MediaViewer` is reused for content previews — no new viewer code.
-- No backend changes; mocks + frontend only, Laravel-ready prop shapes.
-- Mobile-first grids and existing semantic tokens throughout.
-
----
-
-## Out of scope
-- Editing/assigning programs from the teacher side (institute action).
-- Falling-behind notifications.
-- Topic-level breakdown (intentionally removed per requirement).
+## Open questions before I build
+1. Should "Regenerate single" actually call the mock generator (replace that one card) or just mark it for the next batch run?
+2. On submit, should the created exam appear in the existing `mockExamsData` list immediately (so teachers see it), or simulate an API and show only a toast?
+3. For the test metadata, do you want `Pass Percentage` and `Start Date/Time` too (present in existing `ExamFormData`), or keep the AI flow minimal (Name, Duration, Marks/Q, Negative, Exam Type, Instructions only) and let teachers edit the rest from the standard Edit Exam page?
