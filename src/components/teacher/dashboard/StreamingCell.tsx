@@ -33,7 +33,7 @@ export function StreamingCell({ classItem, now, startedAt, endedAt, onStart, onE
             onStart(classItem.id)
             open()
           }}
-          className="h-8 bg-success hover:bg-success/90 text-white relative"
+          className="h-8 bg-primary hover:bg-primary/90 text-primary-foreground relative shadow-sm"
         >
           <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
           <Play className="h-3.5 w-3.5 mr-1" />
