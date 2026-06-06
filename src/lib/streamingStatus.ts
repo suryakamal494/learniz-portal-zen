@@ -4,12 +4,10 @@
 
 export type StreamingState =
   | { kind: 'upcoming'; startsInMs: number }
-  | { kind: 'startEarly'; startsInMs: number }
   | { kind: 'start' }
   | { kind: 'ongoing'; endsInMs: number }
   | { kind: 'overrun' }
   | { kind: 'ended'; endedEarly: boolean; durationMs: number }
-  | { kind: 'missed' }
   | { kind: 'cancelled' }
   | { kind: 'noLink' };
 
@@ -103,16 +101,13 @@ export function getStreamingState(
   }
 
   // Not started yet
-  if (t < start.getTime() - EARLY_WINDOW_MS) {
-    return { kind: 'upcoming', startsInMs: start.getTime() - t };
-  }
   if (t < start.getTime()) {
-    if (!hasLink) return { kind: 'noLink' };
-    return { kind: 'startEarly', startsInMs: start.getTime() - t };
+    return { kind: 'upcoming', startsInMs: start.getTime() - t };
   }
   if (t <= end.getTime()) {
     if (!hasLink) return { kind: 'noLink' };
     return { kind: 'start' };
   }
-  return { kind: 'missed' };
+  // Past end, never started — fall back to a neutral ended state.
+  return { kind: 'ended', endedEarly: false, durationMs: end.getTime() - start.getTime() };
 }
