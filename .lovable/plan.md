@@ -1,94 +1,117 @@
-## What I understood
+## What we're building
 
-You want me to:
-
-1. **Rename** the `✨ AI Test Generator` button on `/teacher/exams` to `✨ AI Exam Generator`.
-2. **Replace the 3-page flow** (Step 1 Config → Step 2 Preview → Step 3 Test Info) with a **single-page workspace** that:
-   - Captures **test metadata first** (Name, Duration, Marks/Q, Negative Marking, Exam Type, Instructions) — the natural starting point for a teacher.
-   - Then the **AI configuration** (Subject, Chapter, Topics, Number of Questions, Difficulty, Question Type, Categories, Custom Instructions).
-   - Then the **generated questions list** which **accumulates** across multiple Generate clicks (new questions append to the existing list; nothing gets wiped).
-   - Lets the teacher select, delete, or regenerate individual questions.
-   - One final **Create Exam** action submits everything.
-3. **Layout** must work well on desktop AND mobile, feel spacious (not cramped, not empty), and avoid forcing teachers between pages.
-
-## Proposed UX: Two-pane workspace (desktop) / Stacked accordion (mobile)
+A floating mic button at the bottom-right of every teacher page. Tap → speak → the system parses intent and navigates to the right page. Navigation only (no actions, no answers). Browser-native speech recognition. No paid integrations.
 
 ```text
-Desktop ≥ lg                                  Mobile / Tablet
-┌─────────────────────┬──────────────────────┐  ┌──────────────────┐
-│ LEFT PANE (sticky)  │ RIGHT PANE (scroll)  │  │ Sticky top bar:  │
-│ ~38% width          │ ~62% width           │  │ counters + CTA   │
-│                     │                      │  ├──────────────────┤
-│ 1. Test Details     │ Generated Questions  │  │ Accordion:       │
-│    (collapsible)    │  ─ Counter strip     │  │  ▸ Test Details  │
-│                     │    (Total / Selected │  │  ▸ AI Config     │
-│ 2. AI Configuration │     / Deleted)       │  │  ▸ Questions (N) │
-│    (collapsible)    │  ─ Bulk actions      │  ├──────────────────┤
-│                     │  ─ Question cards    │  │ Bottom action    │
-│ [Generate +N Qs]    │    (accumulate)      │  │ bar: Generate /  │
-│ [Reset]             │  ─ Empty state when  │  │ Create Exam      │
-│                     │    none yet          │  │                  │
-│ Sticky footer:      │                      │  │                  │
-│ Create Exam (N Qs)  │                      │  │                  │
-└─────────────────────┴──────────────────────┘  └──────────────────┘
+┌─ Teacher page ───────────────────────────────┐
+│                                              │
+│           (page content)                     │
+│                                              │
+│                                  ┌────────┐  │
+│                                  │  🎤    │  │  ← floating FAB
+│                                  └────────┘  │
+└──────────────────────────────────────────────┘
+
+Tap mic → expands into a panel:
+┌──────────────────────────────────────────┐
+│ 🎤  Listening…                       ✕   │
+│ ──────────────────────────────────────── │
+│ "show me batch A reports"                │  ← live transcript
+│                                          │
+│ Try: "Open assessments" · "Attendance"   │
+│      "Batch 11-A" · "Question bank"      │
+└──────────────────────────────────────────┘
+
+After speech ends:
+┌──────────────────────────────────────────┐
+│ 🎯  Opening Batch Reports for 11-A…      │
+│     Wrong page? [Cancel]                 │
+└──────────────────────────────────────────┘
 ```
 
-**Why this layout**
-- Teachers see config + output simultaneously — no page hops.
-- Left pane stays sticky so they can tweak topic/difficulty and click Generate without losing the question list on the right.
-- On mobile the same sections collapse into an accordion with a sticky bottom action bar, preserving touch-friendly targets (≥48px).
+## Tech choices (all free, already available)
 
-### Key interaction rules
-- **Generate is additive.** Clicking Generate appends new questions to the existing list with a fresh batch tag (e.g. "Batch 2 · 5 Qs · Easy · Conceptual") so teachers can see provenance. Nothing is cleared.
-- **Per-question actions:** select (checkbox), delete (soft remove → goes to "Deleted" with Restore), regenerate single (replaces that one question using the same config).
-- **Bulk actions:** Select all in batch, delete selected, regenerate deleted.
-- **Test Summary chip** in the right pane header always shows live counters: Total / Selected / Deleted / Total Marks (selected × marks per Q).
-- **Create Exam** is enabled only when: test name filled, marks/Q > 0, at least 1 question selected. Disabled state shows tooltip listing missing fields.
-- **Validation inline** in the left pane (red ring + helper text), not blocking modals.
-- **Unsaved changes guard** when leaving the page with selected questions.
+- **Speech-to-Text**: Browser `webkitSpeechRecognition` / `SpeechRecognition` Web Speech API. Works in Chrome, Edge, Safari (incl. iOS 14.5+). No key, no cost, low latency. Graceful fallback message for Firefox.
+- **Intent parsing**: Lovable AI Gateway (`google/gemini-3-flash-preview`) with **structured output via tool calling** returning `{ route, params, confidence, friendlyName }`. ~300ms.
+- **Edge function**: `supabase/functions/voice-intent/index.ts` keeps the prompt + route registry server-side and uses `LOVABLE_API_KEY`.
+- **Routing**: existing `react-router-dom` `useNavigate`.
+- **Requires Lovable Cloud** (for the edge function + LOVABLE_API_KEY). Will be enabled in Phase 0.
 
-### Visual style (matches existing pastel system)
-- Left pane = white card with subtle Blue/Green/Purple section dividers reusing the existing Content Selection / Question Configuration / Additional Requirements color cues from screenshot 1.
-- Right pane = light gray surface with white question cards (same look as screenshot 2).
-- Primary buttons: existing Blue/Indigo. Generate button: existing violet gradient.
+## Route registry (drives the LLM)
 
-## Phase-wise implementation plan
+A single typed file `src/lib/voiceRoutes.ts` lists every teacher page with examples. The LLM picks one. New pages = add one entry. Examples:
 
-### Phase 1 — Rename + entry point
-- `src/pages/teacher/exams/ExamsMainPage.tsx`: rename button label `AI Test Generator` → `AI Exam Generator`, wire `onClick` to navigate to `/teacher/exams/ai-generator`.
-- Register route in `src/App.tsx`.
+```ts
+{ id: 'reports.batch', path: '/teacher/reports/section', label: 'Batch Reports',
+  examples: ['show reports', 'batch performance', 'how did batch A do'] }
+{ id: 'attendance', path: '/teacher/reports/attendance', label: 'Attendance',
+  examples: ['mark attendance', 'attendance report', "today's attendance"] }
+{ id: 'assessments', path: '/teacher/exams', label: 'Assessments', ... }
+{ id: 'assessment.create', path: '/teacher/exams/create', ... }
+{ id: 'assessment.ai', path: '/teacher/exams/ai-generator', ... }
+{ id: 'lessons', path: '/teacher/lms', ... }
+{ id: 'lessonPlans', path: '/teacher/lms/series', ... }
+{ id: 'studyNotes', path: '/teacher/classroom/notes', ... }
+{ id: 'questionBank', path: '/teacher/question-bank', ... }
+{ id: 'schedule', path: '/teacher/classroom/schedule', ... }
+{ id: 'batches', path: '/teacher/batches', ... }
+{ id: 'messages', path: '/teacher/messages', ... }
+{ id: 'notifications', path: '/teacher/notifications', ... }
+// + batch-specific: { id: 'batch.open', path: '/teacher/batches/:batchId', needsParam: 'batchId' }
+```
 
-### Phase 2 — Types & mock service
-- `src/types/aiExamGenerator.ts`: `AIExamConfig`, `AIQuestionBatch`, `GeneratedQuestion` (extends existing `Question`), `TestDetails`, `QuestionStatus` (`active | selected | deleted`).
-- `src/data/mockAIGenerator.ts`: a `generateMockQuestions(config)` that returns 1–15 fake MCQs derived from existing `mockQuestionBank` filtered by subject/chapter, tagged with batch id and difficulty.
+For parametrised routes (e.g. "open Batch 11-A"), the edge function receives the list of available batches from `mockBatches` and resolves the param.
 
-### Phase 3 — Page shell & layout
-- `src/pages/teacher/exams/AIExamGeneratorPage.tsx` with responsive two-pane / accordion layout, sticky CTAs, breadcrumb back to Assessment.
-- Hook `useAIExamGenerator` to centralize state: `testDetails`, `aiConfig`, `batches[]`, `questions[]` (with status), derived counters.
+## UX rules
 
-### Phase 4 — Left pane components
-- `TestDetailsSection.tsx` — Test Name, Duration, Marks/Q, Negative Marking, Exam Type (select), Test Instructions (select). Reuse field components from existing `CreateExamPage`.
-- `AIConfigurationSection.tsx` — Subject/Chapter/Topics dropdowns (driven by `questionBankService`), Number of Questions, Difficulty (multi-checkbox), Question Type, Question Category (multi-checkbox), Custom Instructions textarea. Color-coded sub-cards mirroring screenshot 1.
-- `GenerateActionBar.tsx` — Generate button (shows "+N questions"), Reset Config button, validation hints.
+- **Single mic FAB**, bottom-right, 56px, blue-indigo gradient with subtle pulse when idle, animated wave when recording. Hidden on `/login` and `/brochure`.
+- **States**: idle → listening (live transcript) → thinking (200–600ms shimmer) → navigating (toast with "Opening X… Cancel"). Auto-stops on 2s silence.
+- **Low-confidence handling**: if confidence < 0.6, show a confirmation chip with top 2 guesses instead of navigating.
+- **Errors**: mic denied → tooltip explains; STT unsupported → hide FAB; AI error → toast "Couldn't understand, try again".
+- **Privacy notice**: first use shows a one-time tooltip explaining audio is processed in the browser and only the transcript is sent.
+- **Keyboard shortcut**: `Alt+M` toggles mic (bonus, no extra UI).
 
-### Phase 5 — Right pane components
-- `GeneratedQuestionsPanel.tsx` — header with counters strip (Total / Available / Selected / Deleted / Total Marks), Select All, Regenerate Deleted, Show Answers toggle.
-- `GeneratedQuestionCard.tsx` — same card visual as screenshot 2 with: checkbox, batch chip, difficulty chip, category chip, marks/min meta, per-card menu (Regenerate / Delete / Restore / Preview). Uses existing `QuestionPreviewModal`.
-- `BatchDivider.tsx` — subtle separator labeled "Batch 2 · 5 Qs · Hard · Logical · 14:23" so teachers can trace what each generate call produced.
-- `EmptyQuestionsState.tsx` — friendly empty state shown before first Generate.
+## Phase-wise implementation
 
-### Phase 6 — Submit flow
-- Sticky footer button `Create Exam (N selected · M marks)` → validates, then calls a mock `createExamFromAI(testDetails, selectedQuestions)` and navigates back to `/teacher/exams` with a success toast. Wire to existing exam list mock so the new exam appears at the top.
+### Phase 0 — Backend setup
+- Enable Lovable Cloud (required for edge function + LOVABLE_API_KEY).
 
-### Phase 7 — Polish & responsive QA
-- Mobile accordion behavior, sticky bottom action bar, keyboard scroll into newly added batch, loading skeletons during Generate (~1s simulated), toast on rate-limit-like failures.
-- Verify spacing matches existing pastel theme; no cramped/empty feel; touch targets ≥48px.
+### Phase 1 — Route registry + edge function
+- `src/lib/voiceRoutes.ts` — typed array of all navigable teacher pages with `id`, `path`, `label`, `examples[]`, optional `needsParam`.
+- `supabase/functions/voice-intent/index.ts` — accepts `{ transcript, batches[] }`, calls Lovable AI Gateway with a tool-calling schema:
+  ```json
+  { "routeId": "string", "params": { "batchId": "string?" },
+    "confidence": 0-1, "friendlyName": "string" }
+  ```
+  Handles 429/402 with friendly error payloads.
+
+### Phase 2 — Speech recognition hook
+- `src/hooks/useSpeechRecognition.ts` — wraps Web Speech API: `start()`, `stop()`, exposes `transcript`, `isListening`, `isSupported`, `error`. Handles permission denial, no-speech, network errors.
+
+### Phase 3 — Voice command UI
+- `src/components/teacher/voice/VoiceCommandFAB.tsx` — floating mic button with idle/listening/thinking states, animated mic icon (lucide `Mic` + custom pulse rings).
+- `src/components/teacher/voice/VoiceCommandPanel.tsx` — expanded panel above the FAB showing live transcript, example prompts (rotating), close button.
+- `src/components/teacher/voice/VoiceResultToast.tsx` — confirmation toast with "Opening X…" and Cancel/Wrong-page action.
+- Pastel theme, blue/indigo primary, follows existing design tokens.
+
+### Phase 4 — Wire into TeacherLayout
+- Mount `<VoiceCommandFAB />` inside `src/components/teacher/layout/TeacherLayout.tsx` so it appears on every teacher page automatically.
+- On submit: call edge function → navigate using `useNavigate()` → show toast.
+- Add `Alt+M` global shortcut listener.
+
+### Phase 5 — Polish & QA
+- Mobile: FAB shifts above any sticky bottom bars (e.g. AI Exam Generator footer). Use `bottom-20` on those pages via a context flag or just `bottom-24` globally with safe-area-inset.
+- Low-confidence confirmation chips.
+- First-use privacy tooltip.
+- Test phrases across ~15 representative intents.
+- Verify Safari iOS behavior.
 
 ## What stays the same
-- The original 3 pages (if they exist) are not touched outside the rename + new route; we add a brand-new page and only the button entry point changes.
-- All existing components (`QuestionPreviewModal`, `questionBankService`, exam mocks) are reused.
 
-## Open questions before I build
-1. Should "Regenerate single" actually call the mock generator (replace that one card) or just mark it for the next batch run?
-2. On submit, should the created exam appear in the existing `mockExamsData` list immediately (so teachers see it), or simulate an API and show only a toast?
-3. For the test metadata, do you want `Pass Percentage` and `Start Date/Time` too (present in existing `ExamFormData`), or keep the AI flow minimal (Name, Duration, Marks/Q, Negative, Exam Type, Instructions only) and let teachers edit the rest from the standard Edit Exam page?
+- No existing pages or routes change.
+- No new dependencies (Web Speech API is browser-native; we already have `lucide-react`, `react-router-dom`, `sonner`).
+- Only `TeacherLayout.tsx` gets one extra child component.
+
+## Open question (not blocking)
+
+When a teacher says "Open Batch A" but there are multiple matches (Batch A — Physics, Batch A — Chemistry), should the toast show a 2-option chooser, or just navigate to the most recently active one? Default: 2-option chooser.
