@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   Sparkles,
+  BookOpen,
+  Hash,
+  Filter,
+  GraduationCap,
   Trash2,
   RotateCcw,
   Eye,
@@ -11,11 +15,10 @@ import {
   Plus,
   Loader2,
   AlertCircle,
-  Settings2,
-  Undo2,
+  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,12 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Tooltip,
   TooltipContent,
@@ -49,7 +51,6 @@ import {
 } from '@/data/mockAIGenerator'
 import { mockInstructions } from '@/data/mockInstructions'
 import { mockExamsData } from '@/data/mockExamsData'
-import { MathText } from '@/components/teacher/exams/ai/MathText'
 import type {
   AIExamConfig,
   AIQuestionBatch,
@@ -58,10 +59,10 @@ import type {
   TestDetails,
 } from '@/types/aiExamGenerator'
 
-const DIFFICULTY_OPTIONS: { value: DifficultyLevel; label: string; active: string }[] = [
-  { value: 'easy', label: 'Easy', active: 'bg-green-100 text-green-700 border-green-300' },
-  { value: 'medium', label: 'Medium', active: 'bg-amber-100 text-amber-700 border-amber-300' },
-  { value: 'hard', label: 'Hard', active: 'bg-rose-100 text-rose-700 border-rose-300' },
+const DIFFICULTY_OPTIONS: { value: DifficultyLevel; label: string; color: string }[] = [
+  { value: 'easy', label: 'Easy', color: 'bg-green-100 text-green-700 border-green-200' },
+  { value: 'medium', label: 'Medium', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { value: 'hard', label: 'Hard', color: 'bg-rose-100 text-rose-700 border-rose-200' },
 ]
 
 const QUESTION_TYPE_OPTIONS = [
@@ -81,9 +82,9 @@ const initialConfig: AIExamConfig = {
   chapter: '',
   topics: [],
   numberOfQuestions: 5,
-  difficulties: ['medium'],
+  difficulties: [],
   questionType: 'single',
-  categories: ['Conceptual'],
+  categories: [],
   customInstructions: '',
 }
 
@@ -96,8 +97,6 @@ const initialDetails: TestDetails = {
   instructionId: '',
 }
 
-type FeedFilter = 'active' | 'selected' | 'deleted'
-
 export default function AIExamGeneratorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -106,18 +105,20 @@ export default function AIExamGeneratorPage() {
   const [config, setConfig] = useState<AIExamConfig>(initialConfig)
   const [batches, setBatches] = useState<AIQuestionBatch[]>([])
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([])
-  const [showAnswers, setShowAnswers] = useState(true)
+  const [showAnswers, setShowAnswers] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(true)
+  const [configOpen, setConfigOpen] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [filter, setFilter] = useState<FeedFilter>('active')
 
   const subjectMeta = SUBJECT_OPTIONS.find((s) => s.id === config.subject)
   const chapterMeta = subjectMeta?.chapters.find((c) => c.id === config.chapter)
+  const availableTopics = chapterMeta?.topics ?? []
 
   const available = questions.filter((q) => q.status === 'available')
   const deleted = questions.filter((q) => q.status === 'deleted')
   const selected = available.filter((q) => q.selected)
-  const totalMarks = selected.length * (details.marksPerQuestion || 0)
+  const totalMarks = selected.reduce((sum, q) => sum + (details.marksPerQuestion || 0), 0)
 
   const configValid =
     !!config.subject &&
@@ -134,42 +135,32 @@ export default function AIExamGeneratorPage() {
 
   const canSubmit = detailsValid && selected.length > 0
 
-  const handleGenerate = async (overrideConfig?: AIExamConfig, overrideCount?: number) => {
-    const useConfig = overrideConfig ?? config
-    if (
-      !useConfig.subject ||
-      !useConfig.chapter ||
-      useConfig.difficulties.length === 0 ||
-      useConfig.categories.length === 0
-    ) {
+  const handleGenerate = async () => {
+    if (!configValid) {
       toast({
         title: 'Missing AI configuration',
-        description: 'Pick subject, chapter, difficulty and at least one category.',
+        description:
+          'Pick a subject, chapter, difficulty, category and a valid number of questions (1–15).',
         variant: 'destructive',
       })
       return
     }
     setGenerating(true)
-    await new Promise((r) => setTimeout(r, 700))
+    await new Promise((r) => setTimeout(r, 800))
     const batchId = `b${Date.now()}`
     const batch: AIQuestionBatch = {
       id: batchId,
       index: batches.length + 1,
       createdAt: new Date().toISOString(),
-      config: { ...useConfig },
+      config: { ...config },
     }
-    const newQs = generateMockQuestions(
-      useConfig,
-      batchId,
-      details.marksPerQuestion || 1,
-      overrideCount,
-    )
+    const newQs = generateMockQuestions(config, batchId, details.marksPerQuestion || 1)
     setBatches((prev) => [...prev, batch])
     setQuestions((prev) => [...prev, ...newQs])
     setGenerating(false)
     toast({
       title: `Added ${newQs.length} new questions`,
-      description: `Batch ${batch.index} appended.`,
+      description: `Batch ${batch.index} appended. You can refine your config and generate more.`,
     })
   }
 
@@ -214,10 +205,36 @@ export default function AIExamGeneratorPage() {
     toast({ title: 'Question regenerated', description: `Q${target.serial} replaced.` })
   }
 
+  const handleRegenerateDeleted = async () => {
+    if (deleted.length === 0) return
+    // For each deleted, generate a fresh replacement using the original batch config
+    const replacements: GeneratedQuestion[] = []
+    deleted.forEach((d) => {
+      const batch = batches.find((b) => b.id === d.batchId)
+      if (!batch) return
+      const [fresh] = generateMockQuestions(batch.config, batch.id, details.marksPerQuestion || 1, 1)
+      if (fresh) replacements.push({ ...fresh, id: d.id, serial: d.serial })
+    })
+    setQuestions((prev) =>
+      prev.map((q) => {
+        const repl = replacements.find((r) => r.id === q.id)
+        return repl ? { ...repl, status: 'available', selected: true } : q
+      }),
+    )
+    toast({
+      title: 'Deleted questions regenerated',
+      description: `${replacements.length} replacements added back to your list.`,
+    })
+  }
+
   const handleSelectAll = (checked: boolean) => {
     setQuestions((prev) =>
       prev.map((q) => (q.status === 'available' ? { ...q, selected: checked } : q)),
     )
+  }
+
+  const handleResetConfig = () => {
+    setConfig(initialConfig)
   }
 
   const handleCreateExam = async () => {
@@ -252,25 +269,11 @@ export default function AIExamGeneratorPage() {
     navigate('/teacher/exams')
   }
 
-  const filteredBatches = useMemo(() => {
-    return batches.map((batch) => {
-      const all = questions.filter((q) => q.batchId === batch.id)
-      const visible = all.filter((q) => {
-        if (filter === 'active') return q.status === 'available'
-        if (filter === 'selected') return q.status === 'available' && q.selected
-        return q.status === 'deleted'
-      })
-      return { batch, visible, total: all.length }
-    })
-  }, [batches, questions, filter])
-
-  const feedHasAny = questions.length > 0
-
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/30 pb-28">
-        {/* Top header */}
-        <div className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur-md">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/30 pb-32">
+        {/* Header */}
+        <div className="sticky top-0 z-30 border-b bg-white/85 backdrop-blur-md">
           <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <Button
@@ -291,312 +294,527 @@ export default function AIExamGeneratorPage() {
                     AI Exam Generator
                   </h1>
                   <p className="text-xs text-slate-500 truncate">
-                    Configure once, generate, refine and create — all in one place.
+                    Configure once, generate questions, refine, and create the exam in one place.
                   </p>
                 </div>
               </div>
             </div>
-            <Tabs value={filter} onValueChange={(v) => setFilter(v as FeedFilter)} className="hidden md:block">
-              <TabsList className="bg-slate-100">
-                <TabsTrigger value="active" className="text-xs px-3">
-                  Active <span className="ml-1 font-bold">{available.length}</span>
-                </TabsTrigger>
-                <TabsTrigger value="selected" className="text-xs px-3">
-                  Selected <span className="ml-1 font-bold">{selected.length}</span>
-                </TabsTrigger>
-                <TabsTrigger value="deleted" className="text-xs px-3">
-                  Deleted <span className="ml-1 font-bold">{deleted.length}</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="hidden md:flex items-center gap-2">
+              <CounterChip label="Available" value={available.length} tone="slate" />
+              <CounterChip label="Selected" value={selected.length} tone="blue" />
+              <CounterChip label="Marks" value={totalMarks} tone="green" />
+            </div>
           </div>
         </div>
 
-        {/* Horizontal config strip */}
-        <div className="sticky top-[57px] z-30 border-b bg-white shadow-[0_1px_0_rgba(0,0,0,0.02)]">
-          <div className="px-4 sm:px-6 py-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            {/* Exam name + duration */}
-            <div className="md:col-span-4 space-y-1">
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Exam Name & Duration
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="e.g. Chemistry – Electrolysis Quiz"
-                  value={details.testName}
-                  onChange={(e) => setDetails({ ...details, testName: e.target.value })}
-                  className="h-9 text-sm flex-1"
-                />
-                <div className="relative">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={details.durationMinutes}
-                    onChange={(e) =>
-                      setDetails({ ...details, durationMinutes: Number(e.target.value) || 0 })
-                    }
-                    className="h-9 text-sm w-20 pr-7 text-center"
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">
-                    min
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Subject + Chapter */}
-            <div className="md:col-span-3 space-y-1">
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Subject & Chapter
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Select
-                  value={config.subject}
-                  onValueChange={(v) =>
-                    setConfig({ ...config, subject: v, chapter: '', topics: [] })
-                  }
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBJECT_OPTIONS.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={config.chapter}
-                  onValueChange={(v) => setConfig({ ...config, chapter: v, topics: [] })}
-                  disabled={!subjectMeta}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder={subjectMeta ? 'Chapter' : 'Pick subject'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjectMeta?.chapters.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Difficulty pills */}
-            <div className="md:col-span-2 space-y-1">
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Difficulty
-              </Label>
-              <div className="flex gap-1">
-                {DIFFICULTY_OPTIONS.map((d) => {
-                  const active = config.difficulties.includes(d.value)
-                  return (
-                    <button
-                      key={d.value}
-                      type="button"
-                      onClick={() =>
-                        setConfig({
-                          ...config,
-                          difficulties: active
-                            ? config.difficulties.filter((x) => x !== d.value)
-                            : [...config.difficulties, d.value],
+        <div className="px-4 sm:px-6 py-5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* LEFT PANE */}
+            <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+              {/* Test Details */}
+              <SectionCard
+                open={detailsOpen}
+                onOpenChange={setDetailsOpen}
+                icon={<GraduationCap className="h-4 w-4 text-blue-600" />}
+                title="Test Details"
+                subtitle="Name, duration, marks and exam type"
+                accent="from-blue-50 to-blue-50/30 border-blue-100"
+                complete={detailsValid}
+              >
+                <div className="space-y-4">
+                  <Field label="Test Name" required>
+                    <Input
+                      placeholder="e.g. Chemistry – Electrolysis Quiz"
+                      value={details.testName}
+                      onChange={(e) => setDetails({ ...details, testName: e.target.value })}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Duration (min)" required>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={details.durationMinutes}
+                        onChange={(e) =>
+                          setDetails({
+                            ...details,
+                            durationMinutes: Number(e.target.value) || 0,
+                          })
+                        }
+                      />
+                    </Field>
+                    <Field label="Marks / Question" required>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={details.marksPerQuestion}
+                        onChange={(e) =>
+                          setDetails({
+                            ...details,
+                            marksPerQuestion: Number(e.target.value) || 0,
+                          })
+                        }
+                      />
+                    </Field>
+                  </div>
+                  <Field
+                    label="Negative Marking (%)"
+                    hint="Deducted for wrong answers (0–100)"
+                  >
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={details.negativeMarkingPct}
+                      onChange={(e) =>
+                        setDetails({
+                          ...details,
+                          negativeMarkingPct: Number(e.target.value) || 0,
                         })
                       }
-                      className={cn(
-                        'flex-1 h-9 text-xs font-medium rounded-md border transition',
-                        active
-                          ? d.active
-                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50',
-                      )}
+                    />
+                  </Field>
+                  <Field label="Exam Type" required>
+                    <Select
+                      value={details.examType}
+                      onValueChange={(v) =>
+                        setDetails({ ...details, examType: v as TestDetails['examType'] })
+                      }
                     >
-                      {d.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EXAM_TYPE_OPTIONS.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Test Instructions">
+                    <Select
+                      value={details.instructionId || 'none'}
+                      onValueChange={(v) =>
+                        setDetails({ ...details, instructionId: v === 'none' ? '' : v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select instructions (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No instructions</SelectItem>
+                        {mockInstructions.map((i) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            {i.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+              </SectionCard>
 
-            {/* Qty */}
-            <div className="md:col-span-1 space-y-1">
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Qty
-              </Label>
-              <Input
-                type="number"
-                min={1}
-                max={15}
-                value={config.numberOfQuestions}
-                onChange={(e) =>
-                  setConfig({
-                    ...config,
-                    numberOfQuestions: Math.max(1, Math.min(15, Number(e.target.value) || 1)),
-                  })
+              {/* AI Configuration */}
+              <SectionCard
+                open={configOpen}
+                onOpenChange={setConfigOpen}
+                icon={<BookOpen className="h-4 w-4 text-violet-600" />}
+                title="AI Configuration"
+                subtitle="What kind of questions should AI generate?"
+                accent="from-violet-50 to-purple-50/40 border-violet-100"
+                complete={configValid}
+                action={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetConfig}
+                    className="text-xs text-slate-500 hover:text-slate-700"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Reset
+                  </Button>
                 }
-                className="h-9 text-sm text-center"
-              />
-            </div>
-
-            {/* Generate + Advanced */}
-            <div className="md:col-span-2 flex gap-2">
-              <Button
-                onClick={() => handleGenerate()}
-                disabled={generating || !configValid}
-                className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
               >
-                {generating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Generating
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-1.5" />
-                    Generate
-                  </>
-                )}
-              </Button>
-              <AdvancedPopover
-                details={details}
-                onDetailsChange={setDetails}
-                config={config}
-                onConfigChange={setConfig}
-                chapterTopics={chapterMeta?.topics ?? []}
-              />
-            </div>
-          </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Subject" required>
+                      <Select
+                        value={config.subject}
+                        onValueChange={(v) =>
+                          setConfig({ ...config, subject: v, chapter: '', topics: [] })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SUBJECT_OPTIONS.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="Chapter" required>
+                      <Select
+                        value={config.chapter}
+                        onValueChange={(v) => setConfig({ ...config, chapter: v, topics: [] })}
+                        disabled={!subjectMeta}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={subjectMeta ? 'Choose chapter' : 'Select subject first'}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjectMeta?.chapters.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
 
-          {!configValid && (
-            <div className="px-4 sm:px-6 pb-2 -mt-1 text-[11px] text-amber-700 flex items-center gap-1.5">
-              <AlertCircle className="h-3 w-3" />
-              Pick subject, chapter, difficulty and a category to enable Generate.
-            </div>
-          )}
-        </div>
+                  <Field
+                    label="Topics"
+                    hint={
+                      chapterMeta
+                        ? 'Pick one or more (leave empty to cover all)'
+                        : 'Select a chapter to see topics'
+                    }
+                  >
+                    <div className="flex flex-wrap gap-2 min-h-[44px] p-2 rounded-md border bg-white">
+                      {availableTopics.length === 0 ? (
+                        <span className="text-xs text-slate-400 self-center px-1">
+                          No topics yet
+                        </span>
+                      ) : (
+                        availableTopics.map((t) => {
+                          const active = config.topics.includes(t)
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() =>
+                                setConfig({
+                                  ...config,
+                                  topics: active
+                                    ? config.topics.filter((x) => x !== t)
+                                    : [...config.topics, t],
+                                })
+                              }
+                              className={cn(
+                                'text-xs px-2.5 py-1 rounded-full border transition',
+                                active
+                                  ? 'bg-violet-100 border-violet-300 text-violet-700'
+                                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100',
+                              )}
+                            >
+                              {t}
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  </Field>
 
-        {/* Question feed */}
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-          {/* Mobile filter */}
-          <div className="md:hidden mb-4">
-            <Tabs value={filter} onValueChange={(v) => setFilter(v as FeedFilter)}>
-              <TabsList className="w-full bg-slate-100">
-                <TabsTrigger value="active" className="flex-1 text-xs">
-                  Active ({available.length})
-                </TabsTrigger>
-                <TabsTrigger value="selected" className="flex-1 text-xs">
-                  Selected ({selected.length})
-                </TabsTrigger>
-                <TabsTrigger value="deleted" className="flex-1 text-xs">
-                  Deleted ({deleted.length})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field
+                      label="Number of Questions"
+                      required
+                      hint="1–15 per generation"
+                    >
+                      <Input
+                        type="number"
+                        min={1}
+                        max={15}
+                        value={config.numberOfQuestions}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            numberOfQuestions: Math.max(
+                              1,
+                              Math.min(15, Number(e.target.value) || 1),
+                            ),
+                          })
+                        }
+                      />
+                    </Field>
+                    <Field label="Question Type" required>
+                      <Select
+                        value={config.questionType}
+                        onValueChange={(v) =>
+                          setConfig({ ...config, questionType: v as AIExamConfig['questionType'] })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {QUESTION_TYPE_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
 
-          {!feedHasAny ? (
-            <EmptyState
-              hasConfig={configValid}
-              onGenerate={() => handleGenerate()}
-              generating={generating}
-            />
-          ) : (
-            <div className="space-y-8">
-              {/* Bulk actions row */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                  <Checkbox
-                    checked={available.length > 0 && selected.length === available.length}
-                    onCheckedChange={(v) => handleSelectAll(!!v)}
-                  />
-                  Select all ({selected.length}/{available.length})
-                </label>
+                  <Field label="Difficulty" required>
+                    <div className="flex flex-wrap gap-2">
+                      {DIFFICULTY_OPTIONS.map((d) => {
+                        const active = config.difficulties.includes(d.value)
+                        return (
+                          <button
+                            key={d.value}
+                            type="button"
+                            onClick={() =>
+                              setConfig({
+                                ...config,
+                                difficulties: active
+                                  ? config.difficulties.filter((x) => x !== d.value)
+                                  : [...config.difficulties, d.value],
+                              })
+                            }
+                            className={cn(
+                              'text-xs px-3 py-1.5 rounded-full border transition font-medium',
+                              active
+                                ? d.color
+                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50',
+                            )}
+                          >
+                            {d.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </Field>
+
+                  <Field label="Question Category" required>
+                    <div className="grid grid-cols-2 gap-2">
+                      {QUESTION_CATEGORIES.map((c) => {
+                        const active = config.categories.includes(c)
+                        return (
+                          <label
+                            key={c}
+                            className={cn(
+                              'flex items-center gap-2 px-3 py-2 rounded-md border text-sm cursor-pointer transition',
+                              active
+                                ? 'bg-violet-50 border-violet-300 text-violet-700'
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
+                            )}
+                          >
+                            <Checkbox
+                              checked={active}
+                              onCheckedChange={() =>
+                                setConfig({
+                                  ...config,
+                                  categories: active
+                                    ? config.categories.filter((x) => x !== c)
+                                    : [...config.categories, c],
+                                })
+                              }
+                            />
+                            {c}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </Field>
+
+                  <Field
+                    label="Custom Instructions"
+                    hint="Add class, board or any specific guidance for the AI"
+                  >
+                    <Textarea
+                      rows={3}
+                      placeholder="e.g. Class 12 CBSE – keep questions exam-style and avoid trick wording"
+                      value={config.customInstructions}
+                      onChange={(e) =>
+                        setConfig({ ...config, customInstructions: e.target.value })
+                      }
+                    />
+                  </Field>
+                </div>
+              </SectionCard>
+
+              {/* Generate action */}
+              <div className="lg:sticky lg:bottom-24">
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAnswers((s) => !s)}
-                  className="h-8"
+                  onClick={handleGenerate}
+                  disabled={generating || !configValid}
+                  className="w-full h-12 text-base bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md"
                 >
-                  {showAnswers ? (
+                  {generating ? (
                     <>
-                      <EyeOff className="h-3.5 w-3.5 mr-1.5" />
-                      Hide answers
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating…
                     </>
                   ) : (
                     <>
-                      <Eye className="h-3.5 w-3.5 mr-1.5" />
-                      Show answers
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {questions.length === 0
+                        ? `Generate ${config.numberOfQuestions} Questions`
+                        : `Add ${config.numberOfQuestions} More Questions`}
                     </>
                   )}
                 </Button>
+                {!configValid && (
+                  <p className="mt-2 text-xs text-slate-500 flex items-start gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-amber-500" />
+                    Pick subject, chapter, difficulty and at least one category to enable
+                    generation.
+                  </p>
+                )}
               </div>
-
-              {filteredBatches.map(({ batch, visible }) => {
-                if (visible.length === 0) return null
-                return (
-                  <section key={batch.id} className="space-y-3">
-                    <BatchDivider batch={batch} count={visible.length} />
-                    <div className="space-y-3">
-                      {visible.map((q) =>
-                        q.status === 'deleted' ? (
-                          <DeletedQuestionRow key={q.id} q={q} onRestore={handleRestore} />
-                        ) : (
-                          <QuestionCard
-                            key={q.id}
-                            q={q}
-                            showAnswer={showAnswers}
-                            onToggleSelect={handleToggleSelect}
-                            onDelete={handleDelete}
-                            onRegenerate={handleRegenerateOne}
-                          />
-                        ),
-                      )}
-                    </div>
-                    {filter !== 'deleted' && (
-                      <div className="flex justify-center pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs text-slate-600 border-dashed"
-                          disabled={generating}
-                          onClick={() =>
-                            handleGenerate(
-                              batch.config,
-                              Math.min(5, batch.config.numberOfQuestions),
-                            )
-                          }
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                          Generate {Math.min(5, batch.config.numberOfQuestions)} more in this batch
-                        </Button>
-                      </div>
-                    )}
-                  </section>
-                )
-              })}
-
-              {filteredBatches.every(({ visible }) => visible.length === 0) && (
-                <div className="text-center py-12 text-sm text-slate-500">
-                  {filter === 'selected'
-                    ? 'No questions selected yet.'
-                    : filter === 'deleted'
-                      ? 'Nothing deleted.'
-                      : 'No active questions.'}
-                </div>
-              )}
             </div>
-          )}
-        </main>
 
-        {/* Sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 backdrop-blur">
+            {/* RIGHT PANE */}
+            <div className="lg:col-span-7 xl:col-span-8">
+              <Card className="border-slate-200">
+                <CardHeader className="pb-3 border-b">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Hash className="h-4 w-4 text-slate-500" />
+                        Generated Questions
+                      </CardTitle>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Each generation appends below. Select what you want, delete the rest.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAnswers((s) => !s)}
+                        disabled={available.length === 0}
+                      >
+                        {showAnswers ? (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5 mr-1.5" />
+                            Hide Answers
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5 mr-1.5" />
+                            Show Answers
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRegenerateDeleted}
+                        disabled={deleted.length === 0}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                        Regenerate Deleted ({deleted.length})
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <StatPill label="Total" value={questions.length} color="text-slate-700" />
+                    <StatPill label="Available" value={available.length} color="text-emerald-600" />
+                    <StatPill label="Selected" value={selected.length} color="text-blue-600" />
+                    <StatPill
+                      label="Deleted"
+                      value={deleted.length}
+                      color="text-rose-600"
+                    />
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-0">
+                  {available.length === 0 && deleted.length === 0 ? (
+                    <EmptyState
+                      hasConfig={configValid}
+                      onGenerate={handleGenerate}
+                      generating={generating}
+                    />
+                  ) : (
+                    <div>
+                      {/* Bulk row */}
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-slate-50/50">
+                        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                          <Checkbox
+                            checked={
+                              available.length > 0 &&
+                              selected.length === available.length
+                            }
+                            onCheckedChange={(v) => handleSelectAll(!!v)}
+                          />
+                          Select all ({selected.length}/{available.length})
+                        </label>
+                        <span className="text-xs text-slate-500">
+                          {batches.length} {batches.length === 1 ? 'batch' : 'batches'} generated
+                        </span>
+                      </div>
+
+                      {/* Batches */}
+                      <div className="divide-y">
+                        {batches.map((batch) => {
+                          const batchQs = questions.filter(
+                            (q) => q.batchId === batch.id && q.status === 'available',
+                          )
+                          const batchDeleted = questions.filter(
+                            (q) => q.batchId === batch.id && q.status === 'deleted',
+                          )
+                          if (batchQs.length === 0 && batchDeleted.length === 0) return null
+                          return (
+                            <div key={batch.id} className="py-3">
+                              <BatchHeader batch={batch} count={batchQs.length} />
+                              <div className="px-4 space-y-3 mt-2">
+                                {batchQs.map((q) => (
+                                  <QuestionCard
+                                    key={q.id}
+                                    question={q}
+                                    showAnswer={showAnswers}
+                                    onToggleSelect={handleToggleSelect}
+                                    onDelete={handleDelete}
+                                    onRegenerate={handleRegenerateOne}
+                                  />
+                                ))}
+                                {batchDeleted.map((q) => (
+                                  <DeletedQuestionRow
+                                    key={q.id}
+                                    question={q}
+                                    onRestore={handleRestore}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky submit bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur">
           <div className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <FooterStat label="Total" value={questions.length} tone="text-slate-700" />
-              <FooterStat label="Selected" value={selected.length} tone="text-blue-600" />
-              <FooterStat label="Marks" value={totalMarks} tone="text-emerald-600" />
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+              <Badge variant="outline" className="font-normal">
+                {selected.length} selected
+              </Badge>
+              <Badge variant="outline" className="font-normal">
+                {totalMarks} marks
+              </Badge>
+              <Badge variant="outline" className="font-normal">
+                {details.durationMinutes} min
+              </Badge>
               {!detailsValid && (
                 <span className="text-xs text-amber-600 inline-flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5" />
@@ -650,401 +868,235 @@ export default function AIExamGeneratorPage() {
   )
 }
 
-/* ----------------------- Advanced Popover ----------------------- */
+/* ---------------- Sub-components ---------------- */
 
-function AdvancedPopover({
-  details,
-  onDetailsChange,
-  config,
-  onConfigChange,
-  chapterTopics,
+function Field({
+  label,
+  required,
+  hint,
+  children,
 }: {
-  details: TestDetails
-  onDetailsChange: (d: TestDetails) => void
-  config: AIExamConfig
-  onConfigChange: (c: AIExamConfig) => void
-  chapterTopics: string[]
+  label: string
+  required?: boolean
+  hint?: string
+  children: React.ReactNode
 }) {
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" title="Advanced">
-          <Settings2 className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-[420px] max-h-[70vh] overflow-y-auto">
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Test Details
-            </h4>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Marks / Q">
-                <Input
-                  type="number"
-                  min={1}
-                  value={details.marksPerQuestion}
-                  onChange={(e) =>
-                    onDetailsChange({
-                      ...details,
-                      marksPerQuestion: Number(e.target.value) || 0,
-                    })
-                  }
-                />
-              </Field>
-              <Field label="Negative %">
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={details.negativeMarkingPct}
-                  onChange={(e) =>
-                    onDetailsChange({
-                      ...details,
-                      negativeMarkingPct: Number(e.target.value) || 0,
-                    })
-                  }
-                />
-              </Field>
-            </div>
-            <div className="mt-2 grid grid-cols-1 gap-2">
-              <Field label="Exam Type">
-                <Select
-                  value={details.examType}
-                  onValueChange={(v) =>
-                    onDetailsChange({ ...details, examType: v as TestDetails['examType'] })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXAM_TYPE_OPTIONS.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Test Instructions">
-                <Select
-                  value={details.instructionId || 'none'}
-                  onValueChange={(v) =>
-                    onDetailsChange({ ...details, instructionId: v === 'none' ? '' : v })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No instructions</SelectItem>
-                    {mockInstructions.map((i) => (
-                      <SelectItem key={i.id} value={i.id}>
-                        {i.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              AI Configuration
-            </h4>
-            <Field label="Question Type">
-              <Select
-                value={config.questionType}
-                onValueChange={(v) =>
-                  onConfigChange({ ...config, questionType: v as AIExamConfig['questionType'] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {QUESTION_TYPE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <div className="mt-2">
-              <Field label="Topics (optional)">
-                <div className="flex flex-wrap gap-1.5 min-h-[44px] p-2 rounded-md border bg-white">
-                  {chapterTopics.length === 0 ? (
-                    <span className="text-xs text-slate-400 self-center">
-                      Pick a chapter first
-                    </span>
-                  ) : (
-                    chapterTopics.map((t) => {
-                      const active = config.topics.includes(t)
-                      return (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() =>
-                            onConfigChange({
-                              ...config,
-                              topics: active
-                                ? config.topics.filter((x) => x !== t)
-                                : [...config.topics, t],
-                            })
-                          }
-                          className={cn(
-                            'text-xs px-2.5 py-1 rounded-full border transition',
-                            active
-                              ? 'bg-violet-100 border-violet-300 text-violet-700'
-                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100',
-                          )}
-                        >
-                          {t}
-                        </button>
-                      )
-                    })
-                  )}
-                </div>
-              </Field>
-            </div>
-
-            <div className="mt-2">
-              <Field label="Categories">
-                <div className="grid grid-cols-2 gap-2">
-                  {QUESTION_CATEGORIES.map((c) => {
-                    const active = config.categories.includes(c)
-                    return (
-                      <label
-                        key={c}
-                        className={cn(
-                          'flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-xs cursor-pointer transition',
-                          active
-                            ? 'bg-violet-50 border-violet-300 text-violet-700'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
-                        )}
-                      >
-                        <Checkbox
-                          checked={active}
-                          onCheckedChange={() =>
-                            onConfigChange({
-                              ...config,
-                              categories: active
-                                ? config.categories.filter((x) => x !== c)
-                                : [...config.categories, c],
-                            })
-                          }
-                        />
-                        {c}
-                      </label>
-                    )
-                  })}
-                </div>
-              </Field>
-            </div>
-
-            <div className="mt-2">
-              <Field label="Custom Prompt">
-                <Textarea
-                  rows={3}
-                  placeholder="e.g. Class 12 CBSE – exam-style, no trick wording"
-                  value={config.customInstructions}
-                  onChange={(e) =>
-                    onConfigChange({ ...config, customInstructions: e.target.value })
-                  }
-                />
-              </Field>
-            </div>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-/* ----------------------- Sub-components ----------------------- */
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <Label className="text-[11px] font-medium text-slate-600">{label}</Label>
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-slate-700">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </Label>
       {children}
+      {hint && <p className="text-[11px] text-slate-500">{hint}</p>}
     </div>
   )
 }
 
-function FooterStat({
+function SectionCard({
+  open,
+  onOpenChange,
+  icon,
+  title,
+  subtitle,
+  accent,
+  complete,
+  action,
+  children,
+}: {
+  open: boolean
+  onOpenChange: (b: boolean) => void
+  icon: React.ReactNode
+  title: string
+  subtitle: string
+  accent: string
+  complete: boolean
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <Card
+      className={cn(
+        'overflow-hidden border bg-gradient-to-br',
+        accent,
+      )}
+    >
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        <div className="flex items-center justify-between px-4 py-3">
+          <CollapsibleTrigger className="flex items-center gap-3 text-left flex-1 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-white border flex items-center justify-center shrink-0">
+              {icon}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 truncate">{title}</h3>
+                {complete && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+              </div>
+              <p className="text-xs text-slate-500 truncate">{subtitle}</p>
+            </div>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 text-slate-400 ml-2 shrink-0 transition-transform',
+                open && 'rotate-180',
+              )}
+            />
+          </CollapsibleTrigger>
+          {action}
+        </div>
+        <CollapsibleContent>
+          <div className="px-4 pb-4 pt-1 bg-white/60 border-t">{children}</div>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  )
+}
+
+function CounterChip({
   label,
   value,
   tone,
 }: {
   label: string
   value: number
-  tone: string
+  tone: 'slate' | 'blue' | 'green'
 }) {
+  const tones = {
+    slate: 'bg-slate-100 text-slate-700',
+    blue: 'bg-blue-100 text-blue-700',
+    green: 'bg-emerald-100 text-emerald-700',
+  }
   return (
-    <div className="flex flex-col">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        {label}
-      </span>
-      <span className={cn('text-lg font-bold leading-none mt-0.5', tone)}>{value}</span>
+    <div
+      className={cn(
+        'px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1.5',
+        tones[tone],
+      )}
+    >
+      <span>{label}</span>
+      <span className="font-bold">{value}</span>
     </div>
   )
 }
 
-function BatchDivider({ batch, count }: { batch: AIQuestionBatch; count: number }) {
+function StatPill({
+  label,
+  value,
+  color,
+}: {
+  label: string
+  value: number
+  color: string
+}) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-px flex-1 bg-slate-200" />
-      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-violet-700">
-          Batch {batch.index}
-        </span>
-        <span className="text-[10px] text-slate-400">·</span>
-        <span className="text-[10px] text-slate-600">{count} Qs</span>
-        <span className="text-[10px] text-slate-400">·</span>
-        <span className="text-[10px] text-slate-600 capitalize">
-          {batch.config.difficulties.join(', ') || 'mixed'}
-        </span>
-        <span className="text-[10px] text-slate-400">·</span>
-        <span className="text-[10px] text-slate-600">
-          {batch.config.categories.slice(0, 2).join(', ') || 'mixed'}
-        </span>
-      </div>
-      <div className="h-px flex-1 bg-slate-200" />
+    <div className="border rounded-md bg-white px-3 py-2 flex items-center justify-between">
+      <span className="text-xs text-slate-500">{label}</span>
+      <span className={cn('text-base font-bold', color)}>{value}</span>
+    </div>
+  )
+}
+
+function BatchHeader({
+  batch,
+  count,
+}: {
+  batch: AIQuestionBatch
+  count: number
+}) {
+  const time = new Date(batch.createdAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return (
+    <div className="px-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+      <span className="px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 font-medium border border-violet-100">
+        Batch {batch.index}
+      </span>
+      <span>{count} questions</span>
+      <span>·</span>
+      <span className="capitalize">
+        {batch.config.difficulties.join(', ') || 'mixed'}
+      </span>
+      <span>·</span>
+      <span>{batch.config.categories.slice(0, 2).join(', ') || 'mixed'}</span>
+      <span>·</span>
+      <span>{time}</span>
     </div>
   )
 }
 
 function QuestionCard({
-  q,
+  question,
   showAnswer,
   onToggleSelect,
   onDelete,
   onRegenerate,
 }: {
-  q: GeneratedQuestion
+  question: GeneratedQuestion
   showAnswer: boolean
   onToggleSelect: (id: string) => void
   onDelete: (id: string) => void
   onRegenerate: (id: string) => void
 }) {
   const diffColor =
-    q.difficulty === 'easy'
-      ? 'bg-green-50 text-green-700 border-green-200'
-      : q.difficulty === 'medium'
-        ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : 'bg-rose-50 text-rose-700 border-rose-200'
-
+    question.difficulty === 'easy'
+      ? 'bg-green-100 text-green-700 border-green-200'
+      : question.difficulty === 'medium'
+        ? 'bg-amber-100 text-amber-700 border-amber-200'
+        : 'bg-rose-100 text-rose-700 border-rose-200'
   return (
-    <Card
+    <div
       className={cn(
-        'group p-4 sm:p-5 transition border',
-        q.selected
-          ? 'border-blue-200 ring-1 ring-blue-100 bg-white'
-          : 'border-slate-200 bg-white hover:border-slate-300',
+        'rounded-lg border bg-white p-3.5 transition',
+        question.selected ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200',
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Left: checkbox + serial */}
-        <div className="flex flex-col items-center gap-2 pt-0.5">
-          <Checkbox
-            checked={q.selected}
-            onCheckedChange={() => onToggleSelect(q.id)}
-            aria-label={`Select question ${q.serial}`}
-          />
-          <span className="text-[10px] font-bold text-slate-400">Q{q.serial}</span>
-        </div>
-
-        {/* Right: content */}
+        <Checkbox
+          checked={question.selected}
+          onCheckedChange={() => onToggleSelect(question.id)}
+          className="mt-1"
+        />
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5 mb-3">
-            <Badge variant="outline" className={cn('text-[10px] uppercase font-semibold', diffColor)}>
-              {q.difficulty}
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <Badge variant="outline" className="text-[10px] font-medium bg-slate-50">
+              Q{question.serial}
             </Badge>
-            <Badge
-              variant="outline"
-              className="text-[10px] bg-violet-50 text-violet-700 border-violet-200"
-            >
-              {q.category}
+            <Badge variant="outline" className={cn('text-[10px] uppercase', diffColor)}>
+              {question.difficulty}
             </Badge>
-            <Badge
-              variant="outline"
-              className="text-[10px] bg-slate-50 text-slate-600 border-slate-200"
-            >
-              {q.topic}
+            <Badge variant="outline" className="text-[10px] bg-violet-50 text-violet-700 border-violet-100">
+              {question.category}
             </Badge>
-            <span className="text-[11px] text-slate-400 ml-auto">
-              {q.marks} marks · {q.estimatedMinutes} min
+            <span className="text-[11px] text-slate-500 ml-auto">
+              {question.marks} marks · {question.estimatedMinutes} min
             </span>
           </div>
-
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
-              <MathText
-                text={q.questionText}
-                className="block text-sm text-slate-800 leading-relaxed mb-3"
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {q.options.map((o, idx) => {
-                  const isCorrect = showAnswer && idx === q.correctAnswerIndex
-                  return (
-                    <div
-                      key={o.label}
-                      className={cn(
-                        'flex items-start gap-2 px-3 py-2 rounded-md border text-xs',
-                        isCorrect
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                          : 'bg-slate-50 border-slate-200 text-slate-700',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
-                          isCorrect
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-white border border-slate-300 text-slate-500',
-                        )}
-                      >
-                        {o.label}
-                      </span>
-                      <MathText text={o.text} className="leading-tight pt-0.5" />
-                    </div>
-                  )
-                })}
-              </div>
-
-              {showAnswer && q.explanation && (
-                <div className="mt-3 p-2.5 bg-amber-50/60 border border-amber-100 rounded-md">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block mb-1">
-                    Explanation
-                  </span>
-                  <MathText text={q.explanation} className="text-xs text-amber-900 leading-relaxed" />
-                </div>
-              )}
-            </div>
-
-            {q.diagramSvg && (
-              <div className="shrink-0 hidden sm:block">
+          <p className="text-sm text-slate-800 mb-2.5">{question.questionText}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {question.options.map((o, idx) => {
+              const isCorrect = showAnswer && idx === question.correctAnswerIndex
+              return (
                 <div
-                  className="w-32 h-24 rounded-md overflow-hidden border bg-slate-50"
-                  dangerouslySetInnerHTML={{ __html: q.diagramSvg }}
-                />
-              </div>
-            )}
+                  key={o.label}
+                  className={cn(
+                    'text-xs px-2.5 py-1.5 rounded-md border',
+                    isCorrect
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-slate-50 border-slate-200 text-slate-700',
+                  )}
+                >
+                  <span className="font-semibold mr-1">{o.label}.</span>
+                  {o.text}
+                </div>
+              )
+            })}
           </div>
         </div>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+        <div className="flex flex-col gap-1 shrink-0">
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-slate-400 hover:text-violet-600"
-            onClick={() => onRegenerate(q.id)}
+            onClick={() => onRegenerate(question.id)}
             title="Regenerate"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -1053,38 +1105,37 @@ function QuestionCard({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-slate-400 hover:text-rose-600"
-            onClick={() => onDelete(q.id)}
+            onClick={() => onDelete(question.id)}
             title="Delete"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
 
 function DeletedQuestionRow({
-  q,
+  question,
   onRestore,
 }: {
-  q: GeneratedQuestion
+  question: GeneratedQuestion
   onRestore: (id: string) => void
 }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-rose-200 bg-rose-50/40 px-3 py-2">
       <div className="min-w-0 flex items-center gap-2">
         <Trash2 className="h-3.5 w-3.5 text-rose-400 shrink-0" />
-        <span className="text-xs text-slate-500 shrink-0">Q{q.serial} · Deleted</span>
-        <MathText text={q.questionText} className="text-xs text-slate-600 truncate" />
+        <span className="text-xs text-slate-500 shrink-0">Q{question.serial} · Deleted</span>
+        <span className="text-xs text-slate-600 truncate">— {question.questionText}</span>
       </div>
       <Button
         variant="ghost"
         size="sm"
         className="h-7 text-xs text-rose-600 hover:text-rose-700"
-        onClick={() => onRestore(q.id)}
+        onClick={() => onRestore(question.id)}
       >
-        <Undo2 className="h-3.5 w-3.5 mr-1" />
         Restore
       </Button>
     </div>
@@ -1101,19 +1152,19 @@ function EmptyState({
   generating: boolean
 }) {
   return (
-    <div className="px-6 py-20 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+    <div className="px-6 py-14 text-center">
       <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center mb-4">
         <Sparkles className="h-7 w-7 text-violet-600" />
       </div>
       <h3 className="text-base font-semibold text-slate-900">No questions yet</h3>
       <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-        Pick subject, chapter, difficulty in the strip above and hit Generate. Each click
-        appends a new batch — nothing you keep gets removed.
+        Configure the AI on the left and click Generate. Each click appends a new batch —
+        nothing you keep gets removed.
       </p>
       <Button
         onClick={onGenerate}
         disabled={!hasConfig || generating}
-        className="mt-5 bg-blue-600 hover:bg-blue-700 text-white"
+        className="mt-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
       >
         {generating ? (
           <>
@@ -1129,9 +1180,12 @@ function EmptyState({
       </Button>
       {!hasConfig && (
         <p className="mt-3 text-xs text-slate-400">
-          Finish the config strip above to enable this.
+          Finish the AI Configuration on the left to enable this.
         </p>
       )}
     </div>
   )
 }
+
+/* unused imports filter */
+void Filter

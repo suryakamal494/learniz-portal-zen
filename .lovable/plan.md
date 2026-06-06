@@ -1,78 +1,94 @@
-# AI Exam Generator — Compact Redesign (Horizontal Strip Workspace)
+## What I understood
 
-Picking **Direction v2 — Horizontal strip workspace** because it directly fixes the "page is too long" problem: it collapses the tall left rail into a single thin pinned config strip and gives the entire page width and height to the question feed.
+You want me to:
 
-## What the new page looks like
+1. **Rename** the `✨ AI Test Generator` button on `/teacher/exams` to `✨ AI Exam Generator`.
+2. **Replace the 3-page flow** (Step 1 Config → Step 2 Preview → Step 3 Test Info) with a **single-page workspace** that:
+   - Captures **test metadata first** (Name, Duration, Marks/Q, Negative Marking, Exam Type, Instructions) — the natural starting point for a teacher.
+   - Then the **AI configuration** (Subject, Chapter, Topics, Number of Questions, Difficulty, Question Type, Categories, Custom Instructions).
+   - Then the **generated questions list** which **accumulates** across multiple Generate clicks (new questions append to the existing list; nothing gets wiped).
+   - Lets the teacher select, delete, or regenerate individual questions.
+   - One final **Create Exam** action submits everything.
+3. **Layout** must work well on desktop AND mobile, feel spacious (not cramped, not empty), and avoid forcing teachers between pages.
+
+## Proposed UX: Two-pane workspace (desktop) / Stacked accordion (mobile)
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│  ← Back   ✨ AI Exam Generator           [Active|Selected|Deleted]   │ sticky header
-├──────────────────────────────────────────────────────────────────────┤
-│ Name+Duration │ Subject·Chapter │ Difficulty │ Qty │ [Generate ✨] ⚙ │ sticky config strip
-├──────────────────────────────────────────────────────────────────────┤
-│           ─── Batch 1 · 5 Qs · Medium · Conceptual ───               │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │ ☑ Q1  [Physics][Formulae]                       ↻  🗑        │   │
-│  │   "A force F acts on 2 kg…"  (KaTeX math)                    │   │
-│  │   A □   B ✓   C □   D □                                       │   │
-│  │   Explanation: F = ma = 4 N                                  │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │ Q2 Physics + small circuit diagram thumbnail                 │   │
-│  │ Q3 Chemistry · H₂O molecular geometry                        │   │
-│  │ Q4 Math · ∫ x² dx                                            │   │
-│  │ Q5 Chemistry · stoichiometry                                 │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│            [ + Generate 5 more in this batch ]                       │
-├──────────────────────────────────────────────────────────────────────┤
-│ Total 15  •  Selected 5  •  Marks 15      [Cancel]  [Create Exam →] │ sticky footer
-└──────────────────────────────────────────────────────────────────────┘
+Desktop ≥ lg                                  Mobile / Tablet
+┌─────────────────────┬──────────────────────┐  ┌──────────────────┐
+│ LEFT PANE (sticky)  │ RIGHT PANE (scroll)  │  │ Sticky top bar:  │
+│ ~38% width          │ ~62% width           │  │ counters + CTA   │
+│                     │                      │  ├──────────────────┤
+│ 1. Test Details     │ Generated Questions  │  │ Accordion:       │
+│    (collapsible)    │  ─ Counter strip     │  │  ▸ Test Details  │
+│                     │    (Total / Selected │  │  ▸ AI Config     │
+│ 2. AI Configuration │     / Deleted)       │  │  ▸ Questions (N) │
+│    (collapsible)    │  ─ Bulk actions      │  ├──────────────────┤
+│                     │  ─ Question cards    │  │ Bottom action    │
+│ [Generate +N Qs]    │    (accumulate)      │  │ bar: Generate /  │
+│ [Reset]             │  ─ Empty state when  │  │ Create Exam      │
+│                     │    none yet          │  │                  │
+│ Sticky footer:      │                      │  │                  │
+│ Create Exam (N Qs)  │                      │  │                  │
+└─────────────────────┴──────────────────────┘  └──────────────────┘
 ```
 
-## Key changes vs current page
+**Why this layout**
+- Teachers see config + output simultaneously — no page hops.
+- Left pane stays sticky so they can tweak topic/difficulty and click Generate without losing the question list on the right.
+- On mobile the same sections collapse into an accordion with a sticky bottom action bar, preserving touch-friendly targets (≥48px).
 
-- Remove the tall left pane (`Test Details` + `AI Configuration` accordions).
-- Replace with one **sticky horizontal config strip** under the header: Exam Name + Duration · Subject▾Chapter▾ · Difficulty pills · Quantity · `Generate Batch` · ⚙ Advanced popover.
-- Advanced popover (⚙) hosts the less-used fields: Marks/Q, Negative Marking, Exam Type, Test Instructions, Topic multi-select, Category checkboxes, Question Type, Prompt textarea.
-- Question feed becomes the entire body: max-width canvas, grouped by **Batch dividers**, rich cards with KaTeX math, optional diagram thumbnail, A–D options (correct highlighted), explanation, hover-revealed kebab (Select / Delete / Regenerate).
-- Segmented filter `Active | Selected | Deleted` lives in the header right.
-- Sticky bottom action bar keeps live counters and `Create Exam`.
-- "Generate N more" affordance sits at the end of each batch (and the config strip's button still appends a new batch).
+### Key interaction rules
+- **Generate is additive.** Clicking Generate appends new questions to the existing list with a fresh batch tag (e.g. "Batch 2 · 5 Qs · Easy · Conceptual") so teachers can see provenance. Nothing is cleared.
+- **Per-question actions:** select (checkbox), delete (soft remove → goes to "Deleted" with Restore), regenerate single (replaces that one question using the same config).
+- **Bulk actions:** Select all in batch, delete selected, regenerate deleted.
+- **Test Summary chip** in the right pane header always shows live counters: Total / Selected / Deleted / Total Marks (selected × marks per Q).
+- **Create Exam** is enabled only when: test name filled, marks/Q > 0, at least 1 question selected. Disabled state shows tooltip listing missing fields.
+- **Validation inline** in the left pane (red ring + helper text), not blocking modals.
+- **Unsaved changes guard** when leaving the page with selected questions.
 
-## Phased implementation
+### Visual style (matches existing pastel system)
+- Left pane = white card with subtle Blue/Green/Purple section dividers reusing the existing Content Selection / Question Configuration / Additional Requirements color cues from screenshot 1.
+- Right pane = light gray surface with white question cards (same look as screenshot 2).
+- Primary buttons: existing Blue/Indigo. Generate button: existing violet gradient.
 
-**Phase 1 — Config strip**
-- New `AIExamConfigStrip.tsx`: 12-col grid with Name+Duration, Subject/Chapter, Difficulty pills, Qty, Generate button, Advanced ⚙ trigger.
-- Remove the old left-pane `SectionCard` rendering from `AIExamGeneratorPage.tsx`.
+## Phase-wise implementation plan
 
-**Phase 2 — Advanced popover**
-- `AIExamAdvancedPopover.tsx` (shadcn `Popover` + `Sheet` on mobile) holding Marks/Q, Negative Marking, Exam Type, Instructions, Topic, Category checkboxes, Question Type, Prompt.
+### Phase 1 — Rename + entry point
+- `src/pages/teacher/exams/ExamsMainPage.tsx`: rename button label `AI Test Generator` → `AI Exam Generator`, wire `onClick` to navigate to `/teacher/exams/ai-generator`.
+- Register route in `src/App.tsx`.
 
-**Phase 3 — Question feed polish**
-- Upgrade `GeneratedQuestionCard` to the v2 visual: checkbox column, subject/category chips, KaTeX-rendered math (use existing `katex` if present, otherwise `react-katex`), optional diagram thumbnail slot, highlighted correct option, explanation box, hover-revealed action row (Regenerate / Delete / kebab with Select).
-- `BatchDivider` updated to pill style ("Batch N · X Qs · Difficulty · Category").
-- Add `Generate N more` inline button at the end of each batch (uses that batch's config).
+### Phase 2 — Types & mock service
+- `src/types/aiExamGenerator.ts`: `AIExamConfig`, `AIQuestionBatch`, `GeneratedQuestion` (extends existing `Question`), `TestDetails`, `QuestionStatus` (`active | selected | deleted`).
+- `src/data/mockAIGenerator.ts`: a `generateMockQuestions(config)` that returns 1–15 fake MCQs derived from existing `mockQuestionBank` filtered by subject/chapter, tagged with batch id and difficulty.
 
-**Phase 4 — Mock data with substance**
-- Expand `mockAIGenerator.ts`: at least 12 templates across Physics/Chemistry/Math with real KaTeX strings (`$F = ma$`, `$\int x^2\,dx$`, `$H_2O$`), 2 templates with `diagramUrl` (inline SVG circuit + molecular geometry), varied difficulties and categories.
-- Every Generate click returns the requested count, never empty.
+### Phase 3 — Page shell & layout
+- `src/pages/teacher/exams/AIExamGeneratorPage.tsx` with responsive two-pane / accordion layout, sticky CTAs, breadcrumb back to Assessment.
+- Hook `useAIExamGenerator` to centralize state: `testDetails`, `aiConfig`, `batches[]`, `questions[]` (with status), derived counters.
 
-**Phase 5 — Sticky footer + segmented filter**
-- Move `Active | Selected | Deleted` filter into the header right.
-- Footer keeps Total / Selected / Marks counters + `Cancel` / `Create Exam` (existing behavior preserved).
+### Phase 4 — Left pane components
+- `TestDetailsSection.tsx` — Test Name, Duration, Marks/Q, Negative Marking, Exam Type (select), Test Instructions (select). Reuse field components from existing `CreateExamPage`.
+- `AIConfigurationSection.tsx` — Subject/Chapter/Topics dropdowns (driven by `questionBankService`), Number of Questions, Difficulty (multi-checkbox), Question Type, Question Category (multi-checkbox), Custom Instructions textarea. Color-coded sub-cards mirroring screenshot 1.
+- `GenerateActionBar.tsx` — Generate button (shows "+N questions"), Reset Config button, validation hints.
 
-**Phase 6 — Responsive**
-- ≥ lg: horizontal strip as designed.
-- < lg: strip collapses to two rows (Name+Subject row, Difficulty+Qty+Generate row); Advanced opens as bottom `Sheet`.
+### Phase 5 — Right pane components
+- `GeneratedQuestionsPanel.tsx` — header with counters strip (Total / Available / Selected / Deleted / Total Marks), Select All, Regenerate Deleted, Show Answers toggle.
+- `GeneratedQuestionCard.tsx` — same card visual as screenshot 2 with: checkbox, batch chip, difficulty chip, category chip, marks/min meta, per-card menu (Regenerate / Delete / Restore / Preview). Uses existing `QuestionPreviewModal`.
+- `BatchDivider.tsx` — subtle separator labeled "Batch 2 · 5 Qs · Hard · Logical · 14:23" so teachers can trace what each generate call produced.
+- `EmptyQuestionsState.tsx` — friendly empty state shown before first Generate.
 
-## Technical notes
+### Phase 6 — Submit flow
+- Sticky footer button `Create Exam (N selected · M marks)` → validates, then calls a mock `createExamFromAI(testDetails, selectedQuestions)` and navigates back to `/teacher/exams` with a success toast. Wire to existing exam list mock so the new exam appears at the top.
 
-- Files to add: `src/components/teacher/exams/ai/AIExamConfigStrip.tsx`, `AIExamAdvancedPopover.tsx`, `BatchDivider.tsx` (if not already extracted).
-- Files to edit: `src/pages/teacher/exams/AIExamGeneratorPage.tsx` (layout swap), `src/components/teacher/exams/ai/GeneratedQuestionCard.tsx` (visual upgrade), `src/data/mockAIGenerator.ts` (templates + diagrams).
-- Keep all existing logic: additive batches (`setQuestions(prev => [...prev, ...newQs])`), per-question regenerate, deleted-state restore, create-exam append to `mockExamsData`, route `/teacher/exams/ai-generator`.
-- Tokens only — no hardcoded hex; use `primary` (indigo), `muted`, `border`, `card` from the design system.
-- No new dependencies unless `katex`/`react-katex` is missing; will check first and fall back to formatted spans if absent.
+### Phase 7 — Polish & responsive QA
+- Mobile accordion behavior, sticky bottom action bar, keyboard scroll into newly added batch, loading skeletons during Generate (~1s simulated), toast on rate-limit-like failures.
+- Verify spacing matches existing pastel theme; no cramped/empty feel; touch targets ≥48px.
 
-## Out of scope
+## What stays the same
+- The original 3 pages (if they exist) are not touched outside the rename + new route; we add a brand-new page and only the button entry point changes.
+- All existing components (`QuestionPreviewModal`, `questionBankService`, exam mocks) are reused.
 
-- Sidebar/header redesign, other exams pages, backend wiring, AI provider integration.
+## Open questions before I build
+1. Should "Regenerate single" actually call the mock generator (replace that one card) or just mark it for the next batch run?
+2. On submit, should the created exam appear in the existing `mockExamsData` list immediately (so teachers see it), or simulate an API and show only a toast?
+3. For the test metadata, do you want `Pass Percentage` and `Start Date/Time` too (present in existing `ExamFormData`), or keep the AI flow minimal (Name, Duration, Marks/Q, Negative, Exam Type, Instructions only) and let teachers edit the rest from the standard Edit Exam page?
