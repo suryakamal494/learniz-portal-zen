@@ -75,12 +75,6 @@ export function SectionProgramsSummary({ batchId }: Props) {
           );
         })}
 
-        <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
-          <p className="text-xs text-blue-700 font-medium">What it means</p>
-          <p className="text-sm text-blue-900 mt-0.5">
-            {meaningFromPct(summary.overallPct, 'this section')}
-          </p>
-        </div>
 
         <div className="flex flex-col sm:flex-row gap-2 pt-1">
           <Button
