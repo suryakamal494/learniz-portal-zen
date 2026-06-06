@@ -35,6 +35,7 @@ import DirectoryPage from './pages/teacher/exams/DirectoryPage';
 import InstructionsPage from './pages/teacher/exams/InstructionsPage';
 import CreateInstructionPage from './pages/teacher/exams/CreateInstructionPage';
 import EditInstructionPage from './pages/teacher/exams/EditInstructionPage';
+import AIExamGeneratorPage from './pages/teacher/exams/AIExamGeneratorPage';
 
 // Teacher Schedule
 import CreateClassPage from './pages/teacher/schedule/CreateClassPage';
@@ -148,6 +149,7 @@ function App() {
 
           {/* Exams */}
           <Route path="exams" element={<ExamsMainPage />} />
+          <Route path="exams/ai-generator" element={<AIExamGeneratorPage />} />
           <Route path="exams/create" element={<CreateExamPage />} />
           <Route path="exams/:examId/edit" element={<EditExamPage />} />
           <Route path="exams/:examId/update-questions" element={<UpdateQuestionsPage />} />

@@ -95,9 +95,10 @@ const ExamsMainPage: React.FC = () => {
           </Button>
           <Button 
             variant="outline"
+            onClick={() => navigate('/teacher/exams/ai-generator')}
             className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
           >
-            ✨ AI Test Generator
+            ✨ AI Exam Generator
           </Button>
         </div>
       </div>
