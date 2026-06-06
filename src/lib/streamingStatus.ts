@@ -78,7 +78,9 @@ export function getStreamingState(
   if (cls.status === 'cancelled') return { kind: 'cancelled' };
 
   const window = parseClassWindow(cls);
-  if (!window) return { kind: 'upcoming', startsInMs: 0 };
+  if (!window) {
+    return cls.assignments?.urlView ? { kind: 'start' } : { kind: 'noLink' };
+  }
   const [start, end] = window;
   const t = now.getTime();
   const hasLink = !!cls.assignments?.urlView;
@@ -99,10 +101,7 @@ export function getStreamingState(
     return { kind: 'overrun' };
   }
 
-  // Not started yet
-  if (t < start.getTime()) {
-    return { kind: 'upcoming', startsInMs: start.getTime() - t };
-  }
+  // Not started yet — always allow Start (no "Upcoming" gating)
   if (t <= end.getTime()) {
     if (!hasLink) return { kind: 'noLink' };
     return { kind: 'start' };
