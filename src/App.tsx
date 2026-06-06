@@ -149,6 +149,7 @@ function App() {
 
           {/* Exams */}
           <Route path="exams" element={<ExamsMainPage />} />
+          <Route path="exams/ai-generator" element={<AIExamGeneratorPage />} />
           <Route path="exams/create" element={<CreateExamPage />} />
           <Route path="exams/:examId/edit" element={<EditExamPage />} />
           <Route path="exams/:examId/update-questions" element={<UpdateQuestionsPage />} />
