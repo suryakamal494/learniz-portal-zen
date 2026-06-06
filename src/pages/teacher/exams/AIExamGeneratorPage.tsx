@@ -140,7 +140,7 @@ export default function AIExamGeneratorPage() {
       toast({
         title: 'Missing AI configuration',
         description:
-          'Pick a subject, chapter, difficulty, category and a valid number of questions (1\u201315).',
+          'Pick a subject, chapter, difficulty, category and a valid number of questions (1–15).',
         variant: 'destructive',
       })
       return
@@ -324,7 +324,7 @@ export default function AIExamGeneratorPage() {
                 <div className="space-y-4">
                   <Field label="Test Name" required>
                     <Input
-                      placeholder="e.g. Chemistry \u2013 Electrolysis Quiz"
+                      placeholder="e.g. Chemistry – Electrolysis Quiz"
                       value={details.testName}
                       onChange={(e) => setDetails({ ...details, testName: e.target.value })}
                     />
@@ -359,7 +359,7 @@ export default function AIExamGeneratorPage() {
                   </div>
                   <Field
                     label="Negative Marking (%)"
-                    hint="Deducted for wrong answers (0\u2013100)"
+                    hint="Deducted for wrong answers (0–100)"
                   >
                     <Input
                       type="number"
@@ -527,7 +527,7 @@ export default function AIExamGeneratorPage() {
                     <Field
                       label="Number of Questions"
                       required
-                      hint="1\u201315 per generation"
+                      hint="1–15 per generation"
                     >
                       <Input
                         type="number"
@@ -634,7 +634,7 @@ export default function AIExamGeneratorPage() {
                   >
                     <Textarea
                       rows={3}
-                      placeholder="e.g. Class 12 CBSE \u2013 keep questions exam-style and avoid trick wording"
+                      placeholder="e.g. Class 12 CBSE – keep questions exam-style and avoid trick wording"
                       value={config.customInstructions}
                       onChange={(e) =>
                         setConfig({ ...config, customInstructions: e.target.value })
@@ -654,7 +654,7 @@ export default function AIExamGeneratorPage() {
                   {generating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating\u2026
+                      Generating…
                     </>
                   ) : (
                     <>
@@ -841,7 +841,7 @@ export default function AIExamGeneratorPage() {
                       {submitting ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Creating\u2026
+                          Creating…
                         </>
                       ) : (
                         <>
@@ -1011,13 +1011,13 @@ function BatchHeader({
         Batch {batch.index}
       </span>
       <span>{count} questions</span>
-      <span>\u00b7</span>
+      <span>·</span>
       <span className="capitalize">
         {batch.config.difficulties.join(', ') || 'mixed'}
       </span>
-      <span>\u00b7</span>
+      <span>·</span>
       <span>{batch.config.categories.slice(0, 2).join(', ') || 'mixed'}</span>
-      <span>\u00b7</span>
+      <span>·</span>
       <span>{time}</span>
     </div>
   )
@@ -1067,7 +1067,7 @@ function QuestionCard({
               {question.category}
             </Badge>
             <span className="text-[11px] text-slate-500 ml-auto">
-              {question.marks} marks \u00b7 {question.estimatedMinutes} min
+              {question.marks} marks · {question.estimatedMinutes} min
             </span>
           </div>
           <p className="text-sm text-slate-800 mb-2.5">{question.questionText}</p>
@@ -1127,8 +1127,8 @@ function DeletedQuestionRow({
     <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-rose-200 bg-rose-50/40 px-3 py-2">
       <div className="min-w-0 flex items-center gap-2">
         <Trash2 className="h-3.5 w-3.5 text-rose-400 shrink-0" />
-        <span className="text-xs text-slate-500 shrink-0">Q{question.serial} \u00b7 Deleted</span>
-        <span className="text-xs text-slate-600 truncate">\u2014 {question.questionText}</span>
+        <span className="text-xs text-slate-500 shrink-0">Q{question.serial} · Deleted</span>
+        <span className="text-xs text-slate-600 truncate">— {question.questionText}</span>
       </div>
       <Button
         variant="ghost"
@@ -1158,7 +1158,7 @@ function EmptyState({
       </div>
       <h3 className="text-base font-semibold text-slate-900">No questions yet</h3>
       <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-        Configure the AI on the left and click Generate. Each click appends a new batch \u2014
+        Configure the AI on the left and click Generate. Each click appends a new batch —
         nothing you keep gets removed.
       </p>
       <Button
@@ -1169,7 +1169,7 @@ function EmptyState({
         {generating ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Generating\u2026
+            Generating…
           </>
         ) : (
           <>
