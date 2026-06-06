@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Play, Square, ExternalLink, Clock, AlertTriangle, LinkIcon } from "lucide-react"
+import { Play, Square, ExternalLink, AlertTriangle, LinkIcon } from "lucide-react"
 import {
-  formatRelative,
   getStreamingState,
   type StreamingInputClass,
 } from "@/lib/streamingStatus"
@@ -24,20 +23,6 @@ export function StreamingCell({ classItem, now, startedAt, endedAt, onStart, onE
   const open = () => url && window.open(url, "_blank")
 
   switch (state.kind) {
-    case "upcoming":
-      return (
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" variant="outline" disabled className="h-8">
-                <Clock className="h-3.5 w-3.5 mr-1" />
-                Upcoming
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Starts in {formatRelative(state.startsInMs)}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )
 
 
     case "start":
@@ -48,7 +33,7 @@ export function StreamingCell({ classItem, now, startedAt, endedAt, onStart, onE
             onStart(classItem.id)
             open()
           }}
-          className="h-8 bg-success hover:bg-success/90 text-white relative"
+          className="h-8 bg-primary hover:bg-primary/90 text-primary-foreground relative shadow-sm"
         >
           <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
           <Play className="h-3.5 w-3.5 mr-1" />
