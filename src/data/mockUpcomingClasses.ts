@@ -49,7 +49,7 @@ export const mockUpcomingClasses: UpcomingClass[] = [
     studentsCount: 45,
   },
   {
-    // STARTS SOON → "Start early" (within 15 min pre-window)
+    // SOON → "Upcoming" (starts in 10 min)
     id: "2",
     time: window(10, 75),
     date: dateStr,
@@ -66,7 +66,7 @@ export const mockUpcomingClasses: UpcomingClass[] = [
     studentsCount: 38,
   },
   {
-    // FAR FUTURE → "Upcoming" (more than 15 min away)
+    // FAR FUTURE → "Upcoming"
     id: "3",
     time: window(120, 60),
     date: dateStr,
@@ -83,7 +83,7 @@ export const mockUpcomingClasses: UpcomingClass[] = [
     studentsCount: 52,
   },
   {
-    // PAST, never started → "Missed"
+    // PAST class → "Ended"
     id: "4",
     time: window(-180, 60),
     date: dateStr,
