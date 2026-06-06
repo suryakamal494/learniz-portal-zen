@@ -142,8 +142,9 @@ function App() {
           <Route path="batches/:batchId/students" element={<ViewStudentsPage />} />
           <Route path="batches/:batchId/assign-lms" element={<AssignLMSPage />} />
           <Route path="batches/:batchId/assign-notes" element={<BatchNotesAssignmentPage />} />
-          <Route path="batches/:batchId/programs" element={<BatchProgramsPage />} />
-          <Route path="batches/:batchId/progress" element={<BatchProgressTrackerPage />} />
+          <Route path="batches/:batchId/curriculum" element={<BatchCurriculumPage />} />
+          <Route path="batches/:batchId/programs" element={<Navigate to="../curriculum" replace />} />
+          <Route path="batches/:batchId/progress" element={<Navigate to="../curriculum" replace />} />
 
           {/* Exams */}
           <Route path="exams" element={<ExamsMainPage />} />
