@@ -44,8 +44,8 @@ export default function BatchCurriculumPage() {
     }));
   }, [program, summary]);
 
-  const chapterRows = useMemo(() => {
-    if (!program || !activeSubject) return [];
+  const chapterRows = useMemo<Set<string>>(() => {
+    if (!program || !activeSubject) return new Set<string>();
     let rows = getChapterProgressList(program, activeSubject.id);
     if (status === 'done') rows = rows.filter((r) => r.completionPct >= 100);
     else if (status === 'not-started') rows = rows.filter((r) => r.completionPct === 0);
