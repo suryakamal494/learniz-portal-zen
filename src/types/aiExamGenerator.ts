@@ -44,6 +44,8 @@ export interface GeneratedQuestion {
   selected: boolean
   chapter: string
   topic: string
+  explanation?: string
+  diagramSvg?: string
 }
 
 export interface AIQuestionBatch {
