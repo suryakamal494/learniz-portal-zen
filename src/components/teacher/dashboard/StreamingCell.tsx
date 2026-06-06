@@ -23,20 +23,6 @@ export function StreamingCell({ classItem, now, startedAt, endedAt, onStart, onE
   const open = () => url && window.open(url, "_blank")
 
   switch (state.kind) {
-    case "upcoming":
-      return (
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" variant="outline" disabled className="h-8">
-                <Clock className="h-3.5 w-3.5 mr-1" />
-                Upcoming
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Starts in {formatRelative(state.startsInMs)}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )
 
 
     case "start":
