@@ -42,9 +42,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview }: Pro
           <p className="text-sm font-semibold text-gray-900 truncate">
             Chapter {chapter.order}: {chapter.name}
           </p>
-          <p className="text-xs text-gray-500">
-            {chapter.lessonPlans.filter((lp) => lp.status === 'completed').length} of {chapter.lessonPlans.length} lesson plans done
-          </p>
+          <p className="text-xs text-gray-500">{chapter.lessonPlans.length} lesson plans</p>
         </div>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pill}`}>{pct}%</span>
       </button>
