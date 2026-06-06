@@ -3,7 +3,6 @@
 // from a class's date+time+duration and a teacher-recorded startedAt timestamp.
 
 export type StreamingState =
-  | { kind: 'upcoming'; startsInMs: number }
   | { kind: 'start' }
   | { kind: 'ongoing'; endsInMs: number }
   | { kind: 'overrun' }
