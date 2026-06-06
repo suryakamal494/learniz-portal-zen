@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Batch, BatchStudent } from '@/types/batch'
 import { mockBatchStudents } from '@/data/mockBatchStudents'
 import { getInitials, metricTone } from './sectionTheme'
-import { Users, BookOpen, FileText, ClipboardList, ArrowRight } from 'lucide-react'
+import { Users, ArrowRight } from 'lucide-react'
 
 interface Props {
   batch: Batch

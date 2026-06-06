@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpenCheck, LineChart } from 'lucide-react';
+import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getProgramSummary, meaningFromPct, toneForPct } from '@/utils/programProgress';
 
@@ -19,11 +19,11 @@ export function SectionProgramsSummary({ batchId }: Props) {
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
             <BookOpenCheck className="h-4 w-4 text-blue-600" />
           </span>
-          <h3 className="font-semibold text-gray-900">Programs & Progress</h3>
+          <h3 className="font-semibold text-gray-900">Curriculum</h3>
         </div>
         <p className="mt-3 text-sm text-gray-600">
-          No program assigned to this section yet. Once your institute assigns a program, you'll see the chapter-wise
-          plan and your teaching progress here.
+          No curriculum assigned to this section yet. Once your institute assigns one, you'll see chapters, lesson plans
+          and your teaching progress here.
         </p>
       </div>
     );
@@ -33,16 +33,24 @@ export function SectionProgramsSummary({ batchId }: Props) {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
             <BookOpenCheck className="h-4 w-4 text-blue-600" />
           </span>
           <div>
-            <h3 className="font-semibold text-gray-900">Programs & Progress</h3>
+            <h3 className="font-semibold text-gray-900">Curriculum</h3>
             <p className="text-xs text-gray-500">{subjectLabel} · {summary.overallPct}% overall completion</p>
           </div>
         </div>
+        <Button
+          onClick={() => navigate(`/teacher/batches/${batchId}/curriculum`)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <BookOpenCheck className="h-4 w-4 mr-2" />
+          Open Curriculum
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
       </div>
 
       <div className="p-5 space-y-3">
@@ -80,24 +88,6 @@ export function SectionProgramsSummary({ batchId }: Props) {
           <p className="text-sm text-blue-900 mt-0.5">
             {meaningFromPct(summary.overallPct, 'this section')}
           </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2 pt-1">
-          <Button
-            onClick={() => navigate(`/teacher/batches/${batchId}/programs`)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <BookOpenCheck className="h-4 w-4 mr-2" />
-            View programs
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/teacher/batches/${batchId}/progress`)}
-          >
-            <LineChart className="h-4 w-4 mr-2" />
-            Open progress tracker
-          </Button>
         </div>
       </div>
     </div>
