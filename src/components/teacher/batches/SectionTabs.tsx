@@ -29,9 +29,6 @@ export function SectionTabs({ batch, attendancePct, counts }: Props) {
         <TabsTrigger value="attendance" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4 py-2">
           Attendance
         </TabsTrigger>
-        <TabsTrigger value="content" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4 py-2">
-          Content
-        </TabsTrigger>
       </TabsList>
 
       {/* Students */}
@@ -105,32 +102,6 @@ export function SectionTabs({ batch, attendancePct, counts }: Props) {
         />
       </TabsContent>
 
-      {/* Content */}
-      <TabsContent value="content" className="mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <ContentTile
-            icon={<BookOpen className="h-4 w-4 text-blue-600" />}
-            tint="bg-blue-50"
-            label="Lesson Plans"
-            count={counts.lessons}
-            onClick={() => navigate(`/teacher/batches/${batch.id}/assign-lms`)}
-          />
-          <ContentTile
-            icon={<FileText className="h-4 w-4 text-emerald-600" />}
-            tint="bg-emerald-50"
-            label="Study Notes"
-            count={counts.notes}
-            onClick={() => navigate(`/teacher/batches/${batch.id}/assign-notes`)}
-          />
-          <ContentTile
-            icon={<ClipboardList className="h-4 w-4 text-purple-600" />}
-            tint="bg-purple-50"
-            label="Assessments"
-            count={counts.assessments}
-            onClick={() => navigate('/teacher/exams')}
-          />
-        </div>
-      </TabsContent>
     </Tabs>
   )
 }
