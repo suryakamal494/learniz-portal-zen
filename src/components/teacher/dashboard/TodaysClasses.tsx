@@ -144,14 +144,14 @@ export function TodaysClasses() {
                     />
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStreamingClick(classItem)}
-                      className="bg-success hover:bg-success/90 text-white"
-                    >
-                      <Play className="h-4 w-4 mr-1" />
-                      START
-                    </Button>
+                    <StreamingCell
+                      classItem={classItem}
+                      now={now}
+                      startedAt={marks[classItem.id]?.startedAt}
+                      endedAt={marks[classItem.id]?.endedAt}
+                      onStart={handleStart}
+                      onEnd={handleEnd}
+                    />
                   </TableCell>
                   <TableCell>
                     {getAssignmentStatus(classItem.assignments.lmsAssigned)}
@@ -178,14 +178,14 @@ export function TodaysClasses() {
                     <h4 className="font-medium text-foreground">{classItem.batch}</h4>
                     <p className="text-sm text-muted-foreground">{classItem.class} • {classItem.time}</p>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleStreamingClick(classItem)}
-                    className="bg-success hover:bg-success/90 text-white"
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    START
-                  </Button>
+                  <StreamingCell
+                    classItem={classItem}
+                    now={now}
+                    startedAt={marks[classItem.id]?.startedAt}
+                    endedAt={marks[classItem.id]?.endedAt}
+                    onStart={handleStart}
+                    onEnd={handleEnd}
+                  />
                 </div>
                 
                 <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{classItem.topic}</p>
