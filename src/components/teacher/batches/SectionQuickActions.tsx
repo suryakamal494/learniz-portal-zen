@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, FileText, ClipboardList, CalendarPlus, CheckSquare } from 'lucide-react'
+import { BookOpen, FileText, ClipboardList, CalendarPlus, CheckSquare, BookOpenCheck } from 'lucide-react'
 
 interface Props {
   batchId: string
@@ -11,10 +11,17 @@ export function SectionQuickActions({ batchId }: Props) {
 
   const actions = [
     {
-      label: 'Assign Lesson Plan',
-      icon: BookOpen,
+      label: 'Programs',
+      icon: BookOpenCheck,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
+      onClick: () => navigate(`/teacher/batches/${batchId}/programs`),
+    },
+    {
+      label: 'Assign Lesson Plan',
+      icon: BookOpen,
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50',
       onClick: () => navigate(`/teacher/batches/${batchId}/assign-lms`),
     },
     {
@@ -48,7 +55,7 @@ export function SectionQuickActions({ batchId }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {actions.map(a => (
         <button
           key={a.label}
