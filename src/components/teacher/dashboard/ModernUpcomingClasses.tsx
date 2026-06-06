@@ -1,44 +1,61 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar, Clock, Users, Video, Play } from "lucide-react"
 import { mockUpcomingClasses } from "@/data/mockUpcomingClasses"
 import { TeachingStatusCell } from "@/components/teacher/schedule/TeachingStatusCell"
 import { TeachingStatus } from "@/types/teachingProgress"
+import { StreamingCell } from "./StreamingCell"
+import { Button } from "@/components/ui/button"
+
+type StreamMark = { startedAt?: number; endedAt?: number }
+const STORAGE_KEY = "teacher:streamingMarks"
+const loadMarks = (): Record<string, StreamMark> => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") } catch { return {} }
+}
+const saveMarks = (m: Record<string, StreamMark>) => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(m)) } catch { /* ignore */ }
+}
 
 export function ModernUpcomingClasses() {
   const [classStatuses, setClassStatuses] = useState<Record<string, { status: TeachingStatus; notes?: string }>>({})
+  const [marks, setMarks] = useState<Record<string, StreamMark>>(() => loadMarks())
+  const [now, setNow] = useState(() => new Date())
 
-  const handleStreamingClick = (link: string) => {
-    window.open(link, '_blank')
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const handleStart = (id: string) => {
+    setMarks(prev => {
+      const next = { ...prev, [id]: { ...prev[id], startedAt: Date.now() } }
+      saveMarks(next); return next
+    })
+  }
+  const handleEnd = (id: string) => {
+    setMarks(prev => {
+      const next = { ...prev, [id]: { ...prev[id], endedAt: Date.now() } }
+      saveMarks(next); return next
+    })
   }
 
   const handleAssignClick = (type: string, classId: string) => {
     console.log(`Assign ${type} for class ${classId}`)
-    // Navigation logic will be implemented based on requirements
   }
 
   const handleTeachingStatusChange = (classId: string, status: TeachingStatus, notes?: string) => {
-    setClassStatuses(prev => ({
-      ...prev,
-      [classId]: { status, notes }
-    }))
+    setClassStatuses(prev => ({ ...prev, [classId]: { status, notes } }))
   }
 
-  const getTeachingStatus = (classId: string): TeachingStatus => {
-    return classStatuses[classId]?.status || 'pending'
-  }
-
-  const getTeachingNotes = (classId: string): string | undefined => {
-    return classStatuses[classId]?.notes
-  }
+  const getTeachingStatus = (classId: string): TeachingStatus => classStatuses[classId]?.status || 'pending'
+  const getTeachingNotes = (classId: string): string | undefined => classStatuses[classId]?.notes
 
   const getSubjectColor = (subject: string) => {
     const colors = {
       Mathematics: "bg-blue-100 text-blue-800 border-blue-200",
-      Physics: "bg-purple-100 text-purple-800 border-purple-200", 
+      Physics: "bg-purple-100 text-purple-800 border-purple-200",
       Chemistry: "bg-green-100 text-green-800 border-green-200",
       Biology: "bg-orange-100 text-orange-800 border-orange-200"
     }
@@ -138,18 +155,23 @@ export function ModernUpcomingClasses() {
                   </TableCell>
                   
                   <TableCell className="text-center">
-                    {classItem.streamingLink ? (
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
-                        onClick={() => handleStreamingClick(classItem.streamingLink!)}
-                      >
-                        <Play className="h-3 w-3 mr-1" />
-                        START
-                      </Button>
-                    ) : (
-                      <span className="text-slate-400 text-sm">Not available</span>
-                    )}
+                    <div className="flex justify-center">
+                      <StreamingCell
+                        classItem={{
+                          id: classItem.id,
+                          date: classItem.date,
+                          time: classItem.time,
+                          duration: classItem.duration,
+                          status: classItem.status,
+                          assignments: { urlView: classItem.streamingLink },
+                        }}
+                        now={now}
+                        startedAt={marks[classItem.id]?.startedAt}
+                        endedAt={marks[classItem.id]?.endedAt}
+                        onStart={handleStart}
+                        onEnd={handleEnd}
+                      />
+                    </div>
                   </TableCell>
                   
                   <TableCell className="text-center">
