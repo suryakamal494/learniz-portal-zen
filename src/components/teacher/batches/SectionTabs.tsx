@@ -153,30 +153,3 @@ function SummaryPanel({
   )
 }
 
-function ContentTile({
-  icon,
-  tint,
-  label,
-  count,
-  onClick,
-}: {
-  icon: React.ReactNode
-  tint: string
-  label: string
-  count: number
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="text-left bg-white rounded-2xl border border-gray-200 shadow-sm p-5 hover:border-blue-300 hover:shadow-md transition-all"
-    >
-      <div className={`h-9 w-9 rounded-lg ${tint} flex items-center justify-center`}>{icon}</div>
-      <p className="mt-3 text-sm text-gray-500">{label} assigned</p>
-      <p className="text-2xl font-bold text-gray-900 mt-0.5">{count}</p>
-      <p className="text-xs text-blue-700 mt-2 inline-flex items-center">
-        Manage <ArrowRight className="h-3 w-3 ml-1" />
-      </p>
-    </button>
-  )
-}

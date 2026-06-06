@@ -20,8 +20,7 @@ import SectionWorkspacePage from './pages/teacher/batches/SectionWorkspacePage';
 import ViewStudentsPage from './pages/teacher/batches/ViewStudentsPage';
 import AssignLMSPage from './pages/teacher/batches/AssignLMSPage';
 import BatchNotesAssignmentPage from './pages/teacher/batches/BatchNotesAssignmentPage';
-import BatchProgramsPage from './pages/teacher/batches/BatchProgramsPage';
-import BatchProgressTrackerPage from './pages/teacher/batches/BatchProgressTrackerPage';
+import BatchCurriculumPage from './pages/teacher/batches/BatchCurriculumPage';
 
 // Teacher Exams
 import ExamsMainPage from './pages/teacher/exams/ExamsMainPage';
