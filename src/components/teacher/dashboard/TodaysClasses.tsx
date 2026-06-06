@@ -1,38 +1,63 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useNavigate } from "react-router-dom"
-import { Play } from "lucide-react"
 import { mockTeacherScheduleClasses } from "@/data/mockTeacherSchedule"
 import { isToday, parseISO } from "date-fns"
 import { TeachingStatusCell } from "@/components/teacher/schedule/TeachingStatusCell"
 import { TeachingStatus } from "@/types/teachingProgress"
+import { StreamingCell } from "./StreamingCell"
+
+type StreamMark = { startedAt?: number; endedAt?: number }
+const STORAGE_KEY = "teacher:streamingMarks"
+
+function loadMarks(): Record<string, StreamMark> {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") } catch { return {} }
+}
+function saveMarks(m: Record<string, StreamMark>) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(m)) } catch { /* ignore */ }
+}
 
 export function TodaysClasses() {
   const navigate = useNavigate()
   const [classStatuses, setClassStatuses] = useState<Record<string, { status: TeachingStatus; notes?: string }>>({})
-  
+  const [marks, setMarks] = useState<Record<string, StreamMark>>(() => loadMarks())
+  const [now, setNow] = useState(() => new Date())
+
+  // Tick every 30s so streaming states transition without refresh.
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
   // Filter for today's classes or next upcoming classes
-  const todayClasses = mockTeacherScheduleClasses.filter(cls => 
+  const todayClasses = mockTeacherScheduleClasses.filter(cls =>
     isToday(parseISO(cls.date))
   )
-  
+
   // If no classes today, get next 3 upcoming classes
-  const displayClasses = todayClasses.length > 0 
-    ? todayClasses 
+  const displayClasses = todayClasses.length > 0
+    ? todayClasses
     : mockTeacherScheduleClasses
         .filter(cls => new Date(cls.date) >= new Date())
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .slice(0, 3)
 
-  const handleStreamingClick = (classItem: any) => {
-    if (classItem.assignments.urlView) {
-      window.open(classItem.assignments.urlView, '_blank')
-    } else {
-      navigate(`/teacher/schedule/assign/${classItem.id}`)
-    }
+  const handleStart = (id: string) => {
+    setMarks(prev => {
+      const next = { ...prev, [id]: { ...prev[id], startedAt: Date.now() } }
+      saveMarks(next)
+      return next
+    })
+  }
+  const handleEnd = (id: string) => {
+    setMarks(prev => {
+      const next = { ...prev, [id]: { ...prev[id], endedAt: Date.now() } }
+      saveMarks(next)
+      return next
+    })
   }
 
   const handleAssignClick = (classId: string) => {
