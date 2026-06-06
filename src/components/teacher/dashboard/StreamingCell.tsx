@@ -39,21 +39,6 @@ export function StreamingCell({ classItem, now, startedAt, endedAt, onStart, onE
         </TooltipProvider>
       )
 
-    case "startEarly":
-      return (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            onStart(classItem.id)
-            open()
-          }}
-          className="h-8 border-success text-success hover:bg-success/10"
-        >
-          <Play className="h-3.5 w-3.5 mr-1" />
-          Start early
-        </Button>
-      )
 
     case "start":
       return (
@@ -124,13 +109,6 @@ export function StreamingCell({ classItem, now, startedAt, endedAt, onStart, onE
         </Badge>
       )
 
-    case "missed":
-      return (
-        <Badge variant="outline" className="border-destructive/40 text-destructive gap-1">
-          <Ban className="h-3 w-3" />
-          Missed
-        </Badge>
-      )
 
     case "cancelled":
       return (
