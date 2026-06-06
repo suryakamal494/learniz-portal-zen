@@ -73,7 +73,6 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-12 px-4 rounded-xl border-border/50 focus:border-primary/60 focus:ring-primary/20 transition-all duration-300"
-                  required
                 />
               </div>
 
