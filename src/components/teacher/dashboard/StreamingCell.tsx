@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Play, Square, ExternalLink, Clock, AlertTriangle, LinkIcon } from "lucide-react"
+import { Play, Square, ExternalLink, AlertTriangle, LinkIcon } from "lucide-react"
 import {
-  formatRelative,
   getStreamingState,
   type StreamingInputClass,
 } from "@/lib/streamingStatus"
