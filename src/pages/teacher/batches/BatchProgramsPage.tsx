@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpenCheck, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { mockBatches } from '@/data/mockBatches';
@@ -8,10 +8,12 @@ import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubject
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
 import { meaningFromPct } from '@/utils/programProgress';
+import { getSubjectById } from '@/lib/voiceCatalog';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const batch = mockBatches.find((b) => b.id === batchId);
   const program = batchId ? getProgramByBatchId(batchId) : undefined;
 
@@ -19,6 +21,17 @@ export default function BatchProgramsPage() {
     program?.subjects[0]?.id,
   );
   const [previewLpId, setPreviewLpId] = useState<string | null>(null);
+
+  // Voice-nav: pre-select subject tab from ?subject=<slug>
+  useEffect(() => {
+    const subjSlug = searchParams.get('subject');
+    if (!subjSlug || !program) return;
+    const name = getSubjectById(subjSlug)?.name?.toLowerCase();
+    if (!name) return;
+    const match = program.subjects.find(s => s.name.toLowerCase() === name);
+    if (match) setActiveSubjectId(match.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [program]);
 
   const activeSubject = useMemo(
     () => program?.subjects.find((s) => s.id === (activeSubjectId ?? program?.subjects[0]?.id)),
