@@ -212,7 +212,19 @@ export default function BatchProgramsPage() {
                 onFilterChange={setFilter}
                 onPreview={(id) => setPreviewLpId(id)}
                 onTopicStatusChange={handleTopicStatus}
-                focusChapterId={getTodayFocus(program)?.chapter.id}
+                focusChapterId={(() => {
+                  const todayIso = new Date().toISOString().slice(0, 10);
+                  // Pick the chapter in THIS subject that contains today (or next upcoming).
+                  const chapters = activeSubject.chapters;
+                  const current = chapters.find(ch =>
+                    (ch.topics ?? []).some(t => t.plannedStartDate <= todayIso && todayIso <= t.plannedEndDate)
+                  );
+                  if (current) return current.id;
+                  const upcoming = [...chapters]
+                    .filter(ch => (ch.plannedStartDate ?? '') > todayIso)
+                    .sort((a, b) => (a.plannedStartDate ?? '').localeCompare(b.plannedStartDate ?? ''))[0];
+                  return upcoming?.id;
+                })()}
               />
             </div>
           </ProgramSubjectTabs>
