@@ -169,8 +169,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
       {open && (
         <div id={panelId} className="border-t border-gray-100 bg-gray-50/50">
           {(() => {
-            // Build lessonPlan ↔ topic linking maps.
-            const lpById = new Map(chapter.lessonPlans.map((lp) => [lp.id, lp]));
+            // Build lessonPlan ↔ topic linking map (still used to pass usedInTopics to LessonPlanCard).
             const lpToTopics = new Map<string, Array<{ id: string; name: string }>>();
             for (const t of topics) {
               for (const lpId of t.lessonPlanIds ?? []) {
@@ -180,12 +179,6 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
               }
             }
 
-            const scrollToLp = (lpId: string) => {
-              requestAnimationFrame(() => {
-                document.getElementById(`lp-${lpId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              });
-            };
-
             return (
               <>
                 {topics.length > 0 && (
@@ -194,7 +187,6 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                     <ul className="space-y-1.5">
                       {topics.map((t) => {
                         const range = formatDateRange(t.plannedStartDate, t.plannedEndDate);
-                        const linkedLps = (t.lessonPlanIds ?? []).map((id) => lpById.get(id)).filter(Boolean) as typeof chapter.lessonPlans;
                         return (
                           <li
                             key={t.id}
