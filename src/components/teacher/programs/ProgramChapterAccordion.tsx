@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock } from 'lucide-react';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles } from 'lucide-react';
 import { ProgramChapter, TopicStatus } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
@@ -9,6 +9,7 @@ import { LessonPlanCard } from './LessonPlanCard';
 interface Props {
   chapter: ProgramChapter;
   defaultOpen?: boolean;
+  isCurrent?: boolean;
   onPreview: (lessonPlanId: string) => void;
   onTopicStatusChange?: (topicId: string, status: TopicStatus) => void;
 }
