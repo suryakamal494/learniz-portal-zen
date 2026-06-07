@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock } from 'lucide-react';
 import { ProgramChapter, TopicStatus } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState, explainPct } from '@/utils/programSchedule';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LessonPlanCard } from './LessonPlanCard';
 
 interface Props {
