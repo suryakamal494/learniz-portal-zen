@@ -133,26 +133,42 @@ export default function BatchProgramsPage() {
           <span className="text-gray-900 font-medium">Program</span>
         </div>
 
-        {/* Stale-status alert (Phase 6 will refine; live now via Phase 1 util) */}
+        {/* Stale-status alert — nudges teachers to keep their schedule view accurate */}
         {program && staleInfo?.isStale && !staleDismissed && (
-          <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3"
+          >
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-900">
                 {staleInfo.daysSinceLastUpdate === null
-                  ? 'No topic status updated yet'
-                  : `You haven't updated progress for ${staleInfo.daysSinceLastUpdate} day${staleInfo.daysSinceLastUpdate === 1 ? '' : 's'}`}
+                  ? 'No topic marked yet'
+                  : `Your schedule view is ${staleInfo.daysSinceLastUpdate} day${staleInfo.daysSinceLastUpdate === 1 ? '' : 's'} out of date`}
               </p>
               <p className="text-xs text-amber-800 mt-0.5">
-                Mark the topics you've taught so your schedule view stays accurate (threshold: {SCHEDULE_STALE_DAYS} days).
+                {staleInfo.daysSinceLastUpdate === null
+                  ? `Mark a topic as you start teaching so "Behind schedule" stays accurate (we nudge after ${SCHEDULE_STALE_DAYS} days of silence).`
+                  : `Mark the topics you've taught — "Today's focus" and "Behind schedule" rely on these updates.`}
               </p>
             </div>
-            <button
-              onClick={() => setStaleDismissed(true)}
-              className="text-xs text-amber-800 hover:text-amber-900 font-medium px-2 py-1 rounded-md hover:bg-amber-100"
-            >
-              Dismiss
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => {
+                  document.getElementById('today')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700"
+              >
+                Update now
+              </button>
+              <button
+                onClick={() => setStaleDismissed(true)}
+                aria-label="Dismiss reminder"
+                className="text-xs text-amber-800 hover:text-amber-900 font-medium px-2 py-1.5 rounded-md hover:bg-amber-100"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
