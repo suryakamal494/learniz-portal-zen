@@ -273,10 +273,12 @@ interface ChapterListSectionProps {
   onFilterChange: (f: ChapterFilter) => void;
   onPreview: (lpId: string) => void;
   onTopicStatusChange: (topicId: string, status: TopicStatus) => void;
+  onCreateLessonPlan?: (chapterId: string) => void;
+  onAddFromLibrary?: (chapterId: string) => void;
   focusChapterId?: string;
 }
 
-function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTopicStatusChange, focusChapterId }: ChapterListSectionProps) {
+function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, focusChapterId }: ChapterListSectionProps) {
   const today = new Date();
 
   // Sort by first topic start date (chapters without dates fall to the end).
@@ -347,6 +349,8 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
                 isCurrent={ch.id === focusChapterId}
                 onPreview={onPreview}
                 onTopicStatusChange={onTopicStatusChange}
+                onCreateLessonPlan={onCreateLessonPlan}
+                onAddFromLibrary={onAddFromLibrary}
               />
             </div>
           ))}
