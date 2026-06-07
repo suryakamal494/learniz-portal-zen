@@ -112,7 +112,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview, onTop
       </button>
 
       {open && (
-        <div className="border-t border-gray-100 bg-gray-50/50">
+        <div id={panelId} className="border-t border-gray-100 bg-gray-50/50">
           {(() => {
             // Build lessonPlan ↔ topic linking maps.
             const lpById = new Map(chapter.lessonPlans.map((lp) => [lp.id, lp]));
