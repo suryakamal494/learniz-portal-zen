@@ -21,16 +21,6 @@ export default function BatchListingPage() {
     )
   }, [searchQuery])
 
-  // Lightweight derived counts so cards feel meaningful (UI-only mock).
-  const deriveCounts = (id: string) => {
-    const n = parseInt(id, 10) || 1
-    return {
-      lessons: ((n * 3) % 5) + 1,
-      notes: ((n * 7) % 6) + 1,
-      assessments: ((n * 2) % 4) + 1,
-      attendancePct: 55 + ((n * 11) % 40),
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-3 md:p-5">
