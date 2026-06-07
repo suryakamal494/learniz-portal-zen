@@ -71,10 +71,7 @@ export default function BatchListingPage() {
               <SectionCard
                 key={batch.id}
                 batch={batch}
-                onPrograms={b => {
-                  // Placeholder — destination to be defined.
-                  console.log('Programs clicked for', b.id)
-                }}
+                onPrograms={b => navigate(`/teacher/batches/${b.id}/programs`)}
               />
             ))}
           </div>
