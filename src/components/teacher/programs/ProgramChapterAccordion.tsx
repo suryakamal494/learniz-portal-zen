@@ -112,24 +112,6 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
               {topics.length > 0 ? `${topics.length} topics` : `${chapter.lessonPlans.length} lesson plans`}
             </span>
           </div>
-          {chapter.educators && chapter.educators.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {chapter.educators.map((e) => {
-                const initials = e.name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase();
-                return (
-                  <span
-                    key={e.id}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-50 border border-gray-200 text-gray-700"
-                  >
-                    <span className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${e.avatarColor ?? 'bg-gray-200 text-gray-700'}`}>
-                      {initials}
-                    </span>
-                    {e.name}
-                  </span>
-                );
-              })}
-            </div>
-          )}
         </div>
         <span
           className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${pill.cls}`}
