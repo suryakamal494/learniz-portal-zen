@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig } from 'lucide-react';
 import { ProgramChapter, TopicStatus } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
@@ -12,6 +12,8 @@ interface Props {
   isCurrent?: boolean;
   onPreview: (lessonPlanId: string) => void;
   onTopicStatusChange?: (topicId: string, status: TopicStatus) => void;
+  onCreateLessonPlan?: (chapterId: string) => void;
+  onAddFromLibrary?: (chapterId: string) => void;
 }
 
 function formatDateRange(start?: string, end?: string): string | null {
@@ -43,7 +45,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
@@ -230,6 +232,30 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                         usedInTopics={lpToTopics.get(lp.id) ?? []}
                       />
                     ))
+                  )}
+                  {(onCreateLessonPlan || onAddFromLibrary) && (
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                      {onAddFromLibrary && (
+                        <button
+                          type="button"
+                          onClick={() => onAddFromLibrary(chapter.id)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
+                        >
+                          <LibraryBig className="h-3.5 w-3.5" />
+                          Add from library
+                        </button>
+                      )}
+                      {onCreateLessonPlan && (
+                        <button
+                          type="button"
+                          onClick={() => onCreateLessonPlan(chapter.id)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Create lesson plan
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </>
