@@ -104,12 +104,33 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview, onTop
         >
           {pill.label}
         </span>
-        <span
-          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pctPill}`}
-          title={explainPct(spent, planned)}
-        >
-          {pct}%
-        </span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${pctPill}`}
+              title="What does this percentage mean?"
+            >
+              {pct}%
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="bottom"
+            align="end"
+            className="w-72 p-0 border border-gray-200 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ChapterPctBreakdown
+              chapter={chapter}
+              pct={pct}
+              spent={spent}
+              planned={planned}
+              deltaLabel={pill.label}
+              deltaExplanation={delta.explanation}
+            />
+          </PopoverContent>
+        </Popover>
       </button>
 
       {open && (
