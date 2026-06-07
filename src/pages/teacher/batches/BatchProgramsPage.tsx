@@ -56,6 +56,7 @@ export default function BatchProgramsPage() {
   );
   const [previewLpId, setPreviewLpId] = useState<string | null>(null);
   const [staleDismissed, setStaleDismissed] = useState(false);
+  const [filter, setFilter] = useState<ChapterFilter>('all');
 
   // Voice-nav: pre-select subject tab from ?subject=<slug>
   useEffect(() => {
