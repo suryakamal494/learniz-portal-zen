@@ -275,8 +275,18 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
     return bucketOf(delta.state, hasIP).includes(filter);
   });
 
+  // On mount (or when the focus chapter changes), scroll the currently-teaching
+  // chapter into view so the teacher lands at "where I am" instead of May.
+  useEffect(() => {
+    if (!focusChapterId) return;
+    const id = `chapter-${focusChapterId}`;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [focusChapterId]);
+
   return (
-    <div>
+    <div id="chapters-section">
       <div className="flex items-center justify-between gap-3 mb-3 px-1 flex-wrap">
         <div className="flex items-center gap-2">
           <CalendarRange className="h-4 w-4 text-gray-500" />
@@ -292,10 +302,11 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
       ) : (
         <div className="space-y-3">
           {visible.map(({ ch }) => (
-            <div key={ch.id} id={`chapter-${ch.id}`}>
+            <div key={ch.id} id={`chapter-${ch.id}`} className="scroll-mt-24">
               <ProgramChapterAccordion
                 chapter={ch}
                 defaultOpen={ch.id === focusChapterId}
+                isCurrent={ch.id === focusChapterId}
                 onPreview={onPreview}
                 onTopicStatusChange={onTopicStatusChange}
               />
