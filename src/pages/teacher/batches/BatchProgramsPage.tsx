@@ -19,7 +19,35 @@ export default function BatchProgramsPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const batch = mockBatches.find((b) => b.id === batchId);
-  const program = batchId ? getProgramByBatchId(batchId) : undefined;
+  const baseProgram = batchId ? getProgramByBatchId(batchId) : undefined;
+
+  // In-session topic-status overrides — toggled by Today's focus + (later) chapter rows.
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, { status: TopicStatus; lastUpdatedAt: string }>>({});
+
+  const program: Program | undefined = useMemo(() => {
+    if (!baseProgram) return undefined;
+    if (Object.keys(statusOverrides).length === 0) return baseProgram;
+    return {
+      ...baseProgram,
+      subjects: baseProgram.subjects.map(s => ({
+        ...s,
+        chapters: s.chapters.map(ch => ({
+          ...ch,
+          topics: ch.topics?.map(t => {
+            const o = statusOverrides[t.id];
+            return o ? { ...t, status: o.status, lastUpdatedAt: o.lastUpdatedAt } : t;
+          }),
+        })),
+      })),
+    };
+  }, [baseProgram, statusOverrides]);
+
+  const handleTopicStatus = (topicId: string, status: TopicStatus) => {
+    setStatusOverrides(prev => ({
+      ...prev,
+      [topicId]: { status, lastUpdatedAt: new Date().toISOString() },
+    }));
+  };
 
   const [activeSubjectId, setActiveSubjectId] = useState<string | undefined>(
     program?.subjects[0]?.id,
