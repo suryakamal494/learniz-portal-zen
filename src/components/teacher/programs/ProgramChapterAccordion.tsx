@@ -73,20 +73,34 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
   const panelId = `chapter-panel-${chapter.id}`;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div
+      className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-shadow ${
+        isCurrent ? 'border-blue-300 ring-2 ring-blue-300 shadow-md' : 'border-gray-200'
+      }`}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="w-full px-5 py-4 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
+        className={`w-full px-5 py-4 flex items-center gap-3 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
+          isCurrent ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-gray-50'
+        }`}
       >
         <span className="text-gray-400">
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">
-            Chapter {chapter.order}: {chapter.name}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              Chapter {chapter.order}: {chapter.name}
+            </p>
+            {isCurrent && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                <Sparkles className="h-3 w-3" />
+                Currently teaching
+              </span>
+            )}
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
             {dateRange && (
               <span className="inline-flex items-center gap-1">
@@ -98,6 +112,24 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
               {topics.length > 0 ? `${topics.length} topics` : `${chapter.lessonPlans.length} lesson plans`}
             </span>
           </div>
+          {chapter.educators && chapter.educators.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {chapter.educators.map((e) => {
+                const initials = e.name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase();
+                return (
+                  <span
+                    key={e.id}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-50 border border-gray-200 text-gray-700"
+                  >
+                    <span className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${e.avatarColor ?? 'bg-gray-200 text-gray-700'}`}>
+                      {initials}
+                    </span>
+                    {e.name}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
         <span
           className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${pill.cls}`}
