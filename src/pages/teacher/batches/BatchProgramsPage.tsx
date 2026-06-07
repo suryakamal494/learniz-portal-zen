@@ -9,9 +9,11 @@ import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramCh
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
 import { TodayFocusCard } from '@/components/teacher/programs/TodayFocusCard';
 import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
+import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
+import { TodayAnchor } from '@/components/teacher/programs/TodayAnchor';
 import { getSubjectById } from '@/lib/voiceCatalog';
-import { getStaleStatusInfo, SCHEDULE_STALE_DAYS } from '@/utils/programSchedule';
-import { Program, TopicStatus } from '@/types/program';
+import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter } from '@/utils/programSchedule';
+import { Program, ProgramChapter, TopicStatus } from '@/types/program';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
