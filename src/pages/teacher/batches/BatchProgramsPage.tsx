@@ -199,23 +199,13 @@ export default function BatchProgramsPage() {
 
               <StatusOverviewStrip program={program} />
 
-              <div>
-                <div className="flex items-center gap-2 mb-2.5 px-1">
-                  <CalendarRange className="h-4 w-4 text-gray-500" />
-                  <h2 className="text-sm font-semibold text-gray-800">Chapters & lesson plans</h2>
-                </div>
-                <div className="space-y-3">
-                  {activeSubject.chapters.map((ch, i) => (
-                    <div key={ch.id} id={`chapter-${ch.id}`}>
-                      <ProgramChapterAccordion
-                        chapter={ch}
-                        defaultOpen={i === 0}
-                        onPreview={(id) => setPreviewLpId(id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ChapterListSection
+                chapters={activeSubject.chapters}
+                filter={filter}
+                onFilterChange={setFilter}
+                onPreview={(id) => setPreviewLpId(id)}
+                onTopicStatusChange={handleTopicStatus}
+              />
             </div>
           </ProgramSubjectTabs>
         )}
@@ -226,6 +216,104 @@ export default function BatchProgramsPage() {
         onClose={() => setPreviewLpId(null)}
         lessonPlan={previewLp}
       />
+    </div>
+  );
+}
+
+// ─── Chapter list (sorted by planned start, with filter bar + Today anchor) ───
+interface ChapterListSectionProps {
+  chapters: ProgramChapter[];
+  filter: ChapterFilter;
+  onFilterChange: (f: ChapterFilter) => void;
+  onPreview: (lpId: string) => void;
+  onTopicStatusChange: (topicId: string, status: TopicStatus) => void;
+}
+
+function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTopicStatusChange }: ChapterListSectionProps) {
+  const today = new Date();
+
+  // Sort by first topic start date (chapters without dates fall to the end).
+  const sorted = useMemo(() => {
+    const withMeta = chapters.map((ch) => {
+      const startIso = ch.topics?.[0]?.plannedStartDate ?? ch.plannedStartDate ?? '9999-12-31';
+      const delta = getScheduleDeltaForChapter(ch, today);
+      return { ch, startIso, delta };
+    });
+    withMeta.sort((a, b) => a.startIso.localeCompare(b.startIso));
+    return withMeta;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapters]);
+
+  // Bucket each chapter for filter counts.
+  const bucketOf = (state: ReturnType<typeof getScheduleDeltaForChapter>['state'], hasInProgressTopic: boolean): ChapterFilter[] => {
+    const out: ChapterFilter[] = ['all'];
+    if (state === 'behind') out.push('behind');
+    else if (state === 'done') out.push('done');
+    else if (state === 'not-started' && !hasInProgressTopic) out.push('upcoming');
+    if (hasInProgressTopic) out.push('in-progress');
+    return out;
+  };
+
+  const counts: Record<ChapterFilter, number> = { all: 0, behind: 0, 'in-progress': 0, upcoming: 0, done: 0 };
+  for (const { ch, delta } of sorted) {
+    const hasIP = (ch.topics ?? []).some((t) => t.status === 'in-progress');
+    for (const b of bucketOf(delta.state, hasIP)) counts[b] += 1;
+  }
+
+  const visible = sorted.filter(({ ch, delta }) => {
+    if (filter === 'all') return true;
+    const hasIP = (ch.topics ?? []).some((t) => t.status === 'in-progress');
+    return bucketOf(delta.state, hasIP).includes(filter);
+  });
+
+  // Find the index where to inject the Today anchor: between last chapter that ended before today
+  // and the first chapter that starts on/after today.
+  const todayMs = today.getTime();
+  let anchorIndex = -1;
+  for (let i = 0; i < visible.length; i++) {
+    const startIso = visible[i].startIso;
+    if (startIso === '9999-12-31') continue;
+    const start = new Date(startIso).getTime();
+    if (start >= todayMs) {
+      anchorIndex = i;
+      break;
+    }
+  }
+  // If all chapters are in the past, place the anchor at the end (only when filter === 'all').
+  const showAnchor = filter === 'all' && visible.length > 0;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-3 px-1 flex-wrap">
+        <div className="flex items-center gap-2">
+          <CalendarRange className="h-4 w-4 text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-800">Chapters & lesson plans</h2>
+        </div>
+        <ChapterScheduleFilters value={filter} onChange={onFilterChange} counts={counts} />
+      </div>
+
+      {visible.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+          <p className="text-sm text-gray-600">No chapters match this filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visible.map(({ ch }, i) => (
+            <React.Fragment key={ch.id}>
+              {showAnchor && i === anchorIndex && <TodayAnchor />}
+              <div id={`chapter-${ch.id}`}>
+                <ProgramChapterAccordion
+                  chapter={ch}
+                  defaultOpen={i === Math.max(0, anchorIndex)}
+                  onPreview={onPreview}
+                  onTopicStatusChange={onTopicStatusChange}
+                />
+              </div>
+            </React.Fragment>
+          ))}
+          {showAnchor && anchorIndex === -1 && <TodayAnchor />}
+        </div>
+      )}
     </div>
   );
 }
