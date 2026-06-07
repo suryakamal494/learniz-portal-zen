@@ -99,27 +99,6 @@ export default function BatchProgressTrackerPage() {
           </div>
         </div>
 
-        {/* Overview */}
-        {overview && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <OverviewTile label="Overall completion" value={`${overview.overallPct}%`} tint="bg-blue-50 text-blue-900" />
-            <OverviewTile
-              label="Hours taught"
-              value={`${formatHours(overview.hoursSpent)} / ${formatHours(overview.hoursPlanned)}`}
-              tint="bg-emerald-50 text-emerald-900"
-            />
-            <OverviewTile
-              label="Lessons completed"
-              value={`${overview.completedLessons} of ${overview.totalLessons}`}
-              tint="bg-purple-50 text-purple-900"
-            />
-            <OverviewTile
-              label="In progress / Not started"
-              value={`${overview.partialLessons} / ${overview.notStartedLessons}`}
-              tint="bg-amber-50 text-amber-900"
-            />
-          </div>
-        )}
 
         {!program || !activeSubject ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
