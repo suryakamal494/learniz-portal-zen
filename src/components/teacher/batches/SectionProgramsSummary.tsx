@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpenCheck, LineChart } from 'lucide-react';
+import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getProgramSummary } from '@/utils/programProgress';
 
