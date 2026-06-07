@@ -154,7 +154,9 @@ export default function BatchProgramsPage() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => {
-                  document.getElementById('this-week')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  const focusId = getTodayFocus(program)?.chapter.id;
+                  const el = focusId ? document.getElementById(`chapter-${focusId}`) : null;
+                  (el ?? document.getElementById('chapters-section'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
                 className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700"
               >
