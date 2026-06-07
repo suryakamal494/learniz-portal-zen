@@ -401,6 +401,11 @@ function buildSubject(
       if (lastDone) lp.lastTaughtDate = lastDone.plannedEndDate;
     }
 
+    const pool = EDUCATOR_POOL[subjectPrefix] ?? [];
+    const educators = pool.length > 0
+      ? [pool[ci % pool.length], pool[(ci + 1) % pool.length]].filter((v, i, a) => a.findIndex(x => x.id === v.id) === i)
+      : undefined;
+
     chapters.push({
       id: chId,
       name: spec.name,
@@ -409,6 +414,7 @@ function buildSubject(
       plannedEndDate: end,
       topics,
       lessonPlans,
+      educators,
     });
   });
 
