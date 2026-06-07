@@ -39,6 +39,12 @@ export interface ProgramTopic {
   lessonPlanIds?: string[];
 }
 
+export interface ProgramEducator {
+  id: string;
+  name: string;
+  avatarColor?: string;
+}
+
 export interface ProgramChapter {
   id: string;
   name: string;
@@ -48,6 +54,7 @@ export interface ProgramChapter {
   topics?: ProgramTopic[];
   plannedStartDate?: string;
   plannedEndDate?: string;
+  educators?: ProgramEducator[];
 }
 
 export interface ProgramSubject {
