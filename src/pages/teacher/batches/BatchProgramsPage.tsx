@@ -315,7 +315,7 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
       ) : (
         <div className="space-y-3">
           {visible.map(({ ch }, i) => (
-            <React.Fragment key={ch.id}>
+            <div key={ch.id}>
               {showAnchor && i === anchorIndex && <TodayAnchor />}
               <div id={`chapter-${ch.id}`}>
                 <ProgramChapterAccordion
@@ -325,7 +325,7 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
                   onTopicStatusChange={onTopicStatusChange}
                 />
               </div>
-            </React.Fragment>
+            </div>
           ))}
           {showAnchor && anchorIndex === -1 && <TodayAnchor />}
         </div>
