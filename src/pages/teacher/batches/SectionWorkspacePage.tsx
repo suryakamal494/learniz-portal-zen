@@ -56,7 +56,7 @@ export default function SectionWorkspacePage() {
           assessmentCount={counts.assessments}
         />
 
-        <SectionProgramsSummary batchId={batch.id} />
+        
 
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Quick actions</h3>
