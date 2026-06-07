@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles, CalendarDays, AlertCircle, CheckCircle2, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Program, TopicStatus } from '@/types/program';
-import { getTodayFocus, getScheduleDeltaForChapter } from '@/utils/programSchedule';
+import { getTodayFocus } from '@/utils/programSchedule';
 
 interface Props {
   program: Program;
