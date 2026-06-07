@@ -202,7 +202,7 @@ export default function BatchProgramsPage() {
             onChange={setActiveSubjectId}
           >
             <div className="space-y-5">
-              <TodayFocusCard
+              <ThisWeekCard
                 program={program}
                 onStatusChange={handleTopicStatus}
                 onJumpToChapter={(chapterId) => {
@@ -220,6 +220,7 @@ export default function BatchProgramsPage() {
                 onFilterChange={setFilter}
                 onPreview={(id) => setPreviewLpId(id)}
                 onTopicStatusChange={handleTopicStatus}
+                focusChapterId={getTodayFocus(program)?.chapter.id}
               />
             </div>
           </ProgramSubjectTabs>
@@ -235,16 +236,17 @@ export default function BatchProgramsPage() {
   );
 }
 
-// ─── Chapter list (sorted by planned start, with filter bar + Today anchor) ───
+// ─── Chapter list (sorted by planned start, with filter bar) ───
 interface ChapterListSectionProps {
   chapters: ProgramChapter[];
   filter: ChapterFilter;
   onFilterChange: (f: ChapterFilter) => void;
   onPreview: (lpId: string) => void;
   onTopicStatusChange: (topicId: string, status: TopicStatus) => void;
+  focusChapterId?: string;
 }
 
-function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTopicStatusChange }: ChapterListSectionProps) {
+function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTopicStatusChange, focusChapterId }: ChapterListSectionProps) {
   const today = new Date();
 
   // Sort by first topic start date (chapters without dates fall to the end).
@@ -281,22 +283,6 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
     return bucketOf(delta.state, hasIP).includes(filter);
   });
 
-  // Find the index where to inject the Today anchor: between last chapter that ended before today
-  // and the first chapter that starts on/after today.
-  const todayMs = today.getTime();
-  let anchorIndex = -1;
-  for (let i = 0; i < visible.length; i++) {
-    const startIso = visible[i].startIso;
-    if (startIso === '9999-12-31') continue;
-    const start = new Date(startIso).getTime();
-    if (start >= todayMs) {
-      anchorIndex = i;
-      break;
-    }
-  }
-  // If all chapters are in the past, place the anchor at the end (only when filter === 'all').
-  const showAnchor = filter === 'all' && visible.length > 0;
-
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-3 px-1 flex-wrap">
@@ -313,23 +299,20 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
         </div>
       ) : (
         <div className="space-y-3">
-          {visible.map(({ ch }, i) => (
-            <div key={ch.id}>
-              {showAnchor && i === anchorIndex && <TodayAnchor />}
-              <div id={`chapter-${ch.id}`}>
-                <ProgramChapterAccordion
-                  chapter={ch}
-                  defaultOpen={i === Math.max(0, anchorIndex)}
-                  onPreview={onPreview}
-                  onTopicStatusChange={onTopicStatusChange}
-                />
-              </div>
+          {visible.map(({ ch }) => (
+            <div key={ch.id} id={`chapter-${ch.id}`}>
+              <ProgramChapterAccordion
+                chapter={ch}
+                defaultOpen={ch.id === focusChapterId}
+                onPreview={onPreview}
+                onTopicStatusChange={onTopicStatusChange}
+              />
             </div>
           ))}
-          {showAnchor && anchorIndex === -1 && <TodayAnchor />}
         </div>
       )}
     </div>
   );
 }
+
 
