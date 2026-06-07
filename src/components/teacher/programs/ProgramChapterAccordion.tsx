@@ -220,7 +220,33 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                 )}
 
                 <div className="px-5 pb-5 pt-3 space-y-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lesson plans</p>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lesson plans</p>
+                    {(onCreateLessonPlan || onAddFromLibrary) && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {onAddFromLibrary && (
+                          <button
+                            type="button"
+                            onClick={() => onAddFromLibrary(chapter.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
+                          >
+                            <LibraryBig className="h-3.5 w-3.5" />
+                            Add from library
+                          </button>
+                        )}
+                        {onCreateLessonPlan && (
+                          <button
+                            type="button"
+                            onClick={() => onCreateLessonPlan(chapter.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Create lesson plan
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {chapter.lessonPlans.length === 0 ? (
                     <p className="text-sm text-gray-500 py-2">No lesson plans in this chapter yet.</p>
                   ) : (
@@ -232,30 +258,6 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                         usedInTopics={lpToTopics.get(lp.id) ?? []}
                       />
                     ))
-                  )}
-                  {(onCreateLessonPlan || onAddFromLibrary) && (
-                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-                      {onAddFromLibrary && (
-                        <button
-                          type="button"
-                          onClick={() => onAddFromLibrary(chapter.id)}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
-                        >
-                          <LibraryBig className="h-3.5 w-3.5" />
-                          Add from library
-                        </button>
-                      )}
-                      {onCreateLessonPlan && (
-                        <button
-                          type="button"
-                          onClick={() => onCreateLessonPlan(chapter.id)}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Create lesson plan
-                        </button>
-                      )}
-                    </div>
                   )}
                 </div>
               </>
