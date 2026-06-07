@@ -49,6 +49,7 @@ const EXAMPLES = [
 
 export function VoiceCommandFAB() {
   const navigate = useNavigate()
+  const location = useLocation()
   const sr = useSpeechRecognition()
   const [phase, setPhase] = useState<Phase>('idle')
   const [open, setOpen] = useState(false)
