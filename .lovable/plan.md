@@ -1,54 +1,78 @@
-# Programs page cleanup + entry-point fixes
+# Voice navigation — fix stale routes + add "currently teaching" intent
 
-## 1. Remove "Currently running" card
-Delete `<ThisWeekCard />` from `BatchProgramsPage.tsx`. "Where you stand" already answers the "where am I" question, and the highlighted chapter (below) shows what's running. Leave `ThisWeekCard.tsx` file in place (unused, safe to delete later). The stale-status alert's "Update now" button retargets to scroll to the highlighted chapter (`#chapter-<id>`) instead of `#this-week`.
+## 1. Fix stale route paths in `src/lib/voiceRoutes.ts`
+Replace these with the real router paths (verified against `src/App.tsx` / page files):
 
-## 2. Highlight the ongoing chapter
-In `ChapterListSection` (inside `BatchProgramsPage.tsx`), identify the "current" chapter = the one containing the topic returned by `getTodayFocus(program)` (already computed). For that chapter card in `ProgramChapterAccordion`:
-- Add a thicker blue ring + light blue tint on the header (`ring-2 ring-blue-400 bg-blue-50/40`).
-- Add a small "Currently teaching" pill next to the chapter title.
-- Default-open this chapter (already done) and auto-scroll to it on mount.
+| id | old path | new path |
+|---|---|---|
+| `schedule` | `/teacher/classroom/schedule` | `/teacher/schedule` |
+| `schedule.create` | `/teacher/classroom/schedule/create` | `/teacher/schedule/create` |
+| `studyNotes` | `/teacher/classroom/notes` | `/teacher/lms/notes` |
+| `studyNotes.create` | `/teacher/classroom/notes/create` | `/teacher/lms/notes/create` |
+| `lessons.library` | `/teacher/lms/library` | `/teacher/lms/content/library` |
+| `reports.section` | `/teacher/reports/section` | `/teacher/reports/section-reports` |
 
-## 3. Simplify the lesson plan card
-Rewrite `LessonPlanCard.tsx` to show **only**:
-- Lesson plan title
-- `Preview` button
+Remove entirely (route does not exist / superseded):
+- `liveAssessment` (no `/teacher/classroom/live-quizzes` page)
+- `batch.progress` — superseded by `batch.programs` (the Programs page already shows "Where you stand").
 
-Remove: status badge (Completed / In progress / Not started), summary text, "Contents: 1 PPT · 1 Video · 1 Note" line, and the "Used in: <topic>" chips. The card becomes a single row with title left, Preview right.
+(I'll re-read `src/App.tsx` first and only change paths that are actually wrong; the table above is from my audit and will be confirmed before writing.)
 
-## 4. Keep topic → lesson plan linking, drop the inline chips inside topic rows
-Inside the topic list in `ProgramChapterAccordion`, **remove** the "Lesson plans" chip strip under each topic (the `linkedLps` block). The lesson-plan list below the topics already covers it; user explicitly asked to remove that tag. Topic row keeps: status icon, name, dates, planned hours, Start/Mark done/Reopen actions.
+## 2. Resolve the `courses` vs `batch.programs` overlap
+- `courses.examples` becomes `['courses', 'create course', 'course library']` — drop `'programs'` and `'curriculum'`.
+- `batch.programs.examples` gets the new "currently teaching" vocabulary (see §3).
 
-(Validation note in chat: the alternative — nesting lesson plans inside each topic — duplicates LP cards when one LP supports two topics and bloats the chapter card vertically. Recommendation is to keep the flat "Topics" list followed by a single "Lesson plans" list, just stripped down per §3.)
+## 3. New "currently teaching" intent
+Two complementary additions:
 
-## 5. Educators on the chapter
-`ProgramChapter` has no `educators` field. Add an optional `educators?: Array<{ id: string; name: string; avatarColor?: string }>` to `ProgramChapter` in `src/types/program.ts`, seed 1–2 educators per chapter in `mockPrograms.ts` (rotate from a small pool: "Ms. Anika Rao", "Mr. Vivek Menon", "Dr. Suresh Iyer", etc.), and render them as small avatar+name chips in the chapter header row (below the date range).
+### 3a. Enrich `batch.programs` examples
+Add: `"what am i teaching now"`, `"current chapter"`, `"currently teaching"`, `"todays topic"`, `"this weeks lesson"`, `"where do i stand in the program"`, `"jump to current chapter"`, `"show my program"`, `"open my program"`.
 
-## 6. Anchor list start at the "middle of the chapter"
-Currently the chapter list is sorted by `plannedStartDate` ascending from June. With ~28 chapters that pushes the ongoing chapter far down. Change `ChapterListSection` so the list still renders all chapters in order, but on mount it **scrolls to the currently-teaching chapter** (uses the same focus chapter id, `requestAnimationFrame` + `scrollIntoView({ block: 'start' })`). This preserves chronological order while landing the teacher at "where I am" — matching the "starting point = middle of chapter" ask.
+### 3b. New virtual route `programs.current`
+Path template: `/teacher/batches/:batchId/programs` (same as `batch.programs`), but the route id signals the client to:
+1. Pick the **subject** containing today's focus topic (compute on the client via `getTodayFocus` over the resolved batch's program — already in `src/utils/programSchedule.ts`).
+2. Append `?subject=<slug>#chapter-<chapterId>` so the existing `ProgramSubjectTabs` selects the right subject and `ChapterListSection`'s `useEffect` scrolls the highlighted chapter into view.
 
-## 7. Section workspace page (`/teacher/batches/:id`)
-In `SectionWorkspacePage.tsx`:
-- Remove the `<SectionProgramsSummary />` block entirely (per screenshot 2). Quick actions already exposes Programs.
-- Quick actions' Programs tile already navigates to `/teacher/batches/<id>/programs` — no change needed.
+Examples: `"what am i teaching today"`, `"take me to the current chapter"`, `"where am i in the program right now"`, `"show currently running"`, `"open this weeks topic"`.
 
-## 8. My Sections card Programs button (`/teacher/batches`)
-In `BatchListingPage.tsx`, change the `onPrograms` handler from the placeholder `console.log` to `navigate(\`/teacher/batches/${b.id}/programs\`)` so the Programs button on each section card opens the Programs page directly.
+The LLM never has to know which chapter — `programs.current` is a marker; the client does the resolution after navigation intent is returned.
 
-## 9. Programs page also keeps its own Programs entry
-The Programs page itself doesn't need a "Programs" quick action (it's already there). No change.
+## 4. Client resolution for `programs.current`
+In `VoiceCommandFAB.finalizeNavigation`:
+- When `routeId === 'programs.current'`:
+  - Resolve `batchId` (named batch → use it; otherwise prefer the batch in the current URL via `useParams` / `useLocation`; otherwise fall back to `voiceCatalog.batches[0]`).
+  - Look up the program via `getProgramByBatchId(batchId)` and call `getTodayFocus(program)`.
+  - If a focus exists, build `path = /teacher/batches/<batchId>/programs?subject=<subjectSlug>#chapter-<chapterId>`. The subject slug must match what `BatchProgramsPage` already does — it matches by **subject name (lowercased)**, so look up the subject name and pass its slug from `voiceCatalog` (already keyed by name).
+  - If no focus (nothing scheduled), navigate to the plain Programs URL and toast "Nothing scheduled for today — opening Programs."
+- For all other routes, behavior is unchanged.
+
+## 5. Programs page must honor `#chapter-<id>` hash
+`BatchProgramsPage` already scrolls to the focus chapter via its own `useEffect`. That works when the focus matches; but for the voice flow we want to guarantee scroll based on the URL hash too. Add a small `useEffect` to `BatchProgramsPage` that, when `location.hash` starts with `#chapter-`, scrolls that element into view after first render (RAF + 100 ms timer to wait for accordion mount). This keeps the existing focus-scroll behavior intact and makes the deep-link survive subject-tab switches.
+
+## 6. Smarter `batchId` fallback
+In `finalizeNavigation`, if a route `needsParam === 'batchId'` and `intent.filters.batchId` is null, prefer the `:batchId` from the current location path (matched via `/teacher/batches/(\d+)`) over `voiceCatalog.batches[0]`.
+
+## 7. Tighten the LLM system prompt (in `supabase/functions/voice-intent/index.ts`)
+Add one bullet to RULES:
+> "Phrases about 'what I'm teaching now', 'currently teaching', 'today's topic', 'this week's lesson', 'where do I stand in the program' map to `programs.current`. Phrases about 'open program / show curriculum / programs of <section>' map to `batch.programs`. Phrases about 'create course / new course' map to `courses`."
+
+Deploy the edge function after the edit.
 
 ## Files touched
-- `src/pages/teacher/batches/BatchProgramsPage.tsx` — remove ThisWeekCard, add highlight + auto-scroll, retarget stale alert button.
-- `src/components/teacher/programs/ProgramChapterAccordion.tsx` — accept `isCurrent` prop, add ring + "Currently teaching" pill, render `educators` chips, remove inline topic→LP chip strip.
-- `src/components/teacher/programs/LessonPlanCard.tsx` — strip down to title + Preview only.
-- `src/types/program.ts` — add `educators` to `ProgramChapter`.
-- `src/data/mockPrograms.ts` — seed `educators` on each chapter.
-- `src/pages/teacher/batches/SectionWorkspacePage.tsx` — remove `SectionProgramsSummary` usage.
-- `src/pages/teacher/batches/BatchListingPage.tsx` — wire `onPrograms` to navigate.
+- `src/lib/voiceRoutes.ts` — path fixes, example fixes, drop `liveAssessment` + `batch.progress`, add `programs.current`.
+- `src/components/teacher/voice/VoiceCommandFAB.tsx` — handle `programs.current`, smarter batch fallback.
+- `src/pages/teacher/batches/BatchProgramsPage.tsx` — honor `#chapter-<id>` hash on mount.
+- `supabase/functions/voice-intent/index.ts` — system-prompt rule for the new intent class; redeploy.
 
 ## Out of scope
-- "Where you stand" strip stays as-is.
-- Chapter `%` popover stays as-is.
-- Filter chips stay as-is.
-- `SectionProgramsSummary.tsx` file left in repo, unused.
+- No backend / schema changes.
+- No new components.
+- Voice-driven topic status toggles ("mark Galvanic Cells as done") — separate feature, will flag but not implement.
+- Reorganizing the voice catalog or chapter slug strategy.
+
+## How the target scenario will behave after this
+User says: *"Take me to where I can see what I'm currently teaching."*
+→ LLM returns `routeId: "programs.current"` (no subject/chapter needed).
+→ Client resolves batch from current URL (`/teacher/batches/1/...`) → fetches program → `getTodayFocus()` → Chemistry · Chapter 3 Electrochemistry · Galvanic Cells.
+→ Navigates to `/teacher/batches/1/programs?subject=chemistry#chapter-chem-ch-3`.
+→ Programs page opens, Chemistry tab selected, page scrolls to the blue-ringed "Currently teaching" chapter.

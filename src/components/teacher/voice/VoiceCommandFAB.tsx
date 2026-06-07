@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Mic, MicOff, X, Loader2, Sparkles, HelpCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
@@ -10,7 +10,10 @@ import {
   getChapterById,
   getSubjectById,
   voiceCatalog,
+  toSlug,
 } from '@/lib/voiceCatalog'
+import { getProgramByBatchId } from '@/data/mockPrograms'
+import { getTodayFocus } from '@/utils/programSchedule'
 import { supabase } from '@/integrations/supabase/client'
 
 type Phase = 'idle' | 'listening' | 'thinking' | 'clarifying'
@@ -46,6 +49,7 @@ const EXAMPLES = [
 
 export function VoiceCommandFAB() {
   const navigate = useNavigate()
+  const location = useLocation()
   const sr = useSpeechRecognition()
   const [phase, setPhase] = useState<Phase>('idle')
   const [open, setOpen] = useState(false)
@@ -77,10 +81,13 @@ export function VoiceCommandFAB() {
       return
     }
 
-    // Resolve batchId for routes that need it as a path param
+    // Resolve batchId for routes that need it as a path param.
+    // Priority: spoken batch → batch already in current URL → first available.
     let resolvedBatchId = p.batchId
     if (route.needsParam === 'batchId' && !resolvedBatchId) {
-      resolvedBatchId = voiceCatalog.batches[0]?.id || null
+      const urlMatch = location.pathname.match(/\/teacher\/batches\/([^/]+)/)
+      const fromUrl = urlMatch?.[1] && getBatchById(urlMatch[1]) ? urlMatch[1] : null
+      resolvedBatchId = fromUrl || voiceCatalog.batches[0]?.id || null
       if (!resolvedBatchId) {
         toast.error('No section found to open.')
         return
@@ -100,15 +107,40 @@ export function VoiceCommandFAB() {
       }
     }
 
-    // Append supported filter slugs as query params
-    const qs = new URLSearchParams()
-    const supported = route.supportedFilters || []
-    if (supported.includes('subjectId') && p.subjectId) qs.set('subject', p.subjectId)
-    if (supported.includes('chapterId') && p.chapterId) qs.set('chapter', p.chapterId)
-    if (supported.includes('batchId') && resolvedBatchId && route.needsParam !== 'batchId') {
-      qs.set('batch', resolvedBatchId)
+    // "Currently teaching" — compute today's focus subject + chapter and
+    // deep-link via ?subject=<slug>#chapter-<id> so the Programs page lands
+    // exactly where the teacher is, instead of at the top.
+    let hash = ''
+    if (route.id === 'programs.current' && resolvedBatchId) {
+      const program = getProgramByBatchId(resolvedBatchId)
+      const focus = program ? getTodayFocus(program) : null
+      if (focus) {
+        const subjSlug = toSlug(focus.subject.name)
+        path += `?subject=${subjSlug}`
+        hash = `#chapter-${focus.chapter.id}`
+        // Override friendly name with what we're actually teaching
+        p = {
+          ...p,
+          friendlyName: `Currently teaching · ${focus.chapter.name}`,
+          subjectId: p.subjectId ?? subjSlug,
+        }
+      } else {
+        toast.message('Nothing scheduled for today', {
+          description: 'Opening your Program page.',
+        })
+      }
+    } else {
+      // Append supported filter slugs as query params for non-current routes
+      const qs = new URLSearchParams()
+      const supported = route.supportedFilters || []
+      if (supported.includes('subjectId') && p.subjectId) qs.set('subject', p.subjectId)
+      if (supported.includes('chapterId') && p.chapterId) qs.set('chapter', p.chapterId)
+      if (supported.includes('batchId') && resolvedBatchId && route.needsParam !== 'batchId') {
+        qs.set('batch', resolvedBatchId)
+      }
+      if ([...qs.keys()].length > 0) path += `?${qs.toString()}`
     }
-    if ([...qs.keys()].length > 0) path += `?${qs.toString()}`
+    if (hash) path += hash
 
     // Build friendly toast description
     const ctx: string[] = []
@@ -125,7 +157,7 @@ export function VoiceCommandFAB() {
     setPending(null)
     setClarify(null)
     navigate(path)
-  }, [navigate])
+  }, [navigate, location.pathname])
 
   const submit = useCallback(async (transcript: string) => {
     if (!transcript.trim()) {

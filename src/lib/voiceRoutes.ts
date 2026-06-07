@@ -30,8 +30,10 @@ export const voiceRoutes: VoiceRoute[] = [
   { id: 'batches', path: '/teacher/batches', label: 'My Sections', examples: ['batches', 'my sections', 'sections', 'classes list'] },
   { id: 'batches.add', path: '/teacher/batches/add', label: 'Add Section', examples: ['add batch', 'create batch', 'new batch', 'new section'] },
   { id: 'batch.open', path: '/teacher/batches/:batchId', label: 'Open a Section', examples: ['open section a', 'go to physics section', 'show chemistry batch'], needsParam: 'batchId' },
-  { id: 'batch.programs', path: '/teacher/batches/:batchId/programs', label: 'Section Programs', examples: ['programs of section a', 'physics programs', 'open programs', 'show curriculum'], needsParam: 'batchId', supportedFilters: ['subjectId'] },
-  { id: 'batch.progress', path: '/teacher/batches/:batchId/progress', label: 'Section Progress', examples: ['progress of section a', 'batch progress', 'teaching progress'], needsParam: 'batchId' },
+  { id: 'batch.programs', path: '/teacher/batches/:batchId/programs', label: 'Section Program', examples: ['program of section a', 'open program', 'show my program', 'open programs page', 'physics program', 'chemistry program', 'show curriculum'], needsParam: 'batchId', supportedFilters: ['subjectId'] },
+  // Virtual route: same URL as batch.programs but the client deep-links to
+  // today's focus subject + chapter (?subject=<slug>#chapter-<id>).
+  { id: 'programs.current', path: '/teacher/batches/:batchId/programs', label: 'Currently Teaching', examples: ['what am i teaching now', 'what am i teaching today', 'currently teaching', 'current chapter', 'todays topic', 'today topic', 'this weeks lesson', 'this week topic', 'where do i stand in the program', 'where am i in the program', 'take me to the current chapter', 'jump to current chapter', 'show currently running', 'what is running now', 'open this weeks chapter', 'where i stand'], needsParam: 'batchId' },
 
   { id: 'assessments', path: '/teacher/exams', label: 'Assessments', examples: ['assessments', 'exams', 'tests', 'show assessments'] },
   { id: 'assessment.create', path: '/teacher/exams/create', label: 'Create Assessment', examples: ['create assessment', 'new assessment', 'create exam', 'new test'] },
@@ -48,7 +50,7 @@ export const voiceRoutes: VoiceRoute[] = [
   { id: 'lessons.directory', path: '/teacher/lms/directory', label: 'Lessons Directory', examples: ['lessons directory', 'lms directory'] },
   { id: 'lessons.aiPpt', path: '/teacher/lms/ai-ppt-generator', label: 'AI PPT Generator', examples: ['ai ppt', 'generate ppt', 'ai presentation'] },
 
-  { id: 'courses', path: '/teacher/courses', label: 'Courses', examples: ['courses', 'programs', 'curriculum'] },
+  { id: 'courses', path: '/teacher/courses', label: 'Courses', examples: ['courses', 'course library', 'browse courses'] },
   { id: 'courses.create', path: '/teacher/courses/create', label: 'Create Course', examples: ['create course', 'new course', 'add course'] },
 
   { id: 'insights', path: '/institute', label: 'Academic Insights', examples: ['academic insights', 'institute', 'insights'] },

@@ -68,14 +68,19 @@ export default function BatchProgramsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [program]);
 
-  // Deep-link to #progress section (kept for old /progress route).
+  // Deep-link via hash:
+  //   #progress  → scroll to "Where you stand" strip (legacy /progress route)
+  //   #chapter-<id> → scroll to a specific chapter (voice "currently teaching")
   useEffect(() => {
-    if (location.hash === '#progress') {
-      requestAnimationFrame(() => {
-        document.getElementById('progress')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-  }, [location.hash]);
+    const h = location.hash;
+    if (!h) return;
+    const id = h.startsWith('#') ? h.slice(1) : h;
+    // Wait for accordion render + subject-tab switch to settle.
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => clearTimeout(t);
+  }, [location.hash, activeSubjectId]);
 
   const activeSubject = useMemo(
     () => program?.subjects.find((s) => s.id === (activeSubjectId ?? program?.subjects[0]?.id)),
