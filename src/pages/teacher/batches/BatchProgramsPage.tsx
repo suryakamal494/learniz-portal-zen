@@ -202,16 +202,6 @@ export default function BatchProgramsPage() {
             onChange={setActiveSubjectId}
           >
             <div className="space-y-5">
-              <ThisWeekCard
-                program={program}
-                onStatusChange={handleTopicStatus}
-                onJumpToChapter={(chapterId) => {
-                  requestAnimationFrame(() => {
-                    document.getElementById(`chapter-${chapterId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  });
-                }}
-              />
-
               <StatusOverviewStrip program={program} />
 
               <ChapterListSection
