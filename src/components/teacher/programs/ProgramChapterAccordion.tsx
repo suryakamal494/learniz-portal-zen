@@ -68,11 +68,15 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview, onTop
   const lastEnd = topics[topics.length - 1]?.plannedEndDate ?? chapter.plannedEndDate;
   const dateRange = formatDateRange(firstStart, lastEnd);
 
+  const panelId = `chapter-panel-${chapter.id}`;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-5 py-4 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="w-full px-5 py-4 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
       >
         <span className="text-gray-400">
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -108,7 +112,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview, onTop
       </button>
 
       {open && (
-        <div className="border-t border-gray-100 bg-gray-50/50">
+        <div id={panelId} className="border-t border-gray-100 bg-gray-50/50">
           {(() => {
             // Build lessonPlan ↔ topic linking maps.
             const lpById = new Map(chapter.lessonPlans.map((lp) => [lp.id, lp]));
