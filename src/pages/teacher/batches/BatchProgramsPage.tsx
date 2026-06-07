@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpenCheck, AlertTriangle, Sparkles, ListChecks, CalendarRange } from 'lucide-react';
+import { ArrowLeft, BookOpenCheck, AlertTriangle, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { mockBatches } from '@/data/mockBatches';
 import { getProgramByBatchId } from '@/data/mockPrograms';
 import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubjectTabs';
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
+import { TodayFocusCard } from '@/components/teacher/programs/TodayFocusCard';
+import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS } from '@/utils/programSchedule';
+import { Program, TopicStatus } from '@/types/program';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
