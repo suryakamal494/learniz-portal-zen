@@ -15,6 +15,7 @@ import { getBatchById } from '@/lib/voiceCatalog'
 
 export default function AttendancePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedBatch, setSelectedBatch] = useState('')
   const [fromDate, setFromDate] = useState<Date>()
@@ -26,6 +27,25 @@ export default function AttendancePage() {
 
   const batches = getBatches()
   const classes = getClasses()
+
+  // Voice-nav: pre-select section from ?batch=<slug> and auto-run search
+  useEffect(() => {
+    const batchSlug = searchParams.get('batch')
+    if (!batchSlug) return
+    const name = getBatchById(batchSlug)?.name
+    if (!name) return
+    // Match by case-insensitive name or first word against attendance batch labels
+    const match = batches.find(b =>
+      b.toLowerCase() === name.toLowerCase() ||
+      b.toLowerCase().includes(name.toLowerCase().split(/\s+/)[0]),
+    )
+    if (match) {
+      setSelectedBatch(match)
+      setHasSearched(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
 
   // Show all reports by default, then filter based on user selection
   const filteredData = useMemo(() => {
