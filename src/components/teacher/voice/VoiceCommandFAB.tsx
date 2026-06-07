@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Mic, MicOff, X, Loader2, Sparkles, HelpCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
@@ -10,7 +10,10 @@ import {
   getChapterById,
   getSubjectById,
   voiceCatalog,
+  toSlug,
 } from '@/lib/voiceCatalog'
+import { getProgramByBatchId } from '@/data/mockPrograms'
+import { getTodayFocus } from '@/utils/programSchedule'
 import { supabase } from '@/integrations/supabase/client'
 
 type Phase = 'idle' | 'listening' | 'thinking' | 'clarifying'
