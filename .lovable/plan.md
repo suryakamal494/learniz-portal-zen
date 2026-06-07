@@ -1,123 +1,43 @@
-# Context-Aware Voice Navigation (v2 — with slug resolution + clarification)
+# Simplify Section Cards & Headers — Remove Ambiguous Numbers
 
-## Your idea — validated
+You're right — `25/30`, `66%`, `36%` shown without context don't tell the teacher anything actionable. Stripping them keeps the surface clean. Going forward, any number we *do* keep should answer "what does this mean?" on hover (noted as a principle, not part of this change).
 
-You're absolutely right on both points:
+## Scope
 
-1. **Slugs + semantic AI matching** is the correct way to handle name conflicts. "Physics", "PHY", "PHY 101", "Phy-11" should all resolve to the same subject. Same for chapters: "Kinematics" ≈ "Kinematics & Motion" ≈ "Motion in 1D".
-2. **Ask the user when uncertain.** If the AI can't confidently pick between two candidates (e.g. "Section A" exists for both Physics and Chemistry batches), the FAB should ask a short clarification question instead of guessing.
+### 1. "My Sections" cards — `SectionCard.tsx`
+Keep: class/subject chip, section name, **Open section** button.
+Remove:
+- Students `25/30` tile
+- Attendance `66%` tile
+- `4 Lessons · 2 Notes · 3 Assess.` chip row
 
-This makes voice nav feel intelligent rather than brittle.
+Result: a clean card with just the identity + CTA.
 
-## Feasibility: High
-- Mock data already has stable IDs we can repurpose as slugs.
-- Gemini handles semantic alias matching natively when given the canonical list + aliases.
-- The FAB already has a panel UI — we just add a "pick one" state.
+### 2. "Programs & Progress" panel — `SectionProgramsSummary.tsx`
+Keep: header icon + title, subject rows with "3 chapters · 8 lesson plans".
+Remove:
+- The `35% overall completion` text in the subheader (keep `2 subjects`)
+- The per-subject percentage badge (`36%`, `33%`)
+- The progress bar under each subject
 
-## Implementation Plan
+Result: a clean subject inventory, no orphan percentages.
 
-### 1. Canonical catalog with slugs + aliases
-**New file:** `src/lib/voiceCatalog.ts`
+### 3. Section identity header — `SectionIdentityCard.tsx`
+Keep: avatar, section name, `Class 12 · Science Stream`, students count.
+Remove:
+- `· ID #001`
+- The split `25/30` and `83% filled` — replace with a single tile: **"25 students"**
+- Attendance tile (`66% Moderate`)
+- Assessments tile (`3 Assigned`)
 
-Build a single source of truth derived from existing mock data:
-```ts
-type CatalogEntry = {
-  id: string          // stable slug, e.g. "physics"
-  name: string        // canonical display name, e.g. "Physics"
-  aliases: string[]   // ["phy", "phy 101", "phy-11", "physics 11"]
-  subjectId?: string  // for chapters/topics — parent link
-}
+Result: one tile, one number — total students.
 
-export const voiceCatalog = {
-  subjects: CatalogEntry[],
-  chapters: CatalogEntry[],   // each linked to a subjectId
-  batches:  CatalogEntry[],   // aliases include "section a", "11 a", "alpha", etc.
-}
-```
-Aliases are seeded from data + a small hand-curated list (short codes, common spoken variants). Easy to extend later.
+## Files Touched
+- `src/components/teacher/batches/SectionCard.tsx`
+- `src/components/teacher/batches/SectionIdentityCard.tsx`
+- `src/components/teacher/batches/SectionProgramsSummary.tsx`
 
-### 2. AI does semantic resolution, not exact match
-**File:** `supabase/functions/voice-intent/index.ts`
+Pure UI cleanup — no data model, routing, or business logic changes.
 
-Send the catalog (id + name + aliases) into the system prompt and instruct Gemini:
-- Return the **slug (id)**, never the spoken phrase
-- If multiple candidates are plausible, return them in a `candidates[]` array with confidence each
-- If confidence is low or candidates tie within ~0.15, return `needsClarification: true`
-
-Extended tool schema:
-```
-{
-  routeId,
-  filters: { subjectId?, chapterId?, batchId? },
-  candidates?: { field: "subjectId"|"chapterId"|"batchId",
-                 options: [{ id, name, confidence }] },
-  needsClarification?: boolean,
-  confidence,
-  friendlyName
-}
-```
-
-### 3. Client uses slugs everywhere
-**File:** `src/components/teacher/voice/VoiceCommandFAB.tsx`
-
-- Receive slugs from edge function → look up canonical names from `voiceCatalog`
-- Build deep-link URL with slugs: `/teacher/lms/series?subject=physics&chapter=kinematics`
-- Toast shows resolved names: *"Opening Lesson Plans · Physics › Kinematics"*
-
-### 4. Clarification state on the FAB
-New FAB phase: `'clarifying'`. When `needsClarification` is true, the panel shows:
-
-> Heard: *"open section A reports"*
-> Which Section A did you mean?
-> [ Physics – Section A ]  [ Chemistry – Section A ]  [ Cancel ]
-
-Teacher taps (or says the number — *"first one"* via a second mini-listen — optional v2). On selection, we navigate with the chosen slug. No extra AI call needed.
-
-### 5. Declare filter support per route
-**File:** `src/lib/voiceRoutes.ts`
-
-Add `supportedFilters?: ('subjectId'|'chapterId'|'batchId')[]` per route:
-- `lessonPlans` → `subjectId, chapterId`
-- `reports.chapter` → `subjectId, chapterId` (auto-jump to detail if exact chapter)
-- `batch.programs` → `batchId, subjectId`
-- `reports.attendance` → `batchId`
-- `reports.section` → `batchId, subjectId`
-
-### 6. Target pages read filters from URL (slug → state)
-Wire `useSearchParams` into existing filter state. Use `voiceCatalog` to map slug → display value the page already expects. No UI/business-logic changes — filters just pre-populate.
-
-Pages touched:
-- `LMSSeriesPage.tsx`
-- `ChapterAnalyticsListPage.tsx`
-- `BatchProgramsPage.tsx`
-- `BatchReportsPage.tsx`
-- `AttendancePage.tsx`
-
-### 7. Smart deep-jump
-If the resolved `chapterId` exactly matches a chapter detail route, skip the list page and go directly to `/teacher/reports/chapter-analytics/:chapterId`.
-
-### 8. Updated example phrases on the FAB
-- *"Physics lesson plans"*
-- *"PHY 101 programs of Section A"*
-- *"Kinematics report"*
-- *"Open chemistry attendance"*
-
-## Challenges & mitigations
-
-| Challenge | Mitigation |
-|---|---|
-| Maintaining aliases over time | Auto-seed from data; aliases are a plain array — easy to append |
-| AI token cost grows with catalog | Send only id + name + 3-4 aliases per entry; cap chapters to those matching the (likely) subject when one is detected in transcript |
-| User picks wrong clarification option | Cancel button + Alt+M restarts cleanly |
-| Slug collisions | Auto-suffix on build (`physics`, `physics-2`) — covered by `voiceCatalog.ts` generator |
-
-## What stays the same
-- Free browser STT (Web Speech API)
-- Single AI call per command (clarification = local pick, no second call)
-- Same FAB / Alt+M shortcut / pastel theme
-- No new dependencies, no DB changes
-
-## Out of scope (v3)
-- Voice-driven actions (create / edit / mark)
-- TTS read-back of results
-- Multi-turn refinement ("now last week only")
+## Out of scope (noted for later)
+- "Data WITH Understanding" hover tooltips on retained numbers — apply when we add the next batch of metrics, not now.

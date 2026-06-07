@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, BookOpenCheck, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getProgramSummary, meaningFromPct, toneForPct } from '@/utils/programProgress';
+import { getProgramSummary } from '@/utils/programProgress';
 
 interface Props {
   batchId: string;
@@ -40,41 +40,20 @@ export function SectionProgramsSummary({ batchId }: Props) {
           </span>
           <div>
             <h3 className="font-semibold text-gray-900">Programs & Progress</h3>
-            <p className="text-xs text-gray-500">{subjectLabel} · {summary.overallPct}% overall completion</p>
+            <p className="text-xs text-gray-500">{subjectLabel}</p>
           </div>
         </div>
       </div>
 
       <div className="p-5 space-y-3">
-        {summary.subjects.map((s) => {
-          const tone = toneForPct(s.completionPct);
-          const barColor =
-            tone === 'green' ? 'bg-emerald-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-rose-500';
-          const pillBg =
-            tone === 'green'
-              ? 'bg-emerald-50 text-emerald-700'
-              : tone === 'amber'
-              ? 'bg-amber-50 text-amber-700'
-              : 'bg-rose-50 text-rose-700';
-
-          return (
-            <div key={s.subjectId} className="rounded-xl border border-gray-100 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-gray-900">{s.subjectName}</p>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pillBg}`}>
-                  {s.completionPct}%
-                </span>
-              </div>
-              <div className="mt-2 h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full ${barColor} transition-all`} style={{ width: `${s.completionPct}%` }} />
-              </div>
-              <p className="mt-2 text-xs text-gray-500">
-                {s.chaptersCount} chapters · {s.lessonPlansCount} lesson plans
-              </p>
-            </div>
-          );
-        })}
-
+        {summary.subjects.map((s) => (
+          <div key={s.subjectId} className="rounded-xl border border-gray-100 px-4 py-3">
+            <p className="text-sm font-medium text-gray-900">{s.subjectName}</p>
+            <p className="mt-1 text-xs text-gray-500">
+              {s.chaptersCount} chapters · {s.lessonPlansCount} lesson plans
+            </p>
+          </div>
+        ))}
 
         <div className="flex flex-col sm:flex-row gap-2 pt-1">
           <Button
@@ -97,3 +76,4 @@ export function SectionProgramsSummary({ batchId }: Props) {
     </div>
   );
 }
+
