@@ -12,7 +12,8 @@ import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOvervie
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter, getTodayFocus } from '@/utils/programSchedule';
-import { Program, ProgramChapter, TopicStatus } from '@/types/program';
+import { Program, ProgramChapter, ProgramLessonPlan, TopicStatus } from '@/types/program';
+import { AddLessonPlanModal } from '@/components/teacher/programs/AddLessonPlanModal';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
@@ -24,16 +25,23 @@ export default function BatchProgramsPage() {
 
   // In-session topic-status overrides — toggled by Today's focus + (later) chapter rows.
   const [statusOverrides, setStatusOverrides] = useState<Record<string, { status: TopicStatus; lastUpdatedAt: string }>>({});
+  const [addedLessonPlans, setAddedLessonPlans] = useState<Record<string, ProgramLessonPlan[]>>({});
+  const [addModalChapterId, setAddModalChapterId] = useState<string | null>(null);
 
   const program: Program | undefined = useMemo(() => {
     if (!baseProgram) return undefined;
-    if (Object.keys(statusOverrides).length === 0) return baseProgram;
+    const hasOverrides = Object.keys(statusOverrides).length > 0;
+    const hasAdded = Object.keys(addedLessonPlans).length > 0;
+    if (!hasOverrides && !hasAdded) return baseProgram;
     return {
       ...baseProgram,
       subjects: baseProgram.subjects.map(s => ({
         ...s,
         chapters: s.chapters.map(ch => ({
           ...ch,
+          lessonPlans: addedLessonPlans[ch.id]
+            ? [...ch.lessonPlans, ...addedLessonPlans[ch.id]]
+            : ch.lessonPlans,
           topics: ch.topics?.map(t => {
             const o = statusOverrides[t.id];
             return o ? { ...t, status: o.status, lastUpdatedAt: o.lastUpdatedAt } : t;
@@ -41,7 +49,7 @@ export default function BatchProgramsPage() {
         })),
       })),
     };
-  }, [baseProgram, statusOverrides]);
+  }, [baseProgram, statusOverrides, addedLessonPlans]);
 
   const handleTopicStatus = (topicId: string, status: TopicStatus) => {
     setStatusOverrides(prev => ({
