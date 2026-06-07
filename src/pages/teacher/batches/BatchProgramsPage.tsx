@@ -7,7 +7,7 @@ import { getProgramByBatchId } from '@/data/mockPrograms';
 import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubjectTabs';
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
-import { ThisWeekCard } from '@/components/teacher/programs/ThisWeekCard';
+// ThisWeekCard removed — current chapter is highlighted directly in the chapter list.
 import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
