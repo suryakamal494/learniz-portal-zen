@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpenCheck, LineChart } from 'lucide-react';
+import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getProgramSummary } from '@/utils/programProgress';
 
@@ -55,21 +55,14 @@ export function SectionProgramsSummary({ batchId }: Props) {
           </div>
         ))}
 
-        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+        <div className="pt-1">
           <Button
             onClick={() => navigate(`/teacher/batches/${batchId}/programs`)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <BookOpenCheck className="h-4 w-4 mr-2" />
-            View programs
+            Open program
             <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/teacher/batches/${batchId}/progress`)}
-          >
-            <LineChart className="h-4 w-4 mr-2" />
-            Open progress tracker
           </Button>
         </div>
       </div>
