@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpenCheck, AlertTriangle, Sparkles, ListChecks, CalendarRange } from 'lucide-react';
+import { ArrowLeft, BookOpenCheck, AlertTriangle, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { mockBatches } from '@/data/mockBatches';
 import { getProgramByBatchId } from '@/data/mockPrograms';
 import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubjectTabs';
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
+import { TodayFocusCard } from '@/components/teacher/programs/TodayFocusCard';
+import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS } from '@/utils/programSchedule';
+import { Program, TopicStatus } from '@/types/program';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
@@ -16,7 +19,35 @@ export default function BatchProgramsPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const batch = mockBatches.find((b) => b.id === batchId);
-  const program = batchId ? getProgramByBatchId(batchId) : undefined;
+  const baseProgram = batchId ? getProgramByBatchId(batchId) : undefined;
+
+  // In-session topic-status overrides — toggled by Today's focus + (later) chapter rows.
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, { status: TopicStatus; lastUpdatedAt: string }>>({});
+
+  const program: Program | undefined = useMemo(() => {
+    if (!baseProgram) return undefined;
+    if (Object.keys(statusOverrides).length === 0) return baseProgram;
+    return {
+      ...baseProgram,
+      subjects: baseProgram.subjects.map(s => ({
+        ...s,
+        chapters: s.chapters.map(ch => ({
+          ...ch,
+          topics: ch.topics?.map(t => {
+            const o = statusOverrides[t.id];
+            return o ? { ...t, status: o.status, lastUpdatedAt: o.lastUpdatedAt } : t;
+          }),
+        })),
+      })),
+    };
+  }, [baseProgram, statusOverrides]);
+
+  const handleTopicStatus = (topicId: string, status: TopicStatus) => {
+    setStatusOverrides(prev => ({
+      ...prev,
+      [topicId]: { status, lastUpdatedAt: new Date().toISOString() },
+    }));
+  };
 
   const [activeSubjectId, setActiveSubjectId] = useState<string | undefined>(
     program?.subjects[0]?.id,
@@ -153,25 +184,18 @@ export default function BatchProgramsPage() {
             onChange={setActiveSubjectId}
           >
             <div className="space-y-5">
-              {/* Today's focus — Phase 3 will fill in */}
-              <SectionPlaceholder
-                id="today"
-                icon={<Sparkles className="h-5 w-5 text-blue-600" />}
-                title="Today's focus"
-                subtitle="The topic you're scheduled to teach right now and whether you're on track."
-                badge="Coming in Phase 3"
+              <TodayFocusCard
+                program={program}
+                onStatusChange={handleTopicStatus}
+                onJumpToChapter={(chapterId) => {
+                  requestAnimationFrame(() => {
+                    document.getElementById(`chapter-${chapterId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  });
+                }}
               />
 
-              {/* Status overview — Phase 3 */}
-              <SectionPlaceholder
-                id="progress"
-                icon={<ListChecks className="h-5 w-5 text-emerald-600" />}
-                title="Where you stand"
-                subtitle="Syllabus completion, chapters in progress, and chapters behind schedule."
-                badge="Coming in Phase 3"
-              />
+              <StatusOverviewStrip program={program} />
 
-              {/* Schedule + chapter list — Phase 4 will rewrite; show current accordion meanwhile */}
               <div>
                 <div className="flex items-center gap-2 mb-2.5 px-1">
                   <CalendarRange className="h-4 w-4 text-gray-500" />
@@ -179,12 +203,13 @@ export default function BatchProgramsPage() {
                 </div>
                 <div className="space-y-3">
                   {activeSubject.chapters.map((ch, i) => (
-                    <ProgramChapterAccordion
-                      key={ch.id}
-                      chapter={ch}
-                      defaultOpen={i === 0}
-                      onPreview={(id) => setPreviewLpId(id)}
-                    />
+                    <div key={ch.id} id={`chapter-${ch.id}`}>
+                      <ProgramChapterAccordion
+                        chapter={ch}
+                        defaultOpen={i === 0}
+                        onPreview={(id) => setPreviewLpId(id)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -202,35 +227,3 @@ export default function BatchProgramsPage() {
   );
 }
 
-function SectionPlaceholder({
-  id,
-  icon,
-  title,
-  subtitle,
-  badge,
-}: {
-  id?: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  badge: string;
-}) {
-  return (
-    <div id={id} className="bg-white rounded-2xl border border-dashed border-gray-300 p-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-start gap-3 min-w-0">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50 shrink-0">
-            {icon}
-          </span>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
-          </div>
-        </div>
-        <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 whitespace-nowrap">
-          {badge}
-        </span>
-      </div>
-    </div>
-  );
-}
