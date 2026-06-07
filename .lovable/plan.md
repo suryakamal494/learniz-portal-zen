@@ -1,57 +1,54 @@
-# Programs page — restructure + year-long seed
+# Programs page cleanup + entry-point fixes
 
-## New page flow (top → bottom)
-1. **Breadcrumb + header** (unchanged)
-2. **This week** — the single topic scheduled for the current week, with chapter context, dates, planned hours, and quick `Mark in progress` / `Mark done`. Replaces "Today's focus".
-3. **Where you stand** — % completed, chapters in progress, behind schedule, last status update (unchanged).
-4. **Chapters & lesson plans** — full year-long list with filter chips. No "Today" pill at the bottom.
+## 1. Remove "Currently running" card
+Delete `<ThisWeekCard />` from `BatchProgramsPage.tsx`. "Where you stand" already answers the "where am I" question, and the highlighted chapter (below) shows what's running. Leave `ThisWeekCard.tsx` file in place (unused, safe to delete later). The stale-status alert's "Update now" button retargets to scroll to the highlighted chapter (`#chapter-<id>`) instead of `#this-week`.
 
-## Changes by area
+## 2. Highlight the ongoing chapter
+In `ChapterListSection` (inside `BatchProgramsPage.tsx`), identify the "current" chapter = the one containing the topic returned by `getTodayFocus(program)` (already computed). For that chapter card in `ProgramChapterAccordion`:
+- Add a thicker blue ring + light blue tint on the header (`ring-2 ring-blue-400 bg-blue-50/40`).
+- Add a small "Currently teaching" pill next to the chapter title.
+- Default-open this chapter (already done) and auto-scroll to it on mount.
 
-### 1. Mock data — full academic year for Class 12 · Section A
-Rewrite `src/data/mockPrograms.ts` for `batchId: '1'`:
-- **Physics** — 14 chapters (Electrostatics, Current Electricity, Magnetic Effects, EMI, AC, EM Waves, Ray Optics, Wave Optics, Dual Nature, Atoms, Nuclei, Semiconductors, Communication, Revision).
-- **Chemistry** — 14 chapters (Solid State, Solutions, Electrochemistry, Chemical Kinetics, Surface Chemistry, Metallurgy, p-Block, d & f Block, Coordination, Haloalkanes, Alcohols & Ethers, Aldehydes/Ketones/Acids, Amines, Biomolecules).
-- Schedule **Jun 2026 → Apr 2027**, each chapter 4–7 days, 4–6 topics each. Gaps for Dussehra (early Oct), Diwali (early Nov), winter break (late Dec), pre-board (Feb). Total ~120–130 topics per subject.
-- Seed `status` so that the chapter overlapping today (Sun Jun 7, 2026) has 1–2 topics `in-progress`, earlier chapters mostly `done` with a few `not-started` (drives "behind schedule"), later chapters `not-started`.
-- Lesson plans: pool of ~12 reusable LP definitions (Concept intro, Worked examples, Numericals drill, Derivation walkthrough, Quick quiz, Recap & doubts, etc.). Each chapter picks 3–5 from the pool; topics reference 1–2 LP ids via `lessonPlanIds`. Helper builder keeps the file compact.
-- Keep existing `Program / ProgramChapter / ProgramTopic / ProgramLessonPlan` shape — no type changes.
+## 3. Simplify the lesson plan card
+Rewrite `LessonPlanCard.tsx` to show **only**:
+- Lesson plan title
+- `Preview` button
 
-### 2. Replace "Today's focus" with "This week"
-- Delete usage of `TodayFocusCard` from `BatchProgramsPage.tsx`. Keep the component file for now (unused, safe to delete later).
-- New `src/components/teacher/programs/ThisWeekCard.tsx`:
-  - Computes the **single topic** whose `[plannedStartDate, plannedEndDate]` overlaps the current ISO week (Mon–Sun). If multiple, pick the one with the earliest end. If none, fall back to the next upcoming topic with a "Starts in Nd" hint, or the most recent in-progress topic.
-  - Renders: subject · chapter breadcrumb chip, topic title, planned hours, date range, status pill (On track / Behind Nd / Ahead Nd) computed from `plannedEndDate` vs today, and `Mark in progress` / `Mark done` buttons wired to `handleTopicStatus`.
-  - "Jump to chapter" link that scrolls to `#chapter-<id>` and opens its accordion.
+Remove: status badge (Completed / In progress / Not started), summary text, "Contents: 1 PPT · 1 Video · 1 Note" line, and the "Used in: <topic>" chips. The card becomes a single row with title left, Preview right.
 
-### 3. Chapter % breakdown popover
-- In `ProgramChapterAccordion.tsx`, wrap the `%` badge in the chapter header in a Radix `Popover` (click, not hover — works on mobile too).
-- Popover content (compact, ~280px):
-  - **What this means**: "X of Y topics done · Z hours taught of W planned".
-  - Mini bar: topics done / in-progress / not-started counts with color dots.
-  - Hours line: `6h 30m taught of 18h planned` with a thin progress bar.
-  - Schedule delta: "Behind 3 days" / "On track" / "Ahead 2 days" derived from `getScheduleDeltaForChapter`.
-  - Last taught date (from latest topic `lastUpdatedAt`).
-- Stop propagation so clicking the % doesn't toggle the accordion.
+## 4. Keep topic → lesson plan linking, drop the inline chips inside topic rows
+Inside the topic list in `ProgramChapterAccordion`, **remove** the "Lesson plans" chip strip under each topic (the `linkedLps` block). The lesson-plan list below the topics already covers it; user explicitly asked to remove that tag. Topic row keeps: status icon, name, dates, planned hours, Start/Mark done/Reopen actions.
 
-### 4. Remove the bottom "Today" anchor
-- Delete the `TodayAnchor` render + `anchorIndex` computation from `ChapterListSection` in `BatchProgramsPage.tsx`. The current chapter is already surfaced by the new "This week" card; the anchor only confused things at the page tail.
-- Keep `TodayAnchor.tsx` file unused for now (safe later cleanup).
+(Validation note in chat: the alternative — nesting lesson plans inside each topic — duplicates LP cards when one LP supports two topics and bloats the chapter card vertically. Recommendation is to keep the flat "Topics" list followed by a single "Lesson plans" list, just stripped down per §3.)
 
-### 5. Small polish
-- Sort chapters strictly by `plannedStartDate`.
-- Default-open the chapter that contains the "This week" topic; collapse the rest.
-- Update the "Total: 6h 30m taught of 18h planned" line under `StatusOverviewStrip` to reflect the new totals from the year-long seed.
-- Stale-status alert keeps working but its "Update now" button now scrolls to `#this-week`.
+## 5. Educators on the chapter
+`ProgramChapter` has no `educators` field. Add an optional `educators?: Array<{ id: string; name: string; avatarColor?: string }>` to `ProgramChapter` in `src/types/program.ts`, seed 1–2 educators per chapter in `mockPrograms.ts` (rotate from a small pool: "Ms. Anika Rao", "Mr. Vivek Menon", "Dr. Suresh Iyer", etc.), and render them as small avatar+name chips in the chapter header row (below the date range).
+
+## 6. Anchor list start at the "middle of the chapter"
+Currently the chapter list is sorted by `plannedStartDate` ascending from June. With ~28 chapters that pushes the ongoing chapter far down. Change `ChapterListSection` so the list still renders all chapters in order, but on mount it **scrolls to the currently-teaching chapter** (uses the same focus chapter id, `requestAnimationFrame` + `scrollIntoView({ block: 'start' })`). This preserves chronological order while landing the teacher at "where I am" — matching the "starting point = middle of chapter" ask.
+
+## 7. Section workspace page (`/teacher/batches/:id`)
+In `SectionWorkspacePage.tsx`:
+- Remove the `<SectionProgramsSummary />` block entirely (per screenshot 2). Quick actions already exposes Programs.
+- Quick actions' Programs tile already navigates to `/teacher/batches/<id>/programs` — no change needed.
+
+## 8. My Sections card Programs button (`/teacher/batches`)
+In `BatchListingPage.tsx`, change the `onPrograms` handler from the placeholder `console.log` to `navigate(\`/teacher/batches/${b.id}/programs\`)` so the Programs button on each section card opens the Programs page directly.
+
+## 9. Programs page also keeps its own Programs entry
+The Programs page itself doesn't need a "Programs" quick action (it's already there). No change.
 
 ## Files touched
-- `src/data/mockPrograms.ts` — full rewrite with year-long Physics + Chemistry seed.
-- `src/components/teacher/programs/ThisWeekCard.tsx` — **new**.
-- `src/pages/teacher/batches/BatchProgramsPage.tsx` — swap card, remove Today anchor, adjust default-open chapter, retarget "Update now" scroll.
-- `src/components/teacher/programs/ProgramChapterAccordion.tsx` — add Popover on the % badge.
-- (Unused, left in place for now: `TodayFocusCard.tsx`, `TodayAnchor.tsx`.)
+- `src/pages/teacher/batches/BatchProgramsPage.tsx` — remove ThisWeekCard, add highlight + auto-scroll, retarget stale alert button.
+- `src/components/teacher/programs/ProgramChapterAccordion.tsx` — accept `isCurrent` prop, add ring + "Currently teaching" pill, render `educators` chips, remove inline topic→LP chip strip.
+- `src/components/teacher/programs/LessonPlanCard.tsx` — strip down to title + Preview only.
+- `src/types/program.ts` — add `educators` to `ProgramChapter`.
+- `src/data/mockPrograms.ts` — seed `educators` on each chapter.
+- `src/pages/teacher/batches/SectionWorkspacePage.tsx` — remove `SectionProgramsSummary` usage.
+- `src/pages/teacher/batches/BatchListingPage.tsx` — wire `onPrograms` to navigate.
 
 ## Out of scope
-- No backend / schema changes.
-- No edits to LessonPlan card, preview modal, subject tabs, or filter chips.
-- "Today's focus" on the teacher dashboard is untouched.
+- "Where you stand" strip stays as-is.
+- Chapter `%` popover stays as-is.
+- Filter chips stay as-is.
+- `SectionProgramsSummary.tsx` file left in repo, unused.

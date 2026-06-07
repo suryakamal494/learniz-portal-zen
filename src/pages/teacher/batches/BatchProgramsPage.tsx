@@ -7,7 +7,7 @@ import { getProgramByBatchId } from '@/data/mockPrograms';
 import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubjectTabs';
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
-import { ThisWeekCard } from '@/components/teacher/programs/ThisWeekCard';
+// ThisWeekCard removed — current chapter is highlighted directly in the chapter list.
 import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
@@ -154,7 +154,9 @@ export default function BatchProgramsPage() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => {
-                  document.getElementById('this-week')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  const focusId = getTodayFocus(program)?.chapter.id;
+                  const el = focusId ? document.getElementById(`chapter-${focusId}`) : null;
+                  (el ?? document.getElementById('chapters-section'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
                 className="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700"
               >
@@ -202,16 +204,6 @@ export default function BatchProgramsPage() {
             onChange={setActiveSubjectId}
           >
             <div className="space-y-5">
-              <ThisWeekCard
-                program={program}
-                onStatusChange={handleTopicStatus}
-                onJumpToChapter={(chapterId) => {
-                  requestAnimationFrame(() => {
-                    document.getElementById(`chapter-${chapterId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  });
-                }}
-              />
-
               <StatusOverviewStrip program={program} />
 
               <ChapterListSection
@@ -283,8 +275,18 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
     return bucketOf(delta.state, hasIP).includes(filter);
   });
 
+  // On mount (or when the focus chapter changes), scroll the currently-teaching
+  // chapter into view so the teacher lands at "where I am" instead of May.
+  useEffect(() => {
+    if (!focusChapterId) return;
+    const id = `chapter-${focusChapterId}`;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [focusChapterId]);
+
   return (
-    <div>
+    <div id="chapters-section">
       <div className="flex items-center justify-between gap-3 mb-3 px-1 flex-wrap">
         <div className="flex items-center gap-2">
           <CalendarRange className="h-4 w-4 text-gray-500" />
@@ -300,10 +302,11 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
       ) : (
         <div className="space-y-3">
           {visible.map(({ ch }) => (
-            <div key={ch.id} id={`chapter-${ch.id}`}>
+            <div key={ch.id} id={`chapter-${ch.id}`} className="scroll-mt-24">
               <ProgramChapterAccordion
                 chapter={ch}
                 defaultOpen={ch.id === focusChapterId}
+                isCurrent={ch.id === focusChapterId}
                 onPreview={onPreview}
                 onTopicStatusChange={onTopicStatusChange}
               />

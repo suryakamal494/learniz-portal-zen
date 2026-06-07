@@ -319,6 +319,19 @@ function splitTopicDates(start: string, end: string, n: number): Array<{ s: stri
   return out;
 }
 
+const EDUCATOR_POOL: Record<string, Array<{ id: string; name: string; avatarColor: string }>> = {
+  phy: [
+    { id: 'edu-phy-1', name: 'Ms. Anika Rao', avatarColor: 'bg-blue-100 text-blue-700' },
+    { id: 'edu-phy-2', name: 'Mr. Vivek Menon', avatarColor: 'bg-indigo-100 text-indigo-700' },
+    { id: 'edu-phy-3', name: 'Dr. Suresh Iyer', avatarColor: 'bg-purple-100 text-purple-700' },
+  ],
+  chem: [
+    { id: 'edu-chem-1', name: 'Ms. Priya Sharma', avatarColor: 'bg-emerald-100 text-emerald-700' },
+    { id: 'edu-chem-2', name: 'Mr. Rahul Verma', avatarColor: 'bg-teal-100 text-teal-700' },
+    { id: 'edu-chem-3', name: 'Dr. Kavita Nair', avatarColor: 'bg-orange-100 text-orange-700' },
+  ],
+};
+
 function buildSubject(
   subjectPrefix: string,
   subjectName: string,
@@ -388,6 +401,11 @@ function buildSubject(
       if (lastDone) lp.lastTaughtDate = lastDone.plannedEndDate;
     }
 
+    const pool = EDUCATOR_POOL[subjectPrefix] ?? [];
+    const educators = pool.length > 0
+      ? [pool[ci % pool.length], pool[(ci + 1) % pool.length]].filter((v, i, a) => a.findIndex(x => x.id === v.id) === i)
+      : undefined;
+
     chapters.push({
       id: chId,
       name: spec.name,
@@ -396,6 +414,7 @@ function buildSubject(
       plannedEndDate: end,
       topics,
       lessonPlans,
+      educators,
     });
   });
 

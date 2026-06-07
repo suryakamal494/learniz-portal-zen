@@ -6,7 +6,7 @@ import { mockBatches } from '@/data/mockBatches'
 import { SectionIdentityCard } from '@/components/teacher/batches/SectionIdentityCard'
 import { SectionQuickActions } from '@/components/teacher/batches/SectionQuickActions'
 import { SectionTabs } from '@/components/teacher/batches/SectionTabs'
-import { SectionProgramsSummary } from '@/components/teacher/batches/SectionProgramsSummary'
+// SectionProgramsSummary removed — Programs is accessed via Quick actions.
 
 export default function SectionWorkspacePage() {
   const { batchId } = useParams<{ batchId: string }>()
@@ -56,7 +56,7 @@ export default function SectionWorkspacePage() {
           assessmentCount={counts.assessments}
         />
 
-        <SectionProgramsSummary batchId={batch.id} />
+        
 
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Quick actions</h3>
