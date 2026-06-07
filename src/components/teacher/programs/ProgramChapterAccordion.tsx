@@ -236,23 +236,6 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                                 )}
                               </div>
                             </div>
-                            {linkedLps.length > 0 && (
-                              <div className="mt-2 pl-7 flex flex-wrap items-center gap-1.5">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600">
-                                  Lesson plans
-                                </span>
-                                {linkedLps.map((lp) => (
-                                  <button
-                                    key={lp.id}
-                                    onClick={() => scrollToLp(lp.id)}
-                                    className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
-                                    title="Jump to this lesson plan below"
-                                  >
-                                    {lp.title}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
                           </li>
                         );
                       })}
