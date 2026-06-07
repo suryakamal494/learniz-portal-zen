@@ -22,11 +22,32 @@ export interface ProgramLessonPlan {
   lastTaughtDate?: string;
 }
 
+export type TopicStatus = 'not-started' | 'in-progress' | 'done';
+
+export interface ProgramTopic {
+  id: string;
+  name: string;
+  plannedHours: number;
+  /** ISO date (YYYY-MM-DD) the topic is scheduled to start. */
+  plannedStartDate: string;
+  /** ISO date (YYYY-MM-DD) the topic is scheduled to end. */
+  plannedEndDate: string;
+  status: TopicStatus;
+  /** ISO datetime the teacher last updated this topic's status. */
+  lastUpdatedAt?: string;
+  /** Optional links to lesson plans inside the same chapter. */
+  lessonPlanIds?: string[];
+}
+
 export interface ProgramChapter {
   id: string;
   name: string;
   order: number;
   lessonPlans: ProgramLessonPlan[];
+  /** Schedule fields — optional so legacy chapters still render. */
+  topics?: ProgramTopic[];
+  plannedStartDate?: string;
+  plannedEndDate?: string;
 }
 
 export interface ProgramSubject {
