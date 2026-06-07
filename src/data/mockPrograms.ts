@@ -45,6 +45,13 @@ export const mockPrograms: Program[] = [
             id: 'ch-1-phy-1',
             name: 'Electrostatics',
             order: 1,
+            plannedStartDate: '2026-05-18',
+            plannedEndDate: '2026-06-01',
+            topics: [
+              { id: 't-1-phy-1-a', name: "Coulomb's Law & Electric Field", plannedHours: 2, plannedStartDate: '2026-05-18', plannedEndDate: '2026-05-22', status: 'done', lastUpdatedAt: '2026-05-22T15:00:00Z', lessonPlanIds: ['lp-1-1'] },
+              { id: 't-1-phy-1-b', name: "Gauss's Law", plannedHours: 2, plannedStartDate: '2026-05-23', plannedEndDate: '2026-05-26', status: 'done', lastUpdatedAt: '2026-05-26T15:00:00Z', lessonPlanIds: ['lp-1-2'] },
+              { id: 't-1-phy-1-c', name: 'Electric Potential & Capacitance', plannedHours: 3, plannedStartDate: '2026-05-27', plannedEndDate: '2026-06-01', status: 'in-progress', lastUpdatedAt: '2026-05-30T15:00:00Z', lessonPlanIds: ['lp-1-3'] },
+            ],
             lessonPlans: [
               lp('lp-1-1', 'Coulomb\'s Law & Electric Field', 'Foundations of static charges and field calculation.', 'completed', 2, 2, [
                 { type: 'ppt', title: 'Coulomb\'s Law slides', duration: '24 slides' },
@@ -67,6 +74,13 @@ export const mockPrograms: Program[] = [
             id: 'ch-1-phy-2',
             name: 'Current Electricity',
             order: 2,
+            plannedStartDate: '2026-06-02',
+            plannedEndDate: '2026-06-12',
+            topics: [
+              { id: 't-1-phy-2-a', name: "Ohm's Law & Resistivity", plannedHours: 2, plannedStartDate: '2026-06-02', plannedEndDate: '2026-06-04', status: 'in-progress', lastUpdatedAt: '2026-06-02T15:00:00Z', lessonPlanIds: ['lp-1-4'] },
+              { id: 't-1-phy-2-b', name: "Kirchhoff's Laws", plannedHours: 2, plannedStartDate: '2026-06-05', plannedEndDate: '2026-06-08', status: 'not-started', lessonPlanIds: ['lp-1-5'] },
+              { id: 't-1-phy-2-c', name: 'Wheatstone Bridge & Potentiometer', plannedHours: 2, plannedStartDate: '2026-06-09', plannedEndDate: '2026-06-12', status: 'not-started', lessonPlanIds: ['lp-1-6'] },
+            ],
             lessonPlans: [
               lp('lp-1-4', 'Ohm\'s Law & Resistivity', 'Conductors, resistance, drift velocity.', 'partial', 2, 1, [
                 { type: 'ppt', title: 'Ohm\'s Law deep dive', duration: '22 slides' },
@@ -86,6 +100,12 @@ export const mockPrograms: Program[] = [
             id: 'ch-1-phy-3',
             name: 'Magnetic Effects of Current',
             order: 3,
+            plannedStartDate: '2026-06-13',
+            plannedEndDate: '2026-06-22',
+            topics: [
+              { id: 't-1-phy-3-a', name: "Biot-Savart & Ampere's Law", plannedHours: 3, plannedStartDate: '2026-06-13', plannedEndDate: '2026-06-18', status: 'not-started', lessonPlanIds: ['lp-1-7'] },
+              { id: 't-1-phy-3-b', name: 'Force on Moving Charge', plannedHours: 2, plannedStartDate: '2026-06-19', plannedEndDate: '2026-06-22', status: 'not-started', lessonPlanIds: ['lp-1-8'] },
+            ],
             lessonPlans: [
               lp('lp-1-7', 'Biot-Savart & Ampere\'s Law', 'Magnetic field of currents.', 'not-started', 3, 0, [
                 { type: 'ppt', title: 'Magnetic field intro', duration: '20 slides' },
