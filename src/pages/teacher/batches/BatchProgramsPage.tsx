@@ -225,9 +225,10 @@ export default function BatchProgramsPage() {
                 onFilterChange={setFilter}
                 onPreview={(id) => setPreviewLpId(id)}
                 onTopicStatusChange={handleTopicStatus}
+                onCreateLessonPlan={() => navigate('/teacher/lms/content/create')}
+                onAddFromLibrary={(chapterId) => setAddModalChapterId(chapterId)}
                 focusChapterId={(() => {
                   const todayIso = new Date().toISOString().slice(0, 10);
-                  // Pick the chapter in THIS subject that contains today (or next upcoming).
                   const chapters = activeSubject.chapters;
                   const current = chapters.find(ch =>
                     (ch.topics ?? []).some(t => t.plannedStartDate <= todayIso && todayIso <= t.plannedEndDate)
@@ -248,6 +249,18 @@ export default function BatchProgramsPage() {
         open={!!previewLp}
         onClose={() => setPreviewLpId(null)}
         lessonPlan={previewLp}
+      />
+
+      <AddLessonPlanModal
+        open={!!addModalChapterId}
+        onClose={() => setAddModalChapterId(null)}
+        onAdd={(plans) => {
+          if (!addModalChapterId) return;
+          setAddedLessonPlans((prev) => ({
+            ...prev,
+            [addModalChapterId]: [...(prev[addModalChapterId] ?? []), ...plans],
+          }));
+        }}
       />
     </div>
   );
