@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Plus, Search, Filter, Download, FileText, Eye, Edit, Settings, BookOpen } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -14,14 +14,33 @@ import { TeacherDataWrapper } from '@/components/teacher/ui/TeacherDataWrapper'
 import { mockLMSSeries, mockSubtopics } from '@/data/mockLMSSeries'
 import { mockLMSContent } from '@/data/mockLMSContent'
 import { LMSSeries, LMSSeriesFilters, LMSSeriesType } from '@/types/lmsSeries'
+import { getSubjectById, getChapterById } from '@/lib/voiceCatalog'
 
 const LMSSeriesPage = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState<LMSSeriesFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Voice-nav: hydrate subject/chapter filter from URL slugs once
+  useEffect(() => {
+    const subjSlug = searchParams.get('subject')
+    const chSlug = searchParams.get('chapter')
+    const next: LMSSeriesFilters = {}
+    if (subjSlug) {
+      const name = getSubjectById(subjSlug)?.name
+      if (name && mockLMSSeries.some(s => s.subject === name)) next.subject = name
+    }
+    if (chSlug) {
+      const name = getChapterById(chSlug)?.name
+      if (name && mockLMSSeries.some(s => s.chapter === name)) next.chapter = name
+    }
+    if (Object.keys(next).length) setFilters(prev => ({ ...prev, ...next }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Get unique filter options from data
   const filterOptions = useMemo(() => {

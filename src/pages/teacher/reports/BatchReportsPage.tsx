@@ -1,10 +1,10 @@
 
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { BarChart3, Users } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BatchReportFilters } from '@/types/batchReport'
 import { mockBatchExamReports } from '@/data/mockBatchReports'
 import { ReportFilters } from '@/components/teacher/reports/ReportFilters'
@@ -15,7 +15,11 @@ const ITEMS_PER_PAGE = 10
 
 export default function BatchReportsPage() {
   const navigate = useNavigate()
-  const [filters, setFilters] = useState<BatchReportFilters>({})
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState<BatchReportFilters>(() => {
+    const batchSlug = searchParams.get('batch')
+    return batchSlug ? { batchId: batchSlug } : {}
+  })
   const [currentPage, setCurrentPage] = useState(1)
 
   const filteredReports = useMemo(() => {

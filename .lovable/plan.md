@@ -1,117 +1,123 @@
-## What we're building
+# Context-Aware Voice Navigation (v2 — with slug resolution + clarification)
 
-A floating mic button at the bottom-right of every teacher page. Tap → speak → the system parses intent and navigates to the right page. Navigation only (no actions, no answers). Browser-native speech recognition. No paid integrations.
+## Your idea — validated
 
-```text
-┌─ Teacher page ───────────────────────────────┐
-│                                              │
-│           (page content)                     │
-│                                              │
-│                                  ┌────────┐  │
-│                                  │  🎤    │  │  ← floating FAB
-│                                  └────────┘  │
-└──────────────────────────────────────────────┘
+You're absolutely right on both points:
 
-Tap mic → expands into a panel:
-┌──────────────────────────────────────────┐
-│ 🎤  Listening…                       ✕   │
-│ ──────────────────────────────────────── │
-│ "show me batch A reports"                │  ← live transcript
-│                                          │
-│ Try: "Open assessments" · "Attendance"   │
-│      "Batch 11-A" · "Question bank"      │
-└──────────────────────────────────────────┘
+1. **Slugs + semantic AI matching** is the correct way to handle name conflicts. "Physics", "PHY", "PHY 101", "Phy-11" should all resolve to the same subject. Same for chapters: "Kinematics" ≈ "Kinematics & Motion" ≈ "Motion in 1D".
+2. **Ask the user when uncertain.** If the AI can't confidently pick between two candidates (e.g. "Section A" exists for both Physics and Chemistry batches), the FAB should ask a short clarification question instead of guessing.
 
-After speech ends:
-┌──────────────────────────────────────────┐
-│ 🎯  Opening Batch Reports for 11-A…      │
-│     Wrong page? [Cancel]                 │
-└──────────────────────────────────────────┘
-```
+This makes voice nav feel intelligent rather than brittle.
 
-## Tech choices (all free, already available)
+## Feasibility: High
+- Mock data already has stable IDs we can repurpose as slugs.
+- Gemini handles semantic alias matching natively when given the canonical list + aliases.
+- The FAB already has a panel UI — we just add a "pick one" state.
 
-- **Speech-to-Text**: Browser `webkitSpeechRecognition` / `SpeechRecognition` Web Speech API. Works in Chrome, Edge, Safari (incl. iOS 14.5+). No key, no cost, low latency. Graceful fallback message for Firefox.
-- **Intent parsing**: Lovable AI Gateway (`google/gemini-3-flash-preview`) with **structured output via tool calling** returning `{ route, params, confidence, friendlyName }`. ~300ms.
-- **Edge function**: `supabase/functions/voice-intent/index.ts` keeps the prompt + route registry server-side and uses `LOVABLE_API_KEY`.
-- **Routing**: existing `react-router-dom` `useNavigate`.
-- **Requires Lovable Cloud** (for the edge function + LOVABLE_API_KEY). Will be enabled in Phase 0.
+## Implementation Plan
 
-## Route registry (drives the LLM)
+### 1. Canonical catalog with slugs + aliases
+**New file:** `src/lib/voiceCatalog.ts`
 
-A single typed file `src/lib/voiceRoutes.ts` lists every teacher page with examples. The LLM picks one. New pages = add one entry. Examples:
-
+Build a single source of truth derived from existing mock data:
 ```ts
-{ id: 'reports.batch', path: '/teacher/reports/section', label: 'Batch Reports',
-  examples: ['show reports', 'batch performance', 'how did batch A do'] }
-{ id: 'attendance', path: '/teacher/reports/attendance', label: 'Attendance',
-  examples: ['mark attendance', 'attendance report', "today's attendance"] }
-{ id: 'assessments', path: '/teacher/exams', label: 'Assessments', ... }
-{ id: 'assessment.create', path: '/teacher/exams/create', ... }
-{ id: 'assessment.ai', path: '/teacher/exams/ai-generator', ... }
-{ id: 'lessons', path: '/teacher/lms', ... }
-{ id: 'lessonPlans', path: '/teacher/lms/series', ... }
-{ id: 'studyNotes', path: '/teacher/classroom/notes', ... }
-{ id: 'questionBank', path: '/teacher/question-bank', ... }
-{ id: 'schedule', path: '/teacher/classroom/schedule', ... }
-{ id: 'batches', path: '/teacher/batches', ... }
-{ id: 'messages', path: '/teacher/messages', ... }
-{ id: 'notifications', path: '/teacher/notifications', ... }
-// + batch-specific: { id: 'batch.open', path: '/teacher/batches/:batchId', needsParam: 'batchId' }
+type CatalogEntry = {
+  id: string          // stable slug, e.g. "physics"
+  name: string        // canonical display name, e.g. "Physics"
+  aliases: string[]   // ["phy", "phy 101", "phy-11", "physics 11"]
+  subjectId?: string  // for chapters/topics — parent link
+}
+
+export const voiceCatalog = {
+  subjects: CatalogEntry[],
+  chapters: CatalogEntry[],   // each linked to a subjectId
+  batches:  CatalogEntry[],   // aliases include "section a", "11 a", "alpha", etc.
+}
+```
+Aliases are seeded from data + a small hand-curated list (short codes, common spoken variants). Easy to extend later.
+
+### 2. AI does semantic resolution, not exact match
+**File:** `supabase/functions/voice-intent/index.ts`
+
+Send the catalog (id + name + aliases) into the system prompt and instruct Gemini:
+- Return the **slug (id)**, never the spoken phrase
+- If multiple candidates are plausible, return them in a `candidates[]` array with confidence each
+- If confidence is low or candidates tie within ~0.15, return `needsClarification: true`
+
+Extended tool schema:
+```
+{
+  routeId,
+  filters: { subjectId?, chapterId?, batchId? },
+  candidates?: { field: "subjectId"|"chapterId"|"batchId",
+                 options: [{ id, name, confidence }] },
+  needsClarification?: boolean,
+  confidence,
+  friendlyName
+}
 ```
 
-For parametrised routes (e.g. "open Batch 11-A"), the edge function receives the list of available batches from `mockBatches` and resolves the param.
+### 3. Client uses slugs everywhere
+**File:** `src/components/teacher/voice/VoiceCommandFAB.tsx`
 
-## UX rules
+- Receive slugs from edge function → look up canonical names from `voiceCatalog`
+- Build deep-link URL with slugs: `/teacher/lms/series?subject=physics&chapter=kinematics`
+- Toast shows resolved names: *"Opening Lesson Plans · Physics › Kinematics"*
 
-- **Single mic FAB**, bottom-right, 56px, blue-indigo gradient with subtle pulse when idle, animated wave when recording. Hidden on `/login` and `/brochure`.
-- **States**: idle → listening (live transcript) → thinking (200–600ms shimmer) → navigating (toast with "Opening X… Cancel"). Auto-stops on 2s silence.
-- **Low-confidence handling**: if confidence < 0.6, show a confirmation chip with top 2 guesses instead of navigating.
-- **Errors**: mic denied → tooltip explains; STT unsupported → hide FAB; AI error → toast "Couldn't understand, try again".
-- **Privacy notice**: first use shows a one-time tooltip explaining audio is processed in the browser and only the transcript is sent.
-- **Keyboard shortcut**: `Alt+M` toggles mic (bonus, no extra UI).
+### 4. Clarification state on the FAB
+New FAB phase: `'clarifying'`. When `needsClarification` is true, the panel shows:
 
-## Phase-wise implementation
+> Heard: *"open section A reports"*
+> Which Section A did you mean?
+> [ Physics – Section A ]  [ Chemistry – Section A ]  [ Cancel ]
 
-### Phase 0 — Backend setup
-- Enable Lovable Cloud (required for edge function + LOVABLE_API_KEY).
+Teacher taps (or says the number — *"first one"* via a second mini-listen — optional v2). On selection, we navigate with the chosen slug. No extra AI call needed.
 
-### Phase 1 — Route registry + edge function
-- `src/lib/voiceRoutes.ts` — typed array of all navigable teacher pages with `id`, `path`, `label`, `examples[]`, optional `needsParam`.
-- `supabase/functions/voice-intent/index.ts` — accepts `{ transcript, batches[] }`, calls Lovable AI Gateway with a tool-calling schema:
-  ```json
-  { "routeId": "string", "params": { "batchId": "string?" },
-    "confidence": 0-1, "friendlyName": "string" }
-  ```
-  Handles 429/402 with friendly error payloads.
+### 5. Declare filter support per route
+**File:** `src/lib/voiceRoutes.ts`
 
-### Phase 2 — Speech recognition hook
-- `src/hooks/useSpeechRecognition.ts` — wraps Web Speech API: `start()`, `stop()`, exposes `transcript`, `isListening`, `isSupported`, `error`. Handles permission denial, no-speech, network errors.
+Add `supportedFilters?: ('subjectId'|'chapterId'|'batchId')[]` per route:
+- `lessonPlans` → `subjectId, chapterId`
+- `reports.chapter` → `subjectId, chapterId` (auto-jump to detail if exact chapter)
+- `batch.programs` → `batchId, subjectId`
+- `reports.attendance` → `batchId`
+- `reports.section` → `batchId, subjectId`
 
-### Phase 3 — Voice command UI
-- `src/components/teacher/voice/VoiceCommandFAB.tsx` — floating mic button with idle/listening/thinking states, animated mic icon (lucide `Mic` + custom pulse rings).
-- `src/components/teacher/voice/VoiceCommandPanel.tsx` — expanded panel above the FAB showing live transcript, example prompts (rotating), close button.
-- `src/components/teacher/voice/VoiceResultToast.tsx` — confirmation toast with "Opening X…" and Cancel/Wrong-page action.
-- Pastel theme, blue/indigo primary, follows existing design tokens.
+### 6. Target pages read filters from URL (slug → state)
+Wire `useSearchParams` into existing filter state. Use `voiceCatalog` to map slug → display value the page already expects. No UI/business-logic changes — filters just pre-populate.
 
-### Phase 4 — Wire into TeacherLayout
-- Mount `<VoiceCommandFAB />` inside `src/components/teacher/layout/TeacherLayout.tsx` so it appears on every teacher page automatically.
-- On submit: call edge function → navigate using `useNavigate()` → show toast.
-- Add `Alt+M` global shortcut listener.
+Pages touched:
+- `LMSSeriesPage.tsx`
+- `ChapterAnalyticsListPage.tsx`
+- `BatchProgramsPage.tsx`
+- `BatchReportsPage.tsx`
+- `AttendancePage.tsx`
 
-### Phase 5 — Polish & QA
-- Mobile: FAB shifts above any sticky bottom bars (e.g. AI Exam Generator footer). Use `bottom-20` on those pages via a context flag or just `bottom-24` globally with safe-area-inset.
-- Low-confidence confirmation chips.
-- First-use privacy tooltip.
-- Test phrases across ~15 representative intents.
-- Verify Safari iOS behavior.
+### 7. Smart deep-jump
+If the resolved `chapterId` exactly matches a chapter detail route, skip the list page and go directly to `/teacher/reports/chapter-analytics/:chapterId`.
+
+### 8. Updated example phrases on the FAB
+- *"Physics lesson plans"*
+- *"PHY 101 programs of Section A"*
+- *"Kinematics report"*
+- *"Open chemistry attendance"*
+
+## Challenges & mitigations
+
+| Challenge | Mitigation |
+|---|---|
+| Maintaining aliases over time | Auto-seed from data; aliases are a plain array — easy to append |
+| AI token cost grows with catalog | Send only id + name + 3-4 aliases per entry; cap chapters to those matching the (likely) subject when one is detected in transcript |
+| User picks wrong clarification option | Cancel button + Alt+M restarts cleanly |
+| Slug collisions | Auto-suffix on build (`physics`, `physics-2`) — covered by `voiceCatalog.ts` generator |
 
 ## What stays the same
+- Free browser STT (Web Speech API)
+- Single AI call per command (clarification = local pick, no second call)
+- Same FAB / Alt+M shortcut / pastel theme
+- No new dependencies, no DB changes
 
-- No existing pages or routes change.
-- No new dependencies (Web Speech API is browser-native; we already have `lucide-react`, `react-router-dom`, `sonner`).
-- Only `TeacherLayout.tsx` gets one extra child component.
-
-## Open question (not blocking)
-
-When a teacher says "Open Batch A" but there are multiple matches (Batch A — Physics, Batch A — Chemistry), should the toast show a 2-option chooser, or just navigate to the most recently active one? Default: 2-option chooser.
+## Out of scope (v3)
+- Voice-driven actions (create / edit / mark)
+- TTS read-back of results
+- Multi-turn refinement ("now last week only")

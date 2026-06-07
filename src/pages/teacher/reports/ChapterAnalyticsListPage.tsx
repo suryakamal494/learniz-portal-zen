@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,13 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { mockChapterSummaries, mockBatchesForFilter, mockSubjectsForFilter } from '@/data/mockChapterReports';
 import { getTrendIcon, getCategoryBadgeColor } from '@/utils/chapterAnalyticsUtils';
+import { getSubjectById, getChapterById } from '@/lib/voiceCatalog';
 import { Search, BookOpen, TrendingUp, Users } from 'lucide-react';
 
 export default function ChapterAnalyticsListPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [batchFilter, setBatchFilter] = useState('section-10a');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [search, setSearch] = useState('');
+
+  // Apply voice-nav filters from URL slugs once on mount
+  useEffect(() => {
+    const subjSlug = searchParams.get('subject');
+    if (subjSlug) {
+      const name = getSubjectById(subjSlug)?.name?.toLowerCase();
+      const match = mockSubjectsForFilter.find(s => s.name.toLowerCase() === name);
+      if (match) setSubjectFilter(match.id);
+    }
+    const chSlug = searchParams.get('chapter');
+    if (chSlug) {
+      const name = getChapterById(chSlug)?.name;
+      if (name) setSearch(name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredChapters = mockChapterSummaries.filter(ch => {
     if (subjectFilter !== 'all' && ch.subjectId !== subjectFilter) return false;
