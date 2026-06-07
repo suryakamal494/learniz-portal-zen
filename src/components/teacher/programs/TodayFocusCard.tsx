@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles, CalendarDays, AlertCircle, CheckCircle2, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Program, TopicStatus } from '@/types/program';
-import { getTodayFocus, getScheduleDeltaForChapter } from '@/utils/programSchedule';
+import { getTodayFocus } from '@/utils/programSchedule';
 
 interface Props {
   program: Program;
@@ -50,20 +50,57 @@ export function TodayFocusCard({ program, onStatusChange, onJumpToChapter }: Pro
   }
 
   const { topic, chapter, subject } = focus;
-  const delta = getScheduleDeltaForChapter(chapter);
-  const isBehind = delta.state === 'behind';
-  const isUpcoming = topic.status === 'not-started' && delta.state === 'not-started';
+
+  // Compute schedule state from the displayed TOPIC (not the chapter) so the pill
+  // matches the title shown directly below.
+  const today = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const parseISO = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, (m ?? 1) - 1, d ?? 1);
+  };
+  const MS = 24 * 60 * 60 * 1000;
+  const todayMs = startOfDay(today).getTime();
+  const startMs = parseISO(topic.plannedStartDate).getTime();
+  const endMs = parseISO(topic.plannedEndDate).getTime();
+
+  let state: 'on-track' | 'behind' | 'upcoming' | 'done' = 'on-track';
+  let deltaDays = 0;
+  let explanation = '';
+  if (topic.status === 'done') {
+    state = 'done';
+    explanation = `"${topic.name}" is marked done.`;
+  } else if (todayMs < startMs) {
+    state = 'upcoming';
+    deltaDays = Math.round((startMs - todayMs) / MS);
+    explanation = `"${topic.name}" is scheduled to start on ${topic.plannedStartDate}.`;
+  } else if (todayMs > endMs) {
+    state = 'behind';
+    deltaDays = Math.round((todayMs - endMs) / MS);
+    explanation = `"${topic.name}" was scheduled to finish on ${topic.plannedEndDate}. You're ${deltaDays} day${deltaDays === 1 ? '' : 's'} behind on this topic.`;
+  } else {
+    state = 'on-track';
+    explanation = `On track — "${topic.name}" is due by ${topic.plannedEndDate}.`;
+  }
+
+  const isBehind = state === 'behind';
+  const isUpcoming = state === 'upcoming';
+  const isDone = state === 'done';
 
   const stateTint = isBehind
     ? 'bg-rose-50 border-rose-100 text-rose-900'
     : isUpcoming
     ? 'bg-blue-50 border-blue-100 text-blue-900'
+    : isDone
+    ? 'bg-gray-50 border-gray-200 text-gray-700'
     : 'bg-emerald-50 border-emerald-100 text-emerald-900';
 
   const stateLabel = isBehind
-    ? `Behind by ${Math.abs(delta.deltaDays)} day${Math.abs(delta.deltaDays) === 1 ? '' : 's'}`
+    ? `Behind by ${deltaDays} day${deltaDays === 1 ? '' : 's'}`
     : isUpcoming
-    ? `Starts in ${delta.deltaDays} day${delta.deltaDays === 1 ? '' : 's'}`
+    ? `Starts in ${deltaDays} day${deltaDays === 1 ? '' : 's'}`
+    : isDone
+    ? 'Done'
     : 'On track';
 
   return (
@@ -87,6 +124,8 @@ export function TodayFocusCard({ program, onStatusChange, onJumpToChapter }: Pro
               ? 'bg-rose-50 border-rose-200 text-rose-700'
               : isUpcoming
               ? 'bg-blue-50 border-blue-200 text-blue-700'
+              : isDone
+              ? 'bg-gray-50 border-gray-200 text-gray-600'
               : 'bg-emerald-50 border-emerald-200 text-emerald-700'
           }`}
         >
@@ -102,10 +141,10 @@ export function TodayFocusCard({ program, onStatusChange, onJumpToChapter }: Pro
         <p className="text-xs mt-1 opacity-80">
           Planned {formatPlannedHours(topic.plannedHours)} · {topic.plannedStartDate} → {topic.plannedEndDate}
         </p>
-        {isBehind && (
+        {(isBehind || isUpcoming) && (
           <p className="text-xs mt-2 flex items-start gap-1.5">
             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>{delta.explanation}</span>
+            <span>{explanation}</span>
           </p>
         )}
       </div>

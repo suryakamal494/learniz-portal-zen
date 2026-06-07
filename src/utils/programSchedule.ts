@@ -172,10 +172,11 @@ export function getStatusOverview(program: Program, today: Date = new Date()) {
       }
       const delta = getScheduleDeltaForChapter(ch, today);
       if (delta.state === 'behind') chaptersBehind += 1;
-      if (delta.state === 'on-track' || (delta.state === 'not-started' && (ch.topics ?? []).some((t) => t.status !== 'not-started'))) {
-        // treat anything actively moving as in-progress
-        if ((ch.topics ?? []).some((t) => t.status === 'in-progress')) chaptersInProgress += 1;
-      }
+      // A chapter is "in progress" whenever at least one topic is started but not all done.
+      const topics = ch.topics ?? [];
+      const hasStarted = topics.some((t) => t.status === 'in-progress' || t.status === 'done');
+      const allDone = topics.length > 0 && topics.every((t) => t.status === 'done');
+      if (hasStarted && !allDone) chaptersInProgress += 1;
     }
   }
 
