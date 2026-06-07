@@ -49,7 +49,11 @@ RULES:
 3. Only include a filter if the route's supportedFilters list it AND the user clearly referenced that entity.
 4. If chapterId is set, prefer setting its parent subjectId too (use the [subject=...] hint).
 5. If two or more candidates are roughly equally plausible for the SAME field (confidence within ~0.15 of each other), set needsClarification=true and put the top 2-3 in candidates[] for that field. Pick the leader as the primary value.
-6. If nothing reasonably matches, return routeId="none" with low confidence.
+6. Intent disambiguation for program-related phrases:
+   - "what am I teaching now/today", "currently teaching", "current chapter", "today's topic", "this week's lesson/topic", "where do I stand in the program", "jump to current chapter", "what's running now" → routeId="programs.current" (do NOT set subjectId/chapterId — the client computes today's focus).
+   - "open program", "show my program", "physics program", "program of section a", "show curriculum" → routeId="batch.programs".
+   - "courses", "create course", "course library" → routeId="courses". NEVER map "program/curriculum" phrases to "courses".
+7. If nothing reasonably matches, return routeId="none" with low confidence.
 
 ROUTES (id — label — supportedFilters — examples):
 ${routes.map(r => `- ${r.id} — ${r.label}${r.needsParam ? ' [needs ' + r.needsParam + ']' : ''}${r.supportedFilters?.length ? ' [filters: ' + r.supportedFilters.join(',') + ']' : ''} — ${r.examples.slice(0, 3).join('; ')}`).join('\n')}
