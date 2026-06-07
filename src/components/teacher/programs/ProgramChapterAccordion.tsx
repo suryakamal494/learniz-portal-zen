@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock } from 'lucide-react';
 import { ProgramChapter, TopicStatus } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
-import { getScheduleDeltaForChapter, ScheduleState, explainPct } from '@/utils/programSchedule';
+import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LessonPlanCard } from './LessonPlanCard';
 
 interface Props {
@@ -103,12 +104,33 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview, onTop
         >
           {pill.label}
         </span>
-        <span
-          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pctPill}`}
-          title={explainPct(spent, planned)}
-        >
-          {pct}%
-        </span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${pctPill}`}
+              title="What does this percentage mean?"
+            >
+              {pct}%
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="bottom"
+            align="end"
+            className="w-72 p-0 border border-gray-200 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ChapterPctBreakdown
+              chapter={chapter}
+              pct={pct}
+              spent={spent}
+              planned={planned}
+              deltaLabel={pill.label}
+              deltaExplanation={delta.explanation}
+            />
+          </PopoverContent>
+        </Popover>
       </button>
 
       {open && (
@@ -228,3 +250,94 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, onPreview, onTop
     </div>
   );
 }
+
+/* ──────────────── Chapter % breakdown popover ──────────────── */
+
+function fmtHrs(h: number): string {
+  if (!h || h <= 0) return '0h';
+  const whole = Math.floor(h);
+  const m = Math.round((h - whole) * 60);
+  if (whole === 0) return `${m}m`;
+  if (m === 0) return `${whole}h`;
+  return `${whole}h ${m}m`;
+}
+
+interface BreakdownProps {
+  chapter: ProgramChapter;
+  pct: number;
+  spent: number;
+  planned: number;
+  deltaLabel: string;
+  deltaExplanation: string;
+}
+
+function ChapterPctBreakdown({ chapter, pct, spent, planned, deltaLabel, deltaExplanation }: BreakdownProps) {
+  const topics = chapter.topics ?? [];
+  const doneCount = topics.filter((t) => t.status === 'done').length;
+  const ipCount = topics.filter((t) => t.status === 'in-progress').length;
+  const nsCount = topics.filter((t) => t.status === 'not-started').length;
+  const total = topics.length;
+
+  const lastTaught = topics
+    .filter((t) => t.lastUpdatedAt)
+    .map((t) => t.lastUpdatedAt!)
+    .sort()
+    .pop();
+
+  const barTone = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-rose-500';
+
+  return (
+    <div className="p-3 space-y-3 bg-white rounded-md">
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">What this means</p>
+        <p className="text-xs text-gray-700 mt-0.5">
+          {total > 0
+            ? `${doneCount} of ${total} topics done · ${fmtHrs(spent)} taught of ${fmtHrs(planned)} planned.`
+            : `${fmtHrs(spent)} taught of ${fmtHrs(planned)} planned.`}
+        </p>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between text-[11px] text-gray-600">
+          <span>Hours taught</span>
+          <span className="font-semibold">{pct}%</span>
+        </div>
+        <div className="mt-1 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div className={`h-full ${barTone}`} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-[11px] text-gray-500 mt-1">{fmtHrs(spent)} of {fmtHrs(planned)}</p>
+      </div>
+
+      {total > 0 && (
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-md bg-emerald-50 border border-emerald-100 px-2 py-1.5">
+            <p className="text-sm font-bold text-emerald-700">{doneCount}</p>
+            <p className="text-[10px] text-emerald-700">Done</p>
+          </div>
+          <div className="rounded-md bg-amber-50 border border-amber-100 px-2 py-1.5">
+            <p className="text-sm font-bold text-amber-700">{ipCount}</p>
+            <p className="text-[10px] text-amber-700">In progress</p>
+          </div>
+          <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5">
+            <p className="text-sm font-bold text-gray-700">{nsCount}</p>
+            <p className="text-[10px] text-gray-600">Not started</p>
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-gray-100 pt-2 space-y-1">
+        <div className="flex items-start gap-1.5 text-[11px]">
+          <span className="font-semibold text-gray-600">Schedule:</span>
+          <span className="text-gray-700">{deltaLabel} — {deltaExplanation}</span>
+        </div>
+        {lastTaught && (
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+            <Clock className="h-3 w-3" />
+            Last taught {new Date(lastTaught).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
