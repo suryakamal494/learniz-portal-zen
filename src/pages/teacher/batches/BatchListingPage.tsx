@@ -21,16 +21,6 @@ export default function BatchListingPage() {
     )
   }, [searchQuery])
 
-  // Lightweight derived counts so cards feel meaningful (UI-only mock).
-  const deriveCounts = (id: string) => {
-    const n = parseInt(id, 10) || 1
-    return {
-      lessons: ((n * 3) % 5) + 1,
-      notes: ((n * 7) % 6) + 1,
-      assessments: ((n * 2) % 4) + 1,
-      attendancePct: 55 + ((n * 11) % 40),
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-3 md:p-5">
@@ -76,24 +66,22 @@ export default function BatchListingPage() {
             <p className="text-gray-500 text-sm mt-1">Try a different name, class or course.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredBatches.map(batch => {
-              const c = deriveCounts(batch.id)
-              return (
-                <SectionCard
-                  key={batch.id}
-                  batch={batch}
-                  lessonCount={c.lessons}
-                  notesCount={c.notes}
-                  assessmentCount={c.assessments}
-                  attendancePct={c.attendancePct}
-                />
-              )
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {filteredBatches.map(batch => (
+              <SectionCard
+                key={batch.id}
+                batch={batch}
+                onPrograms={b => {
+                  // Placeholder — destination to be defined.
+                  console.log('Programs clicked for', b.id)
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
     </div>
   )
 }
+
 

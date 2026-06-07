@@ -6,6 +6,9 @@ export type SectionPalette = {
   avatarBg: string
   avatarText: string
   ring: string
+  gradient: string // header band background
+  iconText: string // decorative motif color
+  border: string // soft palette-tinted border
 }
 
 const palettes: SectionPalette[] = [
@@ -17,6 +20,9 @@ const palettes: SectionPalette[] = [
     avatarBg: 'bg-blue-100',
     avatarText: 'text-blue-700',
     ring: 'ring-blue-100',
+    gradient: 'bg-gradient-to-br from-blue-100 via-sky-50 to-white',
+    iconText: 'text-blue-400/40',
+    border: 'border-blue-100',
   },
   {
     key: 'purple',
@@ -26,6 +32,9 @@ const palettes: SectionPalette[] = [
     avatarBg: 'bg-purple-100',
     avatarText: 'text-purple-700',
     ring: 'ring-purple-100',
+    gradient: 'bg-gradient-to-br from-purple-100 via-violet-50 to-white',
+    iconText: 'text-purple-400/40',
+    border: 'border-purple-100',
   },
   {
     key: 'green',
@@ -35,6 +44,9 @@ const palettes: SectionPalette[] = [
     avatarBg: 'bg-emerald-100',
     avatarText: 'text-emerald-700',
     ring: 'ring-emerald-100',
+    gradient: 'bg-gradient-to-br from-emerald-100 via-teal-50 to-white',
+    iconText: 'text-emerald-400/40',
+    border: 'border-emerald-100',
   },
   {
     key: 'peach',
@@ -44,6 +56,9 @@ const palettes: SectionPalette[] = [
     avatarBg: 'bg-orange-100',
     avatarText: 'text-orange-700',
     ring: 'ring-orange-100',
+    gradient: 'bg-gradient-to-br from-orange-100 via-amber-50 to-white',
+    iconText: 'text-orange-400/40',
+    border: 'border-orange-100',
   },
 ]
 
