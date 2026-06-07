@@ -7,12 +7,11 @@ import { getProgramByBatchId } from '@/data/mockPrograms';
 import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubjectTabs';
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
-import { TodayFocusCard } from '@/components/teacher/programs/TodayFocusCard';
+import { ThisWeekCard } from '@/components/teacher/programs/ThisWeekCard';
 import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
-import { TodayAnchor } from '@/components/teacher/programs/TodayAnchor';
 import { getSubjectById } from '@/lib/voiceCatalog';
-import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter } from '@/utils/programSchedule';
+import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter, getTodayFocus } from '@/utils/programSchedule';
 import { Program, ProgramChapter, TopicStatus } from '@/types/program';
 
 export default function BatchProgramsPage() {
