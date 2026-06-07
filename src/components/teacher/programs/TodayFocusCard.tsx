@@ -28,7 +28,7 @@ export function TodayFocusCard({ program, onStatusChange, onJumpToChapter }: Pro
 
   if (!focus) {
     return (
-      <div id="today" className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <div id="today" className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 scroll-mt-24">
         <div className="flex items-center gap-3">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
             <Sparkles className="h-5 w-5 text-blue-600" />
