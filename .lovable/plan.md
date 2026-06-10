@@ -1,40 +1,75 @@
-# Plan — Surface "Add material" directly on teacher lesson plan cards
+# Plan — "Add study notes" per chapter (inline form + count indicator)
 
 ## Goal
-A teacher just created a blank lesson plan and shouldn't have to figure out that "material lives behind Preview." The card itself should offer **Add material** as a primary action.
+A third action on each chapter (next to *Add from library* / *Create lesson plan*) that lets the teacher share a study note for that chapter inline. We do **not** list the notes — we just surface a count so the teacher knows "yes, things are shared here."
 
-## Changes
+## 1. Where the count lives
 
-### 1. `LessonPlanCard.tsx` — compact actions + Add material CTA
-- Replace the "Preview" text button with an **icon-only** ghost button (eye icon, `aria-label="Preview"`) for **every** card. Saves horizontal space.
-- For teacher-created plans (`createdBy === 'teacher'`):
-  - Add a primary **`+ Add material`** button (blue, same height as preview) placed before the edit/preview icons.
-  - Keep the pencil **Edit** icon button (icon-only).
-- New prop: `onAddMaterial?: () => void`. Rendered only when present AND the plan is teacher-created.
-- Final action row order, teacher card:  `[+ Add material]  [✏️]  [👁]`
-- Final action row order, admin card:   `[👁]`
+Two places, both subtle, no new list rendered:
 
-### 2. `LessonPlanPreviewModal.tsx` — allow opening directly in "Add" view
-- Accept a new prop `initialView?: 'list' | 'add'` (default `'list'`).
-- On open, set internal `view` to `initialView`. Reset to `'list'` on close (existing behavior).
-- Keep the existing in-modal "+ Add material" button so the action is also available from the preview, as the user requested.
+**A. Chapter header (collapsed and expanded)** — the small meta row that today reads `📅 1 Oct → 7 Oct · 5 topics`. Append a pill when count > 0:
 
-### 3. `ProgramChapterAccordion.tsx`
-- Add `onAddMaterial?: (lessonPlanId: string) => void` prop, forwarded to `LessonPlanCard` for teacher plans only.
+```
+📅 1 Oct → 7 Oct · 5 topics · 📄 3 study notes shared
+```
 
-### 4. `BatchProgramsPage.tsx`
-- New state: `addMaterialLpId: string | null`.
-- Pass `onAddMaterial={(lpId) => setAddMaterialLpId(lpId)}` through `ChapterListSection` → `ProgramChapterAccordion`.
-- When `addMaterialLpId` is set, render the existing `LessonPlanPreviewModal` with `initialView="add"` and that plan as context. (Re-use the same modal — don't open two at once. If preview was already open, prefer the add-material trigger and close preview.)
-- Close handler clears `addMaterialLpId` (and `previewLpId` if it was the same).
+The pill is muted emerald (`bg-emerald-50 text-emerald-700`) and the document icon makes it scannable without competing with the schedule / % pills on the right.
 
-## Why this stays simple
-- One new prop on the card, one new prop on the modal, no new components.
-- "Add material" is now a 1-click action from the card (the primary entry point) AND still available inside the preview (secondary).
-- Preview becomes an icon to keep the row light, since 99% of new teacher cards will have 0 contents and the user's first need is *adding*, not *previewing*.
+**B. Inside the expanded chapter, in the "Lesson plans" toolbar** — the same row that holds *Add from library / Create lesson plan*. We add the third button there and, when count > 0, show a tiny inline status to its left:
+
+```
+Lesson plans               ✓ 3 study notes shared   [+ Add study notes]  [+ Add from library]  [+ Create lesson plan]
+```
+
+That gives the teacher confirmation right where they took the action — no scrolling, no new section.
+
+We deliberately **don't** add a separate "Study notes" panel. Listing them was rejected by the user.
+
+## 2. The inline "Add study notes" form
+
+A small `Dialog` (same pattern as `CreateLessonPlanInlineModal`), titled **Share study note**:
+
+- **Read-only context chips** (auto-filled, no dropdowns): Institute · Class · Subject · Chapter.
+- **Title** (required, single line).
+- **File upload** (required) — accept `.pdf,.doc,.docx,.ppt,.pptx,.png,.jpg`. We just capture the file name (mock app, no real upload).
+- **Optional one-line description** (text input).
+- **Share** button → fires `onShare({ chapterId, title, fileName, description })` and closes.
+
+A toast confirms: *"Study note shared with this chapter."*
+
+## 3. State + plumbing (no new page)
+
+- `src/types/program.ts` — add a small interface:
+  ```ts
+  export interface ChapterStudyNote {
+    id: string;
+    title: string;
+    fileName: string;
+    description?: string;
+    sharedAt: string;
+  }
+  ```
+- `BatchProgramsPage.tsx` — new state `studyNotes: Record<chapterId, ChapterStudyNote[]>`. Merge counts into the computed `program` chapters as a derived `studyNoteCount` (kept off the persistent type — we pass count as a prop).
+- New modal state `addNotesChapterId: string | null` mirroring the existing `createModalChapterId`.
+- Pass `studyNoteCount` and `onAddStudyNote` through `ChapterListSection` → `ProgramChapterAccordion`.
+
+## 4. Component changes
+
+- **New file** `src/components/teacher/programs/AddStudyNoteModal.tsx` — the dialog described in §2.
+- **`ProgramChapterAccordion.tsx`**:
+  - New props: `studyNoteCount?: number`, `onAddStudyNote?: (chapterId: string) => void`.
+  - In the meta row: render the emerald `📄 N study notes shared` pill when count > 0.
+  - In the Lesson plans toolbar: add the third button **`+ Add study notes`** (gray outline, document icon — visually distinct from blue "Create lesson plan" and gray "Add from library" so all three are clearly different actions). Render the inline `✓ N study notes shared` confirmation chip to the left of the buttons when count > 0.
+- **`BatchProgramsPage.tsx`**: wire state, modal, and the toast.
+
+## 5. Why this stays clean
+
+- One new button, one new modal, one new pill. No new page, no new list, no new section.
+- The count is informational only — clicking it does nothing (per the user's "we don't want to see what notes they have added").
+- All three chapter-level actions stay on one row; on narrow widths the existing `flex-wrap` handles it.
 
 ## Files touched
-- `src/components/teacher/programs/LessonPlanCard.tsx`
-- `src/components/teacher/programs/LessonPlanPreviewModal.tsx`
+- `src/types/program.ts` *(add type)*
+- `src/components/teacher/programs/AddStudyNoteModal.tsx` *(new)*
 - `src/components/teacher/programs/ProgramChapterAccordion.tsx`
 - `src/pages/teacher/batches/BatchProgramsPage.tsx`

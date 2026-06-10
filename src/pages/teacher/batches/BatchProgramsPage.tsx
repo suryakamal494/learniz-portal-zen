@@ -11,9 +11,11 @@ import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOvervie
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter, getTodayFocus } from '@/utils/programSchedule';
-import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus } from '@/types/program';
+import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus, ChapterStudyNote } from '@/types/program';
 import { AddLessonPlanModal } from '@/components/teacher/programs/AddLessonPlanModal';
 import { CreateLessonPlanInlineModal } from '@/components/teacher/programs/CreateLessonPlanInlineModal';
+import { AddStudyNoteModal } from '@/components/teacher/programs/AddStudyNoteModal';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
@@ -35,6 +37,9 @@ export default function BatchProgramsPage() {
   const [editLessonPlanId, setEditLessonPlanId] = useState<string | null>(null);
   const [previewLpId, setPreviewLpId] = useState<string | null>(null);
   const [addMaterialLpId, setAddMaterialLpId] = useState<string | null>(null);
+  const [addNotesChapterId, setAddNotesChapterId] = useState<string | null>(null);
+  const [studyNotes, setStudyNotes] = useState<Record<string, ChapterStudyNote[]>>({});
+  const { toast } = useToast();
 
   const program: Program | undefined = useMemo(() => {
     if (!baseProgram) return undefined;
@@ -120,14 +125,17 @@ export default function BatchProgramsPage() {
   const previewCtx = findPlanContext(activeLpId);
   const editCtx = findPlanContext(editLessonPlanId);
 
-  const createChapter = useMemo(() => {
-    if (!createModalChapterId || !program) return null;
+  const findChapter = (chapterId: string | null) => {
+    if (!chapterId || !program) return null;
     for (const s of program.subjects) {
-      const ch = s.chapters.find((c) => c.id === createModalChapterId);
+      const ch = s.chapters.find((c) => c.id === chapterId);
       if (ch) return { chapter: ch, subject: s };
     }
     return null;
-  }, [createModalChapterId, program]);
+  };
+
+  const createChapter = useMemo(() => findChapter(createModalChapterId), [createModalChapterId, program]);
+  const notesChapter = useMemo(() => findChapter(addNotesChapterId), [addNotesChapterId, program]);
 
   const staleInfo = useMemo(() => (program ? getStaleStatusInfo(program) : null), [program]);
 
@@ -254,6 +262,10 @@ export default function BatchProgramsPage() {
                 onAddFromLibrary={(chapterId) => setAddModalChapterId(chapterId)}
                 onEditLessonPlan={(lpId) => setEditLessonPlanId(lpId)}
                 onAddMaterial={(lpId) => setAddMaterialLpId(lpId)}
+                onAddStudyNote={(chapterId) => setAddNotesChapterId(chapterId)}
+                studyNoteCounts={Object.fromEntries(
+                  Object.entries(studyNotes).map(([k, v]) => [k, v.length]),
+                )}
                 focusChapterId={(() => {
                   const todayIso = new Date().toISOString().slice(0, 10);
                   const chapters = activeSubject.chapters;
@@ -350,6 +362,31 @@ export default function BatchProgramsPage() {
           setTitleOverrides((prev) => ({ ...prev, [editLessonPlanId]: title }));
         }}
       />
+
+      <AddStudyNoteModal
+        open={!!notesChapter}
+        onClose={() => setAddNotesChapterId(null)}
+        context={{
+          ...baseCtx,
+          subjectName: notesChapter?.subject.name,
+          chapterName: notesChapter?.chapter.name,
+        }}
+        onShare={({ title, fileName, description }) => {
+          if (!addNotesChapterId) return;
+          const note: ChapterStudyNote = {
+            id: `sn-${Date.now()}`,
+            title,
+            fileName,
+            description,
+            sharedAt: new Date().toISOString(),
+          };
+          setStudyNotes((prev) => ({
+            ...prev,
+            [addNotesChapterId]: [...(prev[addNotesChapterId] ?? []), note],
+          }));
+          toast({ title: 'Study note shared', description: `"${title}" is now shared with this chapter.` });
+        }}
+      />
     </div>
   );
 }
@@ -364,6 +401,8 @@ interface ChapterListSectionProps {
   onAddFromLibrary?: (chapterId: string) => void;
   onEditLessonPlan?: (lessonPlanId: string) => void;
   onAddMaterial?: (lessonPlanId: string) => void;
+  onAddStudyNote?: (chapterId: string) => void;
+  studyNoteCounts?: Record<string, number>;
   focusChapterId?: string;
 }
 
@@ -377,6 +416,8 @@ function ChapterListSection({
   onAddFromLibrary,
   onEditLessonPlan,
   onAddMaterial,
+  onAddStudyNote,
+  studyNoteCounts,
   focusChapterId,
 }: ChapterListSectionProps) {
   const today = new Date();
@@ -449,6 +490,8 @@ function ChapterListSection({
                 onAddFromLibrary={onAddFromLibrary}
                 onEditLessonPlan={onEditLessonPlan}
                 onAddMaterial={onAddMaterial}
+                onAddStudyNote={onAddStudyNote}
+                studyNoteCount={studyNoteCounts?.[ch.id] ?? 0}
               />
             </div>
           ))}

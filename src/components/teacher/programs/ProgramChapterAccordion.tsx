@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig } from 'lucide-react';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen } from 'lucide-react';
 import { ProgramChapter, TopicStatus } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
@@ -16,6 +16,8 @@ interface Props {
   onAddFromLibrary?: (chapterId: string) => void;
   onEditLessonPlan?: (lessonPlanId: string) => void;
   onAddMaterial?: (lessonPlanId: string) => void;
+  onAddStudyNote?: (chapterId: string) => void;
+  studyNoteCount?: number;
 }
 
 function formatDateRange(start?: string, end?: string): string | null {
@@ -47,7 +49,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0 }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
@@ -115,6 +117,12 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
             <span>
               {topics.length > 0 ? `${topics.length} topics` : `${chapter.lessonPlans.length} lesson plans`}
             </span>
+            {studyNoteCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <FileText className="h-3 w-3" />
+                {studyNoteCount} study note{studyNoteCount === 1 ? '' : 's'} shared
+              </span>
+            )}
           </div>
         </div>
         <span
@@ -224,8 +232,24 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                 <div className="px-5 pb-5 pt-3 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lesson plans</p>
-                    {(onCreateLessonPlan || onAddFromLibrary) && (
+                    {(onCreateLessonPlan || onAddFromLibrary || onAddStudyNote) && (
                       <div className="flex flex-wrap items-center gap-2">
+                        {studyNoteCount > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {studyNoteCount} study note{studyNoteCount === 1 ? '' : 's'} shared
+                          </span>
+                        )}
+                        {onAddStudyNote && (
+                          <button
+                            type="button"
+                            onClick={() => onAddStudyNote(chapter.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                          >
+                            <NotebookPen className="h-3.5 w-3.5" />
+                            Add study notes
+                          </button>
+                        )}
                         {onAddFromLibrary && (
                           <button
                             type="button"

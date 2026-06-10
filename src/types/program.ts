@@ -1,3 +1,11 @@
+export interface ChapterStudyNote {
+  id: string;
+  title: string;
+  fileName: string;
+  description?: string;
+  sharedAt: string;
+}
+
 export type LessonPlanContentType = 'ppt' | 'html' | 'video' | 'pdf' | 'note';
 
 export interface LessonPlanContent {
