@@ -362,6 +362,31 @@ export default function BatchProgramsPage() {
           setTitleOverrides((prev) => ({ ...prev, [editLessonPlanId]: title }));
         }}
       />
+
+      <AddStudyNoteModal
+        open={!!notesChapter}
+        onClose={() => setAddNotesChapterId(null)}
+        context={{
+          ...baseCtx,
+          subjectName: notesChapter?.subject.name,
+          chapterName: notesChapter?.chapter.name,
+        }}
+        onShare={({ title, fileName, description }) => {
+          if (!addNotesChapterId) return;
+          const note: ChapterStudyNote = {
+            id: `sn-${Date.now()}`,
+            title,
+            fileName,
+            description,
+            sharedAt: new Date().toISOString(),
+          };
+          setStudyNotes((prev) => ({
+            ...prev,
+            [addNotesChapterId]: [...(prev[addNotesChapterId] ?? []), note],
+          }));
+          toast({ title: 'Study note shared', description: `"${title}" is now shared with this chapter.` });
+        }}
+      />
     </div>
   );
 }
