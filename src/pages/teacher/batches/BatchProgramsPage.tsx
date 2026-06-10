@@ -274,7 +274,11 @@ export default function BatchProgramsPage() {
 
       <LessonPlanPreviewModal
         open={!!previewCtx}
-        onClose={() => setPreviewLpId(null)}
+        initialView={addMaterialLpId ? 'add' : 'list'}
+        onClose={() => {
+          setPreviewLpId(null);
+          setAddMaterialLpId(null);
+        }}
         lessonPlan={previewCtx?.plan ?? null}
         context={{
           ...baseCtx,
@@ -288,6 +292,7 @@ export default function BatchProgramsPage() {
           }));
         }}
       />
+
 
       <AddLessonPlanModal
         open={!!addModalChapterId}
