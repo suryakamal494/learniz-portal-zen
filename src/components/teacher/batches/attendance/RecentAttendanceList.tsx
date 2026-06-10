@@ -24,7 +24,7 @@ export function RecentAttendanceList({ batchId }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => navigate(`/teacher/attendance/mark?batchId=${batchId}`)}
+            onClick={() => navigate(`/teacher/reports/attendance?batchId=${batchId}&action=mark`)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
             size="sm"
           >
