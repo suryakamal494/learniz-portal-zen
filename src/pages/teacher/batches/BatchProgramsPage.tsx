@@ -116,7 +116,8 @@ export default function BatchProgramsPage() {
     return null;
   };
 
-  const previewCtx = findPlanContext(previewLpId);
+  const activeLpId = addMaterialLpId ?? previewLpId;
+  const previewCtx = findPlanContext(activeLpId);
   const editCtx = findPlanContext(editLessonPlanId);
 
   const createChapter = useMemo(() => {
