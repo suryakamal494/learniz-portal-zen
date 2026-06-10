@@ -125,14 +125,17 @@ export default function BatchProgramsPage() {
   const previewCtx = findPlanContext(activeLpId);
   const editCtx = findPlanContext(editLessonPlanId);
 
-  const createChapter = useMemo(() => {
-    if (!createModalChapterId || !program) return null;
+  const findChapter = (chapterId: string | null) => {
+    if (!chapterId || !program) return null;
     for (const s of program.subjects) {
-      const ch = s.chapters.find((c) => c.id === createModalChapterId);
+      const ch = s.chapters.find((c) => c.id === chapterId);
       if (ch) return { chapter: ch, subject: s };
     }
     return null;
-  }, [createModalChapterId, program]);
+  };
+
+  const createChapter = useMemo(() => findChapter(createModalChapterId), [createModalChapterId, program]);
+  const notesChapter = useMemo(() => findChapter(addNotesChapterId), [addNotesChapterId, program]);
 
   const staleInfo = useMemo(() => (program ? getStaleStatusInfo(program) : null), [program]);
 
