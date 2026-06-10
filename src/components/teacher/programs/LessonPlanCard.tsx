@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, Pencil, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgramLessonPlan } from '@/types/program';
 
@@ -7,11 +7,12 @@ interface Props {
   lessonPlan: ProgramLessonPlan;
   onPreview: () => void;
   onEdit?: () => void;
+  onAddMaterial?: () => void;
   /** Unused — kept for backward compatibility with existing callers. */
   usedInTopics?: Array<{ id: string; name: string }>;
 }
 
-export function LessonPlanCard({ lessonPlan, onPreview, onEdit }: Props) {
+export function LessonPlanCard({ lessonPlan, onPreview, onEdit, onAddMaterial }: Props) {
   const isTeacher = lessonPlan.createdBy === 'teacher';
 
   return (
@@ -28,12 +29,22 @@ export function LessonPlanCard({ lessonPlan, onPreview, onEdit }: Props) {
         )}
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
+        {isTeacher && onAddMaterial && (
+          <Button
+            size="sm"
+            onClick={onAddMaterial}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Add material
+          </Button>
+        )}
         {isTeacher && onEdit && (
           <Button
             size="sm"
             variant="outline"
             onClick={onEdit}
-            className="border-gray-200 text-gray-700 hover:bg-gray-50"
+            className="border-gray-200 text-gray-700 hover:bg-gray-50 h-8 w-8 p-0"
             aria-label="Edit lesson plan"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -43,10 +54,11 @@ export function LessonPlanCard({ lessonPlan, onPreview, onEdit }: Props) {
           size="sm"
           variant="outline"
           onClick={onPreview}
-          className="border-blue-200 text-blue-700 hover:bg-blue-50"
+          className="border-blue-200 text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+          aria-label="Preview lesson plan"
+          title="Preview"
         >
-          <Eye className="h-3.5 w-3.5 mr-1.5" />
-          Preview
+          <Eye className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
