@@ -34,6 +34,7 @@ export default function BatchProgramsPage() {
   const [createModalChapterId, setCreateModalChapterId] = useState<string | null>(null);
   const [editLessonPlanId, setEditLessonPlanId] = useState<string | null>(null);
   const [previewLpId, setPreviewLpId] = useState<string | null>(null);
+  const [addMaterialLpId, setAddMaterialLpId] = useState<string | null>(null);
 
   const program: Program | undefined = useMemo(() => {
     if (!baseProgram) return undefined;
@@ -115,7 +116,8 @@ export default function BatchProgramsPage() {
     return null;
   };
 
-  const previewCtx = findPlanContext(previewLpId);
+  const activeLpId = addMaterialLpId ?? previewLpId;
+  const previewCtx = findPlanContext(activeLpId);
   const editCtx = findPlanContext(editLessonPlanId);
 
   const createChapter = useMemo(() => {
@@ -251,6 +253,7 @@ export default function BatchProgramsPage() {
                 onCreateLessonPlan={(chapterId) => setCreateModalChapterId(chapterId)}
                 onAddFromLibrary={(chapterId) => setAddModalChapterId(chapterId)}
                 onEditLessonPlan={(lpId) => setEditLessonPlanId(lpId)}
+                onAddMaterial={(lpId) => setAddMaterialLpId(lpId)}
                 focusChapterId={(() => {
                   const todayIso = new Date().toISOString().slice(0, 10);
                   const chapters = activeSubject.chapters;
@@ -271,7 +274,11 @@ export default function BatchProgramsPage() {
 
       <LessonPlanPreviewModal
         open={!!previewCtx}
-        onClose={() => setPreviewLpId(null)}
+        initialView={addMaterialLpId ? 'add' : 'list'}
+        onClose={() => {
+          setPreviewLpId(null);
+          setAddMaterialLpId(null);
+        }}
         lessonPlan={previewCtx?.plan ?? null}
         context={{
           ...baseCtx,
@@ -285,6 +292,7 @@ export default function BatchProgramsPage() {
           }));
         }}
       />
+
 
       <AddLessonPlanModal
         open={!!addModalChapterId}
@@ -355,6 +363,7 @@ interface ChapterListSectionProps {
   onCreateLessonPlan?: (chapterId: string) => void;
   onAddFromLibrary?: (chapterId: string) => void;
   onEditLessonPlan?: (lessonPlanId: string) => void;
+  onAddMaterial?: (lessonPlanId: string) => void;
   focusChapterId?: string;
 }
 
@@ -367,6 +376,7 @@ function ChapterListSection({
   onCreateLessonPlan,
   onAddFromLibrary,
   onEditLessonPlan,
+  onAddMaterial,
   focusChapterId,
 }: ChapterListSectionProps) {
   const today = new Date();
@@ -438,6 +448,7 @@ function ChapterListSection({
                 onCreateLessonPlan={onCreateLessonPlan}
                 onAddFromLibrary={onAddFromLibrary}
                 onEditLessonPlan={onEditLessonPlan}
+                onAddMaterial={onAddMaterial}
               />
             </div>
           ))}
