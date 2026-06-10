@@ -31,6 +31,8 @@ interface Props {
   };
   /** Fires when teacher saves new material. Parent appends it to the plan. */
   onAddContent?: (lessonPlanId: string, content: LessonPlanContent) => void;
+  /** Open straight into the add-material form. Defaults to 'list'. */
+  initialView?: 'list' | 'add';
 }
 
 const typeMeta: Record<
