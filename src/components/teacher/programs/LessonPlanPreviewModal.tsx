@@ -56,8 +56,8 @@ function Chip({ label, value }: { label: string; value?: string }) {
   );
 }
 
-export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onAddContent }: Props) {
-  const [view, setView] = useState<'list' | 'add'>('list');
+export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onAddContent, initialView = 'list' }: Props) {
+  const [view, setView] = useState<'list' | 'add'>(initialView);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<LessonPlanContentType>('pdf');
   const [url, setUrl] = useState('');
@@ -66,7 +66,9 @@ export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onA
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setView(initialView);
+    } else {
       setView('list');
       setTitle('');
       setType('pdf');
@@ -74,7 +76,7 @@ export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onA
       setFileName('');
       setNoteBody('');
     }
-  }, [open]);
+  }, [open, initialView]);
 
   if (!lessonPlan) return null;
 
