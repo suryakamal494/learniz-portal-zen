@@ -232,8 +232,24 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                 <div className="px-5 pb-5 pt-3 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lesson plans</p>
-                    {(onCreateLessonPlan || onAddFromLibrary) && (
+                    {(onCreateLessonPlan || onAddFromLibrary || onAddStudyNote) && (
                       <div className="flex flex-wrap items-center gap-2">
+                        {studyNoteCount > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {studyNoteCount} study note{studyNoteCount === 1 ? '' : 's'} shared
+                          </span>
+                        )}
+                        {onAddStudyNote && (
+                          <button
+                            type="button"
+                            onClick={() => onAddStudyNote(chapter.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                          >
+                            <NotebookPen className="h-3.5 w-3.5" />
+                            Add study notes
+                          </button>
+                        )}
                         {onAddFromLibrary && (
                           <button
                             type="button"
