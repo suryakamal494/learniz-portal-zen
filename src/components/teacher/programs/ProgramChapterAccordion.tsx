@@ -256,6 +256,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                         key={lp.id}
                         lessonPlan={lp}
                         onPreview={() => onPreview(lp.id)}
+                        onEdit={onEditLessonPlan ? () => onEditLessonPlan(lp.id) : undefined}
                         usedInTopics={lpToTopics.get(lp.id) ?? []}
                       />
                     ))
