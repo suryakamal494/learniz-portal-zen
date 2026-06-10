@@ -443,6 +443,7 @@ function ChapterListSection({
                 onCreateLessonPlan={onCreateLessonPlan}
                 onAddFromLibrary={onAddFromLibrary}
                 onEditLessonPlan={onEditLessonPlan}
+                onAddMaterial={onAddMaterial}
               />
             </div>
           ))}
