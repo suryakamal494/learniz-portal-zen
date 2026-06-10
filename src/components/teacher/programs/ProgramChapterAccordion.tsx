@@ -16,6 +16,8 @@ interface Props {
   onAddFromLibrary?: (chapterId: string) => void;
   onEditLessonPlan?: (lessonPlanId: string) => void;
   onAddMaterial?: (lessonPlanId: string) => void;
+  onAddStudyNote?: (chapterId: string) => void;
+  studyNoteCount?: number;
 }
 
 function formatDateRange(start?: string, end?: string): string | null {
