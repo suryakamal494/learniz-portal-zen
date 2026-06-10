@@ -14,6 +14,7 @@ interface Props {
   onTopicStatusChange?: (topicId: string, status: TopicStatus) => void;
   onCreateLessonPlan?: (chapterId: string) => void;
   onAddFromLibrary?: (chapterId: string) => void;
+  onEditLessonPlan?: (lessonPlanId: string) => void;
 }
 
 function formatDateRange(start?: string, end?: string): string | null {
