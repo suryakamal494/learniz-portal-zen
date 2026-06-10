@@ -162,6 +162,8 @@ export function getStatusOverview(program: Program, today: Date = new Date()) {
   let chaptersBehind = 0;
   let plannedHrs = 0;
   let spentHrs = 0;
+  let periodsBehind = 0;
+  const todayMs = startOfDay(today).getTime();
 
   for (const s of program.subjects) {
     for (const ch of s.chapters) {
@@ -169,10 +171,15 @@ export function getStatusOverview(program: Program, today: Date = new Date()) {
         plannedHrs += t.plannedHours;
         if (t.status === 'done') spentHrs += t.plannedHours;
         else if (t.status === 'in-progress') spentHrs += t.plannedHours * 0.5;
+
+        // Overdue topic = not done and planned end date is in the past.
+        if (t.status !== 'done') {
+          const endMs = parseISODate(t.plannedEndDate).getTime();
+          if (endMs < todayMs) periodsBehind += t.plannedHours;
+        }
       }
       const delta = getScheduleDeltaForChapter(ch, today);
       if (delta.state === 'behind') chaptersBehind += 1;
-      // A chapter is "in progress" whenever at least one topic is started but not all done.
       const topics = ch.topics ?? [];
       const hasStarted = topics.some((t) => t.status === 'in-progress' || t.status === 'done');
       const allDone = topics.length > 0 && topics.every((t) => t.status === 'done');
@@ -187,6 +194,7 @@ export function getStatusOverview(program: Program, today: Date = new Date()) {
     spentHrs,
     chaptersInProgress,
     chaptersBehind,
+    periodsBehind: Math.round(periodsBehind),
   };
 }
 
