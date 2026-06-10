@@ -1,54 +1,89 @@
-## Goal
-Add two action buttons at the bottom of every chapter's lesson-plan list in the Batch Programs page:
-1. **Create lesson plan** — navigates to the existing content-creation page.
-2. **Add** — opens an inline library modal so the teacher can pick existing content and attach it to the chapter.
+# Plan — Programs page: simpler status strip + inline lesson plan / material creation
 
-## Why
-Teachers currently see only the pre-built lesson plans inside a chapter. They need a way to inject their own material — either by creating brand-new content or by pulling from the existing Material Library.
+## A. "Where you stand" strip cleanup
 
-## Files to change
+In `src/components/teacher/programs/StatusOverviewStrip.tsx`:
 
-### 1. `src/components/teacher/programs/ProgramChapterAccordion.tsx`
-- Add two optional callback props: `onCreateLessonPlan?` and `onAddFromLibrary?`.
-- At the bottom of the lesson-plans list (after the last `LessonPlanCard` or the empty-state message) render a right-aligned row with two small buttons:
-  - **"Create lesson plan"** — primary/outline style, calls `onCreateLessonPlan`.
-  - **"Add"** — outline style, calls `onAddFromLibrary`.
-- Keep styling consistent with the rest of the card: subtle borders, small text, no large padding.
+1. **Remove** the "Syllabus completed (%)" tile — teachers find percentages opaque.
+2. **Remove** the "Chapters in progress" tile — a section only ever has one in-progress chapter at a time, so the number is meaningless.
+3. **Replace** "Behind schedule: 4" with **"Periods behind: N"**, where N = total planned periods (1 period ≈ 1 planned hour, rounded) for all not-yet-done topics whose `plannedEndDate` is before today. Label reads e.g. `3 periods` (singular `1 period`).
+4. **Keep** the "Last status update" tile unchanged.
+5. Drop the trailing `Total: 31h taught of 214h planned` line (it duplicates the removed % tile).
 
-### 2. `src/pages/teacher/batches/BatchProgramsPage.tsx`
-- Add local state to track which chapter has the "Add" modal open (`addModalChapterId: string | null`).
-- Add local state to store lesson plans that were "added" from the library (`addedLessonPlans: Record<string, ProgramLessonPlan[]>` keyed by `chapterId`).
-- Merge `addedLessonPlans` into the computed `program` object (similar to how `statusOverrides` is merged) so the new plans appear in the accordion.
-- Pass the two new callbacks into `ChapterListSection`, and from there into each `ProgramChapterAccordion`.
-- `onCreateLessonPlan` → `navigate('/teacher/lms/content/create')`.
-- `onAddFromLibrary` → set `addModalChapterId`.
-- Render `<AddLessonPlanModal />` at the page level, controlled by `addModalChapterId`.
+Resulting strip = 2 tiles: **Periods behind** · **Last status update**. Use `grid-cols-1 sm:grid-cols-2` and keep the existing `MetricWithMeaning` "what it means / how it's calculated / next step" tooltip pattern.
 
-### 3. New file: `src/components/teacher/programs/AddLessonPlanModal.tsx`
-- A `Dialog` (shadcn/ui) that shows a searchable list of items from `mockLMSContent`.
-- Each row shows: content title, type badge, subject, chapter, topic.
-- Multi-select via checkboxes.
-- "Add selected" button converts each selected `LMSContentItem` into a `ProgramLessonPlan` (minimal mapping: title, hoursPlanned = 1, status = 'not-started', empty contents array) and calls an `onAdd` callback with the list.
-- Cancel / close buttons.
-- Empty state when no items match the search.
+In `src/utils/programSchedule.ts`, extend `getStatusOverview` to also return `periodsBehind: number` (sum of `plannedHours` of overdue, not-`done` topics, rounded). Leave the existing fields alone so nothing else breaks.
 
-## Data flow diagram
-````text
-BatchProgramsPage
-  ├─ ChapterListSection
-  │   └─ ProgramChapterAccordion (per chapter)
-  │        └─ [Buttons] Create lesson plan  |  Add
-  │
-  └─ AddLessonPlanModal (controlled by addModalChapterId)
-       └─ picks from mockLMSContent → returns ProgramLessonPlan[]
-            → BatchProgramsPage appends to addedLessonPlans[chapterId]
-````
+## B. Inline lesson plan creation (no page redirect)
 
-## Edge cases handled
-- Chapter has zero lesson plans: buttons still appear below the "No lesson plans yet" empty message.
-- Teacher closes modal without selecting anything: no state change.
-- Added plans are merged into the computed program so chapter %, topic counts, and schedule pills update automatically.
-- Buttons are hidden when `onCreateLessonPlan` / `onAddFromLibrary` are not provided (backward-compatible).
+Today, "Create lesson plan" navigates to `/teacher/lms/content/create`. Replace that with an inline dialog so teachers stay on the Programs page.
 
-## No backend changes
-Everything is client-side using existing mock data and local React state.
+### B1. New component `CreateLessonPlanInlineModal.tsx`
+
+A small Dialog with:
+- **Read-only context chips** (auto-filled from the chapter the user clicked from): Institute · Class · Subject · Chapter. No dropdowns — these are already known.
+- **Title input** (required, single field).
+- **Create button** → calls `onCreate({ chapterId, title })` and closes.
+
+It returns a new `ProgramLessonPlan` with:
+- `id: 'lp-teacher-' + uuid`
+- `summary: 'Created by you'`
+- `contents: []` (blank — material added later)
+- `status: 'not-started'`, `hoursPlanned/Spent: 0`
+- A new `createdBy: 'teacher' | 'admin'` flag (added to `ProgramLessonPlan` in `src/types/program.ts`; existing plans treated as `'admin'`).
+
+### B2. Wire into `BatchProgramsPage.tsx`
+
+- Replace the existing `onCreateLessonPlan={() => navigate(...)}` with `setCreateModalChapterId(chapter.id)`.
+- Render `<CreateLessonPlanInlineModal>` and on submit push the new plan into the same `addedLessonPlans[chapterId]` map already used by "Add from library".
+- No routing change. No new page.
+
+### B3. "Created by you" badge
+
+In `src/components/teacher/programs/LessonPlanCard.tsx`, when `lessonPlan.createdBy === 'teacher'`, render a small pill next to the title: `Created by you` (indigo/blue tint). Admin-created plans show no pill (the default).
+
+For teacher-created plans, also add an **Edit** icon button next to Preview that opens the same create-modal in "edit title" mode.
+
+## C. Inline material creation inside the preview modal
+
+Today `LessonPlanPreviewModal` only lists existing contents. Change it so the teacher can add material **without leaving the page**, using a two-state pattern inside the **same** dialog (no stacked dialogs — keeps it light).
+
+### C1. Update `LessonPlanPreviewModal.tsx`
+
+Add a local `view: 'list' | 'add'` state.
+
+- **List view (default):**
+  - Header keeps title + summary.
+  - Add an **`+ Add material`** button at the top-right of the contents header (only shown when the plan is `createdBy === 'teacher'` — admin plans stay read-only; can be opened up later).
+  - Lists existing `lessonPlan.contents` as today.
+
+- **Add view (in-place, replaces list inside the same dialog body):**
+  - Back arrow → returns to list.
+  - Read-only context chips (Institute · Class · Subject · Chapter · Lesson plan) — same auto-fill pattern as B1.
+  - **Title** input (required).
+  - **Type** select: `pdf | video | ppt | note | html` (reuse `LessonPlanContentType`).
+  - **File upload** (`<input type="file">`) OR **URL** input depending on type. For the mock data app, store the file name / URL in `content.url` and skip real upload.
+  - **Save** → appends a new `LessonPlanContent` to the lesson plan's `contents`, switches `view` back to `'list'`, and surfaces a toast.
+
+### C2. Where the new content lives
+
+`BatchProgramsPage` owns lesson-plan state via `addedLessonPlans`. Lift a new `lessonPlanContents` override map: `Record<lessonPlanId, LessonPlanContent[]>`, merged into the computed `program` the same way `addedLessonPlans` is. `LessonPlanPreviewModal` receives an `onAddContent(lessonPlanId, content)` callback that updates this map.
+
+## D. Why this stays uncluttered
+
+- One inline dialog for "Create lesson plan" (title only — no filters, because the chapter context already disambiguates).
+- One dialog for the lesson plan itself, with an internal `list ⇄ add` swap for adding material. Never two dialogs open at once.
+- Admin plans remain read-only by default; teacher plans get the inline edit / add-material affordances. Visual badge keeps the two clearly distinguishable.
+- No routing changes — everything happens on `/teacher/batches/:id/programs`.
+
+## Files touched
+
+- `src/utils/programSchedule.ts` — add `periodsBehind` to `getStatusOverview`.
+- `src/components/teacher/programs/StatusOverviewStrip.tsx` — drop 2 tiles, swap "Behind schedule" → "Periods behind", drop totals footer.
+- `src/types/program.ts` — add optional `createdBy?: 'admin' | 'teacher'` to `ProgramLessonPlan`.
+- `src/components/teacher/programs/CreateLessonPlanInlineModal.tsx` — **new**.
+- `src/components/teacher/programs/LessonPlanCard.tsx` — "Created by you" pill + Edit button for teacher plans.
+- `src/components/teacher/programs/LessonPlanPreviewModal.tsx` — internal list/add view + `onAddContent` prop.
+- `src/pages/teacher/batches/BatchProgramsPage.tsx` — wire create modal, edit modal, content overrides; remove `navigate('/teacher/lms/content/create')`.
+
+No backend changes; everything stays in-memory like the current `addedLessonPlans` map.

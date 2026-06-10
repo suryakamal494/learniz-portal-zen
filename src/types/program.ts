@@ -20,6 +20,8 @@ export interface ProgramLessonPlan {
   hoursPlanned: number;
   hoursSpent: number;
   lastTaughtDate?: string;
+  /** Source of this lesson plan — admin-provisioned (default) or teacher-created inline. */
+  createdBy?: 'admin' | 'teacher';
 }
 
 export type TopicStatus = 'not-started' | 'in-progress' | 'done';

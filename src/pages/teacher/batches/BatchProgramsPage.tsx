@@ -7,13 +7,13 @@ import { getProgramByBatchId } from '@/data/mockPrograms';
 import { ProgramSubjectTabs } from '@/components/teacher/programs/ProgramSubjectTabs';
 import { ProgramChapterAccordion } from '@/components/teacher/programs/ProgramChapterAccordion';
 import { LessonPlanPreviewModal } from '@/components/teacher/programs/LessonPlanPreviewModal';
-// ThisWeekCard removed — current chapter is highlighted directly in the chapter list.
 import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOverviewStrip';
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter, getTodayFocus } from '@/utils/programSchedule';
-import { Program, ProgramChapter, ProgramLessonPlan, TopicStatus } from '@/types/program';
+import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus } from '@/types/program';
 import { AddLessonPlanModal } from '@/components/teacher/programs/AddLessonPlanModal';
+import { CreateLessonPlanInlineModal } from '@/components/teacher/programs/CreateLessonPlanInlineModal';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
@@ -23,36 +23,50 @@ export default function BatchProgramsPage() {
   const batch = mockBatches.find((b) => b.id === batchId);
   const baseProgram = batchId ? getProgramByBatchId(batchId) : undefined;
 
-  // In-session topic-status overrides — toggled by Today's focus + (later) chapter rows.
+  // In-session overrides
   const [statusOverrides, setStatusOverrides] = useState<Record<string, { status: TopicStatus; lastUpdatedAt: string }>>({});
   const [addedLessonPlans, setAddedLessonPlans] = useState<Record<string, ProgramLessonPlan[]>>({});
+  const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>({});
+  const [contentOverrides, setContentOverrides] = useState<Record<string, LessonPlanContent[]>>({});
+
+  // Modal state
   const [addModalChapterId, setAddModalChapterId] = useState<string | null>(null);
+  const [createModalChapterId, setCreateModalChapterId] = useState<string | null>(null);
+  const [editLessonPlanId, setEditLessonPlanId] = useState<string | null>(null);
+  const [previewLpId, setPreviewLpId] = useState<string | null>(null);
 
   const program: Program | undefined = useMemo(() => {
     if (!baseProgram) return undefined;
-    const hasOverrides = Object.keys(statusOverrides).length > 0;
-    const hasAdded = Object.keys(addedLessonPlans).length > 0;
-    if (!hasOverrides && !hasAdded) return baseProgram;
     return {
       ...baseProgram,
-      subjects: baseProgram.subjects.map(s => ({
+      subjects: baseProgram.subjects.map((s) => ({
         ...s,
-        chapters: s.chapters.map(ch => ({
-          ...ch,
-          lessonPlans: addedLessonPlans[ch.id]
-            ? [...ch.lessonPlans, ...addedLessonPlans[ch.id]]
-            : ch.lessonPlans,
-          topics: ch.topics?.map(t => {
-            const o = statusOverrides[t.id];
-            return o ? { ...t, status: o.status, lastUpdatedAt: o.lastUpdatedAt } : t;
-          }),
-        })),
+        chapters: s.chapters.map((ch) => {
+          const merged: ProgramLessonPlan[] = [
+            ...ch.lessonPlans,
+            ...(addedLessonPlans[ch.id] ?? []),
+          ].map((lp) => ({
+            ...lp,
+            title: titleOverrides[lp.id] ?? lp.title,
+            contents: contentOverrides[lp.id]
+              ? [...lp.contents, ...contentOverrides[lp.id]]
+              : lp.contents,
+          }));
+          return {
+            ...ch,
+            lessonPlans: merged,
+            topics: ch.topics?.map((t) => {
+              const o = statusOverrides[t.id];
+              return o ? { ...t, status: o.status, lastUpdatedAt: o.lastUpdatedAt } : t;
+            }),
+          };
+        }),
       })),
     };
-  }, [baseProgram, statusOverrides, addedLessonPlans]);
+  }, [baseProgram, statusOverrides, addedLessonPlans, titleOverrides, contentOverrides]);
 
   const handleTopicStatus = (topicId: string, status: TopicStatus) => {
-    setStatusOverrides(prev => ({
+    setStatusOverrides((prev) => ({
       ...prev,
       [topicId]: { status, lastUpdatedAt: new Date().toISOString() },
     }));
@@ -61,29 +75,23 @@ export default function BatchProgramsPage() {
   const [activeSubjectId, setActiveSubjectId] = useState<string | undefined>(
     program?.subjects[0]?.id,
   );
-  const [previewLpId, setPreviewLpId] = useState<string | null>(null);
   const [staleDismissed, setStaleDismissed] = useState(false);
   const [filter, setFilter] = useState<ChapterFilter>('all');
 
-  // Voice-nav: pre-select subject tab from ?subject=<slug>
   useEffect(() => {
     const subjSlug = searchParams.get('subject');
     if (!subjSlug || !program) return;
     const name = getSubjectById(subjSlug)?.name?.toLowerCase();
     if (!name) return;
-    const match = program.subjects.find(s => s.name.toLowerCase() === name);
+    const match = program.subjects.find((s) => s.name.toLowerCase() === name);
     if (match) setActiveSubjectId(match.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [program]);
 
-  // Deep-link via hash:
-  //   #progress  → scroll to "Where you stand" strip (legacy /progress route)
-  //   #chapter-<id> → scroll to a specific chapter (voice "currently teaching")
   useEffect(() => {
     const h = location.hash;
     if (!h) return;
     const id = h.startsWith('#') ? h.slice(1) : h;
-    // Wait for accordion render + subject-tab switch to settle.
     const t = setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
@@ -95,17 +103,29 @@ export default function BatchProgramsPage() {
     [program, activeSubjectId],
   );
 
-  const previewLp = useMemo(() => {
-    if (!previewLpId || !program) return null;
+  // Locate any lesson plan + its chapter/subject (used for modal context).
+  const findPlanContext = (lpId: string | null) => {
+    if (!lpId || !program) return null;
     for (const s of program.subjects) {
       for (const ch of s.chapters) {
-        for (const lp of ch.lessonPlans) {
-          if (lp.id === previewLpId) return lp;
-        }
+        const lp = ch.lessonPlans.find((p) => p.id === lpId);
+        if (lp) return { plan: lp, chapter: ch, subject: s };
       }
     }
     return null;
-  }, [previewLpId, program]);
+  };
+
+  const previewCtx = findPlanContext(previewLpId);
+  const editCtx = findPlanContext(editLessonPlanId);
+
+  const createChapter = useMemo(() => {
+    if (!createModalChapterId || !program) return null;
+    for (const s of program.subjects) {
+      const ch = s.chapters.find((c) => c.id === createModalChapterId);
+      if (ch) return { chapter: ch, subject: s };
+    }
+    return null;
+  }, [createModalChapterId, program]);
 
   const staleInfo = useMemo(() => (program ? getStaleStatusInfo(program) : null), [program]);
 
@@ -121,6 +141,11 @@ export default function BatchProgramsPage() {
       </div>
     );
   }
+
+  const baseCtx = {
+    institute: 'Learniz Institute',
+    className: batch.class,
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -145,7 +170,6 @@ export default function BatchProgramsPage() {
           <span className="text-gray-900 font-medium">Program</span>
         </div>
 
-        {/* Stale-status alert — nudges teachers to keep their schedule view accurate */}
         {program && staleInfo?.isStale && !staleDismissed && (
           <div
             role="alert"
@@ -160,8 +184,8 @@ export default function BatchProgramsPage() {
               </p>
               <p className="text-xs text-amber-800 mt-0.5">
                 {staleInfo.daysSinceLastUpdate === null
-                  ? `Mark a topic as you start teaching so "Behind schedule" stays accurate (we nudge after ${SCHEDULE_STALE_DAYS} days of silence).`
-                  : `Mark the topics you've taught — "Today's focus" and "Behind schedule" rely on these updates.`}
+                  ? `Mark a topic as you start teaching so "Periods behind" stays accurate (we nudge after ${SCHEDULE_STALE_DAYS} days of silence).`
+                  : `Mark the topics you've taught — "Today's focus" and "Periods behind" rely on these updates.`}
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -186,7 +210,6 @@ export default function BatchProgramsPage() {
           </div>
         )}
 
-        {/* Header — no cross-link button; one unified page now */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
@@ -225,17 +248,18 @@ export default function BatchProgramsPage() {
                 onFilterChange={setFilter}
                 onPreview={(id) => setPreviewLpId(id)}
                 onTopicStatusChange={handleTopicStatus}
-                onCreateLessonPlan={() => navigate('/teacher/lms/content/create')}
+                onCreateLessonPlan={(chapterId) => setCreateModalChapterId(chapterId)}
                 onAddFromLibrary={(chapterId) => setAddModalChapterId(chapterId)}
+                onEditLessonPlan={(lpId) => setEditLessonPlanId(lpId)}
                 focusChapterId={(() => {
                   const todayIso = new Date().toISOString().slice(0, 10);
                   const chapters = activeSubject.chapters;
-                  const current = chapters.find(ch =>
-                    (ch.topics ?? []).some(t => t.plannedStartDate <= todayIso && todayIso <= t.plannedEndDate)
+                  const current = chapters.find((ch) =>
+                    (ch.topics ?? []).some((t) => t.plannedStartDate <= todayIso && todayIso <= t.plannedEndDate)
                   );
                   if (current) return current.id;
                   const upcoming = [...chapters]
-                    .filter(ch => (ch.plannedStartDate ?? '') > todayIso)
+                    .filter((ch) => (ch.plannedStartDate ?? '') > todayIso)
                     .sort((a, b) => (a.plannedStartDate ?? '').localeCompare(b.plannedStartDate ?? ''))[0];
                   return upcoming?.id;
                 })()}
@@ -246,9 +270,20 @@ export default function BatchProgramsPage() {
       </div>
 
       <LessonPlanPreviewModal
-        open={!!previewLp}
+        open={!!previewCtx}
         onClose={() => setPreviewLpId(null)}
-        lessonPlan={previewLp}
+        lessonPlan={previewCtx?.plan ?? null}
+        context={{
+          ...baseCtx,
+          subjectName: previewCtx?.subject.name,
+          chapterName: previewCtx?.chapter.name,
+        }}
+        onAddContent={(lessonPlanId, content) => {
+          setContentOverrides((prev) => ({
+            ...prev,
+            [lessonPlanId]: [...(prev[lessonPlanId] ?? []), content],
+          }));
+        }}
       />
 
       <AddLessonPlanModal
@@ -262,11 +297,55 @@ export default function BatchProgramsPage() {
           }));
         }}
       />
+
+      <CreateLessonPlanInlineModal
+        open={!!createChapter}
+        onClose={() => setCreateModalChapterId(null)}
+        context={{
+          ...baseCtx,
+          subjectName: createChapter?.subject.name,
+          chapterName: createChapter?.chapter.name,
+        }}
+        onSubmit={(title) => {
+          if (!createModalChapterId) return;
+          const plan: ProgramLessonPlan = {
+            id: `lp-teacher-${Date.now()}`,
+            title,
+            summary: 'Created by you',
+            contents: [],
+            status: 'not-started',
+            hoursPlanned: 0,
+            hoursSpent: 0,
+            createdBy: 'teacher',
+          };
+          setAddedLessonPlans((prev) => ({
+            ...prev,
+            [createModalChapterId]: [...(prev[createModalChapterId] ?? []), plan],
+          }));
+          // Open preview right away so the teacher can immediately add material.
+          setPreviewLpId(plan.id);
+        }}
+      />
+
+      <CreateLessonPlanInlineModal
+        open={!!editCtx}
+        mode="edit"
+        onClose={() => setEditLessonPlanId(null)}
+        context={{
+          ...baseCtx,
+          subjectName: editCtx?.subject.name,
+          chapterName: editCtx?.chapter.name,
+        }}
+        initialTitle={editCtx?.plan.title ?? ''}
+        onSubmit={(title) => {
+          if (!editLessonPlanId) return;
+          setTitleOverrides((prev) => ({ ...prev, [editLessonPlanId]: title }));
+        }}
+      />
     </div>
   );
 }
 
-// ─── Chapter list (sorted by planned start, with filter bar) ───
 interface ChapterListSectionProps {
   chapters: ProgramChapter[];
   filter: ChapterFilter;
@@ -275,13 +354,23 @@ interface ChapterListSectionProps {
   onTopicStatusChange: (topicId: string, status: TopicStatus) => void;
   onCreateLessonPlan?: (chapterId: string) => void;
   onAddFromLibrary?: (chapterId: string) => void;
+  onEditLessonPlan?: (lessonPlanId: string) => void;
   focusChapterId?: string;
 }
 
-function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, focusChapterId }: ChapterListSectionProps) {
+function ChapterListSection({
+  chapters,
+  filter,
+  onFilterChange,
+  onPreview,
+  onTopicStatusChange,
+  onCreateLessonPlan,
+  onAddFromLibrary,
+  onEditLessonPlan,
+  focusChapterId,
+}: ChapterListSectionProps) {
   const today = new Date();
 
-  // Sort by first topic start date (chapters without dates fall to the end).
   const sorted = useMemo(() => {
     const withMeta = chapters.map((ch) => {
       const startIso = ch.topics?.[0]?.plannedStartDate ?? ch.plannedStartDate ?? '9999-12-31';
@@ -293,7 +382,6 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapters]);
 
-  // Bucket each chapter for filter counts.
   const bucketOf = (state: ReturnType<typeof getScheduleDeltaForChapter>['state'], hasInProgressTopic: boolean): ChapterFilter[] => {
     const out: ChapterFilter[] = ['all'];
     if (state === 'behind') out.push('behind');
@@ -315,8 +403,6 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
     return bucketOf(delta.state, hasIP).includes(filter);
   });
 
-  // On mount (or when the focus chapter changes), scroll the currently-teaching
-  // chapter into view so the teacher lands at "where I am" instead of May.
   useEffect(() => {
     if (!focusChapterId) return;
     const id = `chapter-${focusChapterId}`;
@@ -351,6 +437,7 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
                 onTopicStatusChange={onTopicStatusChange}
                 onCreateLessonPlan={onCreateLessonPlan}
                 onAddFromLibrary={onAddFromLibrary}
+                onEditLessonPlan={onEditLessonPlan}
               />
             </div>
           ))}
@@ -359,5 +446,3 @@ function ChapterListSection({ chapters, filter, onFilterChange, onPreview, onTop
     </div>
   );
 }
-
-
