@@ -37,6 +37,9 @@ export default function BatchProgramsPage() {
   const [editLessonPlanId, setEditLessonPlanId] = useState<string | null>(null);
   const [previewLpId, setPreviewLpId] = useState<string | null>(null);
   const [addMaterialLpId, setAddMaterialLpId] = useState<string | null>(null);
+  const [addNotesChapterId, setAddNotesChapterId] = useState<string | null>(null);
+  const [studyNotes, setStudyNotes] = useState<Record<string, ChapterStudyNote[]>>({});
+  const { toast } = useToast();
 
   const program: Program | undefined = useMemo(() => {
     if (!baseProgram) return undefined;
