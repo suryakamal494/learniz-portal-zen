@@ -376,6 +376,8 @@ interface ChapterListSectionProps {
   onAddFromLibrary?: (chapterId: string) => void;
   onEditLessonPlan?: (lessonPlanId: string) => void;
   onAddMaterial?: (lessonPlanId: string) => void;
+  onAddStudyNote?: (chapterId: string) => void;
+  studyNoteCounts?: Record<string, number>;
   focusChapterId?: string;
 }
 
@@ -389,6 +391,8 @@ function ChapterListSection({
   onAddFromLibrary,
   onEditLessonPlan,
   onAddMaterial,
+  onAddStudyNote,
+  studyNoteCounts,
   focusChapterId,
 }: ChapterListSectionProps) {
   const today = new Date();
