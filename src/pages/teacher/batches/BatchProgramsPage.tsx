@@ -253,6 +253,7 @@ export default function BatchProgramsPage() {
                 onCreateLessonPlan={(chapterId) => setCreateModalChapterId(chapterId)}
                 onAddFromLibrary={(chapterId) => setAddModalChapterId(chapterId)}
                 onEditLessonPlan={(lpId) => setEditLessonPlanId(lpId)}
+                onAddMaterial={(lpId) => setAddMaterialLpId(lpId)}
                 focusChapterId={(() => {
                   const todayIso = new Date().toISOString().slice(0, 10);
                   const chapters = activeSubject.chapters;
