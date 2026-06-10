@@ -465,6 +465,8 @@ function ChapterListSection({
                 onAddFromLibrary={onAddFromLibrary}
                 onEditLessonPlan={onEditLessonPlan}
                 onAddMaterial={onAddMaterial}
+                onAddStudyNote={onAddStudyNote}
+                studyNoteCount={studyNoteCounts?.[ch.id] ?? 0}
               />
             </div>
           ))}
