@@ -46,7 +46,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
