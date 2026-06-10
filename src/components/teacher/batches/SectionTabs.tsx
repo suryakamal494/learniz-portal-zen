@@ -1,11 +1,15 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Batch, BatchStudent } from '@/types/batch'
 import { mockBatchStudents } from '@/data/mockBatchStudents'
+import { getSectionAssessments } from '@/data/mockSectionAssessments'
 import { getInitials, metricTone } from './sectionTheme'
 import { Users, BookOpen, FileText, ClipboardList, ArrowRight } from 'lucide-react'
+import { ChapterAssessmentMatrix } from './reports/ChapterAssessmentMatrix'
+import { ChapterExamsDrawer } from './reports/ChapterExamsDrawer'
+import { RecentAttendanceList } from './attendance/RecentAttendanceList'
 
 interface Props {
   batch: Batch
@@ -16,6 +20,13 @@ interface Props {
 export function SectionTabs({ batch, attendancePct, counts }: Props) {
   const navigate = useNavigate()
   const students: BatchStudent[] = mockBatchStudents.slice(0, batch.currentStudents)
+
+  const { rollups, examsByChapter } = useMemo(
+    () => getSectionAssessments(batch.id),
+    [batch.id],
+  )
+  const [drawerChapterId, setDrawerChapterId] = useState<string | null>(null)
+  const drawerChapter = rollups.find((r) => r.chapterId === drawerChapterId)
 
   return (
     <Tabs defaultValue="students" className="w-full">
@@ -79,30 +90,49 @@ export function SectionTabs({ batch, attendancePct, counts }: Props) {
 
       {/* Reports */}
       <TabsContent value="reports" className="mt-4">
-        <SummaryPanel
-          title="Assessment performance for this section"
-          headline={`${Math.max(40, 100 - Math.round(attendancePct / 2))}% average score`}
-          meaning="A section-level summary of how students are performing across assigned assessments."
-          ctaLabel="Open detailed reports"
-          onCta={() => navigate('/teacher/reports/batch-reports')}
+        <Tabs defaultValue="assessments" className="w-full">
+          <TabsList className="bg-gray-100 rounded-lg p-1 h-auto mb-4">
+            <TabsTrigger
+              value="assessments"
+              className="data-[state=active]:bg-white data-[state=active]:text-blue-700 rounded-md px-3 py-1.5 text-sm"
+            >
+              Assessments
+            </TabsTrigger>
+            <TabsTrigger
+              value="performance"
+              className="data-[state=active]:bg-white data-[state=active]:text-blue-700 rounded-md px-3 py-1.5 text-sm"
+            >
+              Performance
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="assessments" className="mt-0">
+            <ChapterAssessmentMatrix
+              rollups={rollups}
+              onOpenChapterExams={(id) => setDrawerChapterId(id)}
+            />
+          </TabsContent>
+          <TabsContent value="performance" className="mt-0">
+            <SummaryPanel
+              title="Assessment performance for this section"
+              headline={`${Math.max(40, 100 - Math.round(attendancePct / 2))}% average score`}
+              meaning="A section-level summary of how students are performing across assigned assessments."
+              ctaLabel="Open detailed reports"
+              onCta={() => navigate('/teacher/reports/batch-reports')}
+            />
+          </TabsContent>
+        </Tabs>
+
+        <ChapterExamsDrawer
+          open={drawerChapterId !== null}
+          onOpenChange={(v) => !v && setDrawerChapterId(null)}
+          chapterName={drawerChapter?.chapterName ?? ''}
+          exams={drawerChapterId ? examsByChapter[drawerChapterId] ?? [] : []}
         />
       </TabsContent>
 
       {/* Attendance */}
       <TabsContent value="attendance" className="mt-4">
-        <SummaryPanel
-          title="Attendance for this section"
-          headline={`${Math.round(attendancePct)}% present this month`}
-          meaning={
-            attendancePct >= 70
-              ? 'Healthy attendance. Keep reinforcing the routine.'
-              : attendancePct >= 40
-              ? 'Moderate — a few students are slipping. Worth a check-in.'
-              : 'Low attendance. Consider following up with families.'
-          }
-          ctaLabel="Open attendance"
-          onCta={() => navigate('/teacher/reports/attendance')}
-        />
+        <RecentAttendanceList batchId={batch.id} />
       </TabsContent>
 
       {/* Content */}
