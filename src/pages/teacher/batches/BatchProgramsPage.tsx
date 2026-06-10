@@ -11,9 +11,11 @@ import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOvervie
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter, getTodayFocus } from '@/utils/programSchedule';
-import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus } from '@/types/program';
+import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus, ChapterStudyNote } from '@/types/program';
 import { AddLessonPlanModal } from '@/components/teacher/programs/AddLessonPlanModal';
 import { CreateLessonPlanInlineModal } from '@/components/teacher/programs/CreateLessonPlanInlineModal';
+import { AddStudyNoteModal } from '@/components/teacher/programs/AddStudyNoteModal';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BatchProgramsPage() {
   const { batchId } = useParams<{ batchId: string }>();
