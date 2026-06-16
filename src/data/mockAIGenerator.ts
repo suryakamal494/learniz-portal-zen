@@ -204,7 +204,18 @@ export function generateMockQuestions(
       selected: true,
       chapter: chapterName,
       topic,
+      originalDifficulty: difficulty,
+      originalCategory: category,
+      originalTopic: topic,
     })
   }
   return out
+}
+
+export function getTopicsForChapter(chapterName: string): string[] {
+  for (const s of SUBJECT_OPTIONS) {
+    const c = s.chapters.find((c) => c.name === chapterName)
+    if (c) return c.topics
+  }
+  return []
 }

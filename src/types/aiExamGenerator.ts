@@ -44,9 +44,13 @@ export interface GeneratedQuestion {
   selected: boolean
   chapter: string
   topic: string
+  originalDifficulty?: DifficultyLevel
+  originalCategory?: string
+  originalTopic?: string
 }
 
 export interface AIQuestionBatch {
+  isSample?: boolean
   id: string
   index: number
   createdAt: string
