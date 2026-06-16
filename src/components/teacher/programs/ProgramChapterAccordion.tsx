@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion } from 'lucide-react';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion, CalendarDays, BookOpen, ClipboardList } from 'lucide-react';
 import { ProgramChapter, TopicStatus, ChapterTest } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
@@ -182,24 +182,27 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
 
             return (
               <Tabs defaultValue="lesson-plans" className="px-5 py-4">
-                <TabsList className="bg-gray-100/80 border border-gray-200 p-1 h-auto rounded-xl">
+                <TabsList className="bg-slate-200 border border-slate-300 p-1.5 h-auto rounded-xl shadow-sm">
                   <TabsTrigger
                     value="schedule"
-                    className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-200/50 transition-all"
+                    className="text-xs font-semibold px-4 py-2 rounded-lg gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:text-slate-900 data-[state=inactive]:hover:bg-slate-300/60 transition-all"
                   >
-                    Schedule <span className="ml-1.5 text-[10px] opacity-80">{topics.length}</span>
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Schedule <span className="ml-1 text-[10px] opacity-80 font-bold">{topics.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="lesson-plans"
-                    className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-200/50 transition-all"
+                    className="text-xs font-semibold px-4 py-2 rounded-lg gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:text-slate-900 data-[state=inactive]:hover:bg-slate-300/60 transition-all"
                   >
-                    Lesson plans <span className="ml-1.5 text-[10px] opacity-80">{chapter.lessonPlans.length}</span>
+                    <BookOpen className="h-3.5 w-3.5" />
+                    Lesson plans <span className="ml-1 text-[10px] opacity-80 font-bold">{chapter.lessonPlans.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="tests"
-                    className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-200/50 transition-all"
+                    className="text-xs font-semibold px-4 py-2 rounded-lg gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:text-slate-900 data-[state=inactive]:hover:bg-slate-300/60 transition-all"
                   >
-                    Tests <span className="ml-1.5 text-[10px] opacity-80">{tests.length}</span>
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Tests <span className="ml-1 text-[10px] opacity-80 font-bold">{tests.length}</span>
                   </TabsTrigger>
                 </TabsList>
 
