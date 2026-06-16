@@ -144,6 +144,60 @@ export default function BatchProgramsPage() {
 
   const staleInfo = useMemo(() => (program ? getStaleStatusInfo(program) : null), [program]);
 
+  const handleToggleTestEnabled = (testId: string) => {
+    setChapterTests((prev) => {
+      let chapterId: string | null = null;
+      let source: ChapterTest[] | null = null;
+      for (const [cid, arr] of Object.entries(prev)) {
+        if (arr.some((t) => t.id === testId)) { chapterId = cid; source = arr; break; }
+      }
+      if (!chapterId && program) {
+        for (const s of program.subjects) {
+          for (const ch of s.chapters) {
+            const seed = getChapterTests(ch.id);
+            if (seed.some((t) => t.id === testId)) { chapterId = ch.id; source = seed; break; }
+          }
+          if (chapterId) break;
+        }
+      }
+      if (!chapterId || !source) return prev;
+      return {
+        ...prev,
+        [chapterId]: source.map((t) => t.id === testId ? { ...t, enabledForStudents: !t.enabledForStudents } : t),
+      };
+    });
+  };
+
+  const handleAddTestsFromLibrary = (chapterId: string, picked: ChapterTest[]) => {
+    setChapterTests((prev) => ({
+      ...prev,
+      [chapterId]: [...(prev[chapterId] ?? getChapterTests(chapterId)), ...picked],
+    }));
+    toast({ title: `${picked.length} test${picked.length === 1 ? '' : 's'} added`, description: 'Now available for this chapter.' });
+  };
+
+  const handleCreateTest = (chapterId: string) => {
+    const ctx = findChapter(chapterId);
+    const params = new URLSearchParams();
+    params.set('chapterId', chapterId);
+    if (ctx?.subject.id) params.set('subjectId', ctx.subject.id);
+    if (batchId) params.set('batchId', batchId);
+    navigate(`/teacher/exams/ai-generator?${params.toString()}`);
+  };
+
+  const previewTest: ChapterTest | null = (() => {
+    if (!previewTestId || !program) return null;
+    for (const s of program.subjects) {
+      for (const ch of s.chapters) {
+        const arr = chapterTests[ch.id] ?? getChapterTests(ch.id);
+        const found = arr.find((t) => t.id === previewTestId);
+        if (found) return found;
+      }
+    }
+    return null;
+  })();
+
+
   if (!batch) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
