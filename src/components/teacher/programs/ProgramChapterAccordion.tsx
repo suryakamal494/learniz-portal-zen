@@ -182,15 +182,24 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
 
             return (
               <Tabs defaultValue="lesson-plans" className="px-5 py-4">
-                <TabsList className="bg-white border border-gray-200">
-                  <TabsTrigger value="schedule" className="text-xs">
-                    Schedule <span className="ml-1.5 text-[10px] text-gray-500">{topics.length}</span>
+                <TabsList className="bg-gray-100/80 border border-gray-200 p-1 h-auto rounded-xl">
+                  <TabsTrigger
+                    value="schedule"
+                    className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-200/50 transition-all"
+                  >
+                    Schedule <span className="ml-1.5 text-[10px] opacity-80">{topics.length}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="lesson-plans" className="text-xs">
-                    Lesson plans <span className="ml-1.5 text-[10px] text-gray-500">{chapter.lessonPlans.length}</span>
+                  <TabsTrigger
+                    value="lesson-plans"
+                    className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-200/50 transition-all"
+                  >
+                    Lesson plans <span className="ml-1.5 text-[10px] opacity-80">{chapter.lessonPlans.length}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="tests" className="text-xs">
-                    Tests <span className="ml-1.5 text-[10px] text-gray-500">{tests.length}</span>
+                  <TabsTrigger
+                    value="tests"
+                    className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-200/50 transition-all"
+                  >
+                    Tests <span className="ml-1.5 text-[10px] opacity-80">{tests.length}</span>
                   </TabsTrigger>
                 </TabsList>
 
