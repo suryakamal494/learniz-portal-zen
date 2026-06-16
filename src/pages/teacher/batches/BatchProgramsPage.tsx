@@ -453,6 +453,12 @@ export default function BatchProgramsPage() {
           toast({ title: 'Study note shared', description: `"${title}" is now shared with this chapter.` });
         }}
       />
+
+      <ChapterTestPreviewModal
+        open={!!previewTest}
+        onClose={() => setPreviewTestId(null)}
+        test={previewTest}
+      />
     </div>
   );
 }
