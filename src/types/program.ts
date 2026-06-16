@@ -6,6 +6,20 @@ export interface ChapterStudyNote {
   sharedAt: string;
 }
 
+export type ChapterTestSource = 'admin' | 'library' | 'created';
+
+export interface ChapterTest {
+  id: string;
+  chapterId: string;
+  title: string;
+  source: ChapterTestSource;
+  questionCount: number;
+  durationMinutes: number;
+  totalMarks: number;
+  enabledForStudents: boolean;
+  sharedAt: string;
+}
+
 export type LessonPlanContentType = 'ppt' | 'html' | 'video' | 'pdf' | 'note';
 
 export interface LessonPlanContent {
