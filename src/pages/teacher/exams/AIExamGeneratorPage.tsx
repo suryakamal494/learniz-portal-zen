@@ -48,6 +48,7 @@ import {
   SUBJECT_OPTIONS,
   QUESTION_CATEGORIES,
   generateMockQuestions,
+  getTopicsForChapter,
 } from '@/data/mockAIGenerator'
 import { mockInstructions } from '@/data/mockInstructions'
 import { mockExamsData } from '@/data/mockExamsData'
