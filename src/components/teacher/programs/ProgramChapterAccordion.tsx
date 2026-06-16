@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen } from 'lucide-react';
-import { ProgramChapter, TopicStatus } from '@/types/program';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion } from 'lucide-react';
+import { ProgramChapter, TopicStatus, ChapterTest } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LessonPlanCard } from './LessonPlanCard';
+import { ChapterTestsTab } from './ChapterTestsTab';
 
 interface Props {
   chapter: ProgramChapter;
@@ -18,6 +20,11 @@ interface Props {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCount?: number;
+  tests?: ChapterTest[];
+  onPreviewTest?: (testId: string) => void;
+  onToggleTestEnabled?: (testId: string) => void;
+  onAddTestsFromLibrary?: (chapterId: string, tests: ChapterTest[]) => void;
+  onCreateTest?: (chapterId: string) => void;
 }
 
 function formatDateRange(start?: string, end?: string): string | null {
@@ -49,7 +56,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0 }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
