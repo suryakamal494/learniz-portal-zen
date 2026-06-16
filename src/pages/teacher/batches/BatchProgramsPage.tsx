@@ -11,10 +11,12 @@ import { StatusOverviewStrip } from '@/components/teacher/programs/StatusOvervie
 import { ChapterScheduleFilters, ChapterFilter } from '@/components/teacher/programs/ChapterScheduleFilters';
 import { getSubjectById } from '@/lib/voiceCatalog';
 import { getStaleStatusInfo, SCHEDULE_STALE_DAYS, getScheduleDeltaForChapter, getTodayFocus } from '@/utils/programSchedule';
-import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus, ChapterStudyNote } from '@/types/program';
+import { Program, ProgramChapter, ProgramLessonPlan, LessonPlanContent, TopicStatus, ChapterStudyNote, ChapterTest } from '@/types/program';
 import { AddLessonPlanModal } from '@/components/teacher/programs/AddLessonPlanModal';
 import { CreateLessonPlanInlineModal } from '@/components/teacher/programs/CreateLessonPlanInlineModal';
 import { AddStudyNoteModal } from '@/components/teacher/programs/AddStudyNoteModal';
+import { ChapterTestPreviewModal } from '@/components/teacher/programs/ChapterTestPreviewModal';
+import { getChapterTests } from '@/data/mockChapterTests';
 import { useToast } from '@/hooks/use-toast';
 
 export default function BatchProgramsPage() {
@@ -39,7 +41,72 @@ export default function BatchProgramsPage() {
   const [addMaterialLpId, setAddMaterialLpId] = useState<string | null>(null);
   const [addNotesChapterId, setAddNotesChapterId] = useState<string | null>(null);
   const [studyNotes, setStudyNotes] = useState<Record<string, ChapterStudyNote[]>>({});
+  const [chapterTests, setChapterTests] = useState<Record<string, ChapterTest[]>>({});
+  const [previewTestId, setPreviewTestId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Initialise tests lazily per chapter from mock source.
+  const getTestsFor = (chapterId: string): ChapterTest[] => {
+    if (chapterTests[chapterId]) return chapterTests[chapterId];
+    return getChapterTests(chapterId);
+  };
+
+  const handleToggleTestEnabled = (testId: string) => {
+    setChapterTests((prev) => {
+      // Locate chapter
+      let chapterId: string | null = null;
+      let source: ChapterTest[] | null = null;
+      for (const [cid, arr] of Object.entries(prev)) {
+        if (arr.some((t) => t.id === testId)) { chapterId = cid; source = arr; break; }
+      }
+      if (!chapterId) {
+        // Not yet copied to state — find in mock
+        if (!program) return prev;
+        for (const s of program.subjects) {
+          for (const ch of s.chapters) {
+            const seed = getChapterTests(ch.id);
+            if (seed.some((t) => t.id === testId)) { chapterId = ch.id; source = seed; break; }
+          }
+          if (chapterId) break;
+        }
+      }
+      if (!chapterId || !source) return prev;
+      return {
+        ...prev,
+        [chapterId]: source.map((t) => t.id === testId ? { ...t, enabledForStudents: !t.enabledForStudents } : t),
+      };
+    });
+  };
+
+  const handleAddTestsFromLibrary = (chapterId: string, picked: ChapterTest[]) => {
+    setChapterTests((prev) => ({
+      ...prev,
+      [chapterId]: [...(prev[chapterId] ?? getChapterTests(chapterId)), ...picked],
+    }));
+    toast({ title: `${picked.length} test${picked.length === 1 ? '' : 's'} added`, description: 'Now available for this chapter.' });
+  };
+
+  const handleCreateTest = (chapterId: string) => {
+    const ctx = findChapter(chapterId);
+    const params = new URLSearchParams();
+    params.set('chapterId', chapterId);
+    if (ctx?.subject.id) params.set('subjectId', ctx.subject.id);
+    if (batchId) params.set('batchId', batchId);
+    navigate(`/teacher/exams/ai-generator?${params.toString()}`);
+  };
+
+  // Locate test for preview
+  const previewTest: ChapterTest | null = (() => {
+    if (!previewTestId || !program) return null;
+    for (const s of program.subjects) {
+      for (const ch of s.chapters) {
+        const arr = chapterTests[ch.id] ?? getChapterTests(ch.id);
+        const found = arr.find((t) => t.id === previewTestId);
+        if (found) return found;
+      }
+    }
+    return null;
+  })();
 
   const program: Program | undefined = useMemo(() => {
     if (!baseProgram) return undefined;
