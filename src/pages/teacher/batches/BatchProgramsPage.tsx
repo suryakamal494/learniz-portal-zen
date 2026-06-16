@@ -495,6 +495,11 @@ function ChapterListSection({
   onAddMaterial,
   onAddStudyNote,
   studyNoteCounts,
+  testsByChapter,
+  onPreviewTest,
+  onToggleTestEnabled,
+  onAddTestsFromLibrary,
+  onCreateTest,
   focusChapterId,
 }: ChapterListSectionProps) {
   const today = new Date();
