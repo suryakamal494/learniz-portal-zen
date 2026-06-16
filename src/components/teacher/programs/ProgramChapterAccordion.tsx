@@ -121,9 +121,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                 {dateRange}
               </span>
             )}
-            <span>
-              {topics.length > 0 ? `${topics.length} topics` : `${chapter.lessonPlans.length} lesson plans`}
-            </span>
+            <span>{topics.length} topics</span>
             <span>· {chapter.lessonPlans.length} lesson plans</span>
             <span>· {tests.length} tests</span>
             {studyNoteCount > 0 && (
