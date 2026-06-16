@@ -1100,19 +1100,36 @@ function QuestionCard({
   onToggleSelect,
   onDelete,
   onRegenerate,
+  onUpdateMeta,
 }: {
   question: GeneratedQuestion
   showAnswer: boolean
   onToggleSelect: (id: string) => void
   onDelete: (id: string) => void
   onRegenerate: (id: string) => void
+  onUpdateMeta: (
+    id: string,
+    patch: Partial<Pick<GeneratedQuestion, 'topic' | 'difficulty' | 'category'>>,
+  ) => void
 }) {
-  const diffColor =
+  const diffTriggerColor =
     question.difficulty === 'easy'
-      ? 'bg-green-100 text-green-700 border-green-200'
+      ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
       : question.difficulty === 'medium'
-        ? 'bg-amber-100 text-amber-700 border-amber-200'
-        : 'bg-rose-100 text-rose-700 border-rose-200'
+        ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+        : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+
+  const topicOptions = getTopicsForChapter(question.chapter)
+  const topicList = topicOptions.includes(question.topic)
+    ? topicOptions
+    : [question.topic, ...topicOptions]
+
+  const topicEdited = question.originalTopic !== undefined && question.originalTopic !== question.topic
+  const diffEdited =
+    question.originalDifficulty !== undefined && question.originalDifficulty !== question.difficulty
+  const catEdited =
+    question.originalCategory !== undefined && question.originalCategory !== question.category
+
   return (
     <div
       className={cn(
@@ -1131,16 +1148,44 @@ function QuestionCard({
             <Badge variant="outline" className="text-[10px] font-medium bg-slate-50">
               Q{question.serial}
             </Badge>
-            <Badge variant="outline" className={cn('text-[10px] uppercase', diffColor)}>
-              {question.difficulty}
-            </Badge>
-            <Badge variant="outline" className="text-[10px] bg-violet-50 text-violet-700 border-violet-100">
-              {question.category}
-            </Badge>
             <span className="text-[11px] text-slate-500 ml-auto">
               {question.marks} marks · {question.estimatedMinutes} min
             </span>
           </div>
+
+          {/* Editable meta tags */}
+          <div className="flex flex-wrap items-center gap-2 mb-2.5">
+            <MetaSelect
+              label="Topic"
+              value={question.topic}
+              edited={topicEdited}
+              triggerClass="bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100"
+              options={topicList.map((t) => ({ value: t, label: t }))}
+              onChange={(v) => onUpdateMeta(question.id, { topic: v })}
+            />
+            <MetaSelect
+              label="Difficulty"
+              value={question.difficulty}
+              edited={diffEdited}
+              triggerClass={diffTriggerColor}
+              options={DIFFICULTY_OPTIONS.map((d) => ({ value: d.value, label: d.label }))}
+              onChange={(v) =>
+                onUpdateMeta(question.id, { difficulty: v as DifficultyLevel })
+              }
+            />
+            <MetaSelect
+              label="Category"
+              value={question.category}
+              edited={catEdited}
+              triggerClass="bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100"
+              options={QUESTION_CATEGORIES.map((c) => ({ value: c, label: c }))}
+              onChange={(v) => onUpdateMeta(question.id, { category: v })}
+            />
+            <span className="text-[10px] text-slate-400 ml-1">
+              Chapter: <span className="text-slate-600 font-medium">{question.chapter}</span>
+            </span>
+          </div>
+
           <p className="text-sm text-slate-800 mb-2.5">{question.questionText}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {question.options.map((o, idx) => {
@@ -1186,6 +1231,46 @@ function QuestionCard({
     </div>
   )
 }
+
+function MetaSelect({
+  label,
+  value,
+  options,
+  onChange,
+  triggerClass,
+  edited,
+}: {
+  label: string
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (v: string) => void
+  triggerClass?: string
+  edited?: boolean
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
+        aria-label={label}
+        className={cn(
+          'h-7 px-2.5 py-0 text-[11px] font-medium rounded-full border gap-1 w-auto min-w-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:opacity-60',
+          triggerClass,
+        )}
+      >
+        <span className="text-[9px] uppercase tracking-wide opacity-60 mr-0.5">{label}:</span>
+        <SelectValue />
+        {edited && <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-blue-500 inline-block" title="Edited" />}
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value} className="text-xs">
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 
 function DeletedQuestionRow({
   question,
