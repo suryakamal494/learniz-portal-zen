@@ -325,6 +325,13 @@ export default function BatchProgramsPage() {
                 studyNoteCounts={Object.fromEntries(
                   Object.entries(studyNotes).map(([k, v]) => [k, v.length]),
                 )}
+                testsByChapter={Object.fromEntries(
+                  activeSubject.chapters.map((ch) => [ch.id, chapterTests[ch.id] ?? getChapterTests(ch.id)])
+                )}
+                onPreviewTest={(id) => setPreviewTestId(id)}
+                onToggleTestEnabled={handleToggleTestEnabled}
+                onAddTestsFromLibrary={handleAddTestsFromLibrary}
+                onCreateTest={handleCreateTest}
                 focusChapterId={(() => {
                   const todayIso = new Date().toISOString().slice(0, 10);
                   const chapters = activeSubject.chapters;
