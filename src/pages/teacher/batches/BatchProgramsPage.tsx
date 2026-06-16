@@ -475,6 +475,11 @@ interface ChapterListSectionProps {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCounts?: Record<string, number>;
+  testsByChapter?: Record<string, ChapterTest[]>;
+  onPreviewTest?: (testId: string) => void;
+  onToggleTestEnabled?: (testId: string) => void;
+  onAddTestsFromLibrary?: (chapterId: string, tests: ChapterTest[]) => void;
+  onCreateTest?: (chapterId: string) => void;
   focusChapterId?: string;
 }
 
