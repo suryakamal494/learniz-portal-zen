@@ -791,13 +791,26 @@ export default function AIExamGeneratorPage() {
 
                 <CardContent className="p-0">
                   {available.length === 0 && deleted.length === 0 ? (
-                    <EmptyState
-                      hasConfig={configValid}
-                      onGenerate={handleGenerate}
-                      generating={generating}
-                    />
+                    <div className="px-6 py-10 text-center text-sm text-slate-500">
+                      All questions cleared — generate a batch from the left to add new ones.
+                    </div>
                   ) : (
                     <div>
+                      {/* Sample banner */}
+                      {batches.some((b) => b.isSample) && batches.length === 1 && (
+                        <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-100 flex items-center justify-between gap-3">
+                          <p className="text-xs text-amber-800">
+                            <span className="font-semibold">Sample preview:</span> 5 example questions so you can try editing the meta tags below. Generate your own batch on the left to add real ones.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleClearSamples}
+                            className="text-xs font-medium text-amber-700 hover:text-amber-900 underline whitespace-nowrap"
+                          >
+                            Clear samples
+                          </button>
+                        </div>
+                      )}
                       {/* Bulk row */}
                       <div className="flex items-center justify-between px-4 py-2.5 border-b bg-slate-50/50">
                         <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
@@ -837,6 +850,7 @@ export default function AIExamGeneratorPage() {
                                     onToggleSelect={handleToggleSelect}
                                     onDelete={handleDelete}
                                     onRegenerate={handleRegenerateOne}
+                                    onUpdateMeta={handleUpdateMeta}
                                   />
                                 ))}
                                 {batchDeleted.map((q) => (
