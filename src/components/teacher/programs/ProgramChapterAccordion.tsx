@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen } from 'lucide-react';
-import { ProgramChapter, TopicStatus } from '@/types/program';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion } from 'lucide-react';
+import { ProgramChapter, TopicStatus, ChapterTest } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LessonPlanCard } from './LessonPlanCard';
+import { ChapterTestsTab } from './ChapterTestsTab';
 
 interface Props {
   chapter: ProgramChapter;
@@ -18,6 +20,11 @@ interface Props {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCount?: number;
+  tests?: ChapterTest[];
+  onPreviewTest?: (testId: string) => void;
+  onToggleTestEnabled?: (testId: string) => void;
+  onAddTestsFromLibrary?: (chapterId: string, tests: ChapterTest[]) => void;
+  onCreateTest?: (chapterId: string) => void;
 }
 
 function formatDateRange(start?: string, end?: string): string | null {
@@ -49,7 +56,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0 }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
@@ -114,9 +121,9 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                 {dateRange}
               </span>
             )}
-            <span>
-              {topics.length > 0 ? `${topics.length} topics` : `${chapter.lessonPlans.length} lesson plans`}
-            </span>
+            <span>{topics.length} topics</span>
+            <span>· {chapter.lessonPlans.length} lesson plans</span>
+            <span>· {tests.length} tests</span>
             {studyNoteCount > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                 <FileText className="h-3 w-3" />
@@ -174,10 +181,23 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
             }
 
             return (
-              <>
-                {topics.length > 0 && (
-                  <div className="px-5 pt-4 pb-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Topics</p>
+              <Tabs defaultValue="lesson-plans" className="px-5 py-4">
+                <TabsList className="bg-white border border-gray-200">
+                  <TabsTrigger value="schedule" className="text-xs">
+                    Schedule <span className="ml-1.5 text-[10px] text-gray-500">{topics.length}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="lesson-plans" className="text-xs">
+                    Lesson plans <span className="ml-1.5 text-[10px] text-gray-500">{chapter.lessonPlans.length}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="tests" className="text-xs">
+                    Tests <span className="ml-1.5 text-[10px] text-gray-500">{tests.length}</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="schedule" className="mt-3">
+                  {topics.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-3">No schedule topics for this chapter yet.</p>
+                  ) : (
                     <ul className="space-y-1.5">
                       {topics.map((t) => {
                         const range = formatDateRange(t.plannedStartDate, t.plannedEndDate);
@@ -226,51 +246,46 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                         );
                       })}
                     </ul>
-                  </div>
-                )}
+                  )}
+                </TabsContent>
 
-                <div className="px-5 pb-5 pt-3 space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Lesson plans</p>
-                    {(onCreateLessonPlan || onAddFromLibrary || onAddStudyNote) && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {studyNoteCount > 0 && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
-                            <CheckCircle2 className="h-3 w-3" />
-                            {studyNoteCount} study note{studyNoteCount === 1 ? '' : 's'} shared
-                          </span>
-                        )}
-                        {onAddStudyNote && (
-                          <button
-                            type="button"
-                            onClick={() => onAddStudyNote(chapter.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
-                          >
-                            <NotebookPen className="h-3.5 w-3.5" />
-                            Add study notes
-                          </button>
-                        )}
-                        {onAddFromLibrary && (
-                          <button
-                            type="button"
-                            onClick={() => onAddFromLibrary(chapter.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
-                          >
-                            <LibraryBig className="h-3.5 w-3.5" />
-                            Add from library
-                          </button>
-                        )}
-                        {onCreateLessonPlan && (
-                          <button
-                            type="button"
-                            onClick={() => onCreateLessonPlan(chapter.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Create lesson plan
-                          </button>
-                        )}
-                      </div>
+                <TabsContent value="lesson-plans" className="mt-3 space-y-3">
+                  <div className="flex items-center justify-end gap-2 flex-wrap">
+                    {studyNoteCount > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                        <CheckCircle2 className="h-3 w-3" />
+                        {studyNoteCount} study note{studyNoteCount === 1 ? '' : 's'} shared
+                      </span>
+                    )}
+                    {onAddStudyNote && (
+                      <button
+                        type="button"
+                        onClick={() => onAddStudyNote(chapter.id)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                      >
+                        <NotebookPen className="h-3.5 w-3.5" />
+                        Add study notes
+                      </button>
+                    )}
+                    {onAddFromLibrary && (
+                      <button
+                        type="button"
+                        onClick={() => onAddFromLibrary(chapter.id)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
+                      >
+                        <LibraryBig className="h-3.5 w-3.5" />
+                        Add from library
+                      </button>
+                    )}
+                    {onCreateLessonPlan && (
+                      <button
+                        type="button"
+                        onClick={() => onCreateLessonPlan(chapter.id)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Create lesson plan
+                      </button>
                     )}
                   </div>
                   {chapter.lessonPlans.length === 0 ? (
@@ -287,8 +302,19 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                       />
                     ))
                   )}
-                </div>
-              </>
+                </TabsContent>
+
+                <TabsContent value="tests" className="mt-3">
+                  <ChapterTestsTab
+                    chapterId={chapter.id}
+                    tests={tests}
+                    onPreviewTest={(id) => onPreviewTest?.(id)}
+                    onToggleEnabled={(id) => onToggleTestEnabled?.(id)}
+                    onAddFromLibrary={(cid, picked) => onAddTestsFromLibrary?.(cid, picked)}
+                    onCreateTest={(cid) => onCreateTest?.(cid)}
+                  />
+                </TabsContent>
+              </Tabs>
             );
           })()}
         </div>
