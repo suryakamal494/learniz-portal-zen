@@ -124,6 +124,8 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
             <span>
               {topics.length > 0 ? `${topics.length} topics` : `${chapter.lessonPlans.length} lesson plans`}
             </span>
+            <span>· {chapter.lessonPlans.length} lesson plans</span>
+            <span>· {tests.length} tests</span>
             {studyNoteCount > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                 <FileText className="h-3 w-3" />
