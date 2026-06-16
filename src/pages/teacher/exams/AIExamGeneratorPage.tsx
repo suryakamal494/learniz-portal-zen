@@ -100,6 +100,7 @@ const initialDetails: TestDetails = {
 export default function AIExamGeneratorPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
 
   const [details, setDetails] = useState<TestDetails>(initialDetails)
   const [config, setConfig] = useState<AIExamConfig>(initialConfig)
@@ -110,6 +111,18 @@ export default function AIExamGeneratorPage() {
   const [detailsOpen, setDetailsOpen] = useState(true)
   const [configOpen, setConfigOpen] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+
+  // Prefill subject from query params when arriving from the Programs page.
+  useEffect(() => {
+    const subjectParam = searchParams.get('subjectId')?.toLowerCase()
+    if (!subjectParam) return
+    const subj = SUBJECT_OPTIONS.find(
+      (s) => s.id.toLowerCase() === subjectParam || s.name.toLowerCase() === subjectParam,
+    )
+    if (subj) setConfig((prev) => ({ ...prev, subject: subj.id }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
 
   const subjectMeta = SUBJECT_OPTIONS.find((s) => s.id === config.subject)
   const chapterMeta = subjectMeta?.chapters.find((c) => c.id === config.chapter)
