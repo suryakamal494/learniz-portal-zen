@@ -212,6 +212,21 @@ export default function AIExamGeneratorPage() {
     )
   }
 
+  const handleUpdateMeta = (
+    id: string,
+    patch: Partial<Pick<GeneratedQuestion, 'topic' | 'difficulty' | 'category'>>,
+  ) => {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, ...patch } : q)))
+  }
+
+  const handleClearSamples = () => {
+    setQuestions((prev) => prev.filter((q) => {
+      const b = batches.find((x) => x.id === q.batchId)
+      return !b?.isSample
+    }))
+    setBatches((prev) => prev.filter((b) => !b.isSample))
+  }
+
   const handleDelete = (id: string) => {
     setQuestions((prev) =>
       prev.map((q) => (q.id === id ? { ...q, status: 'deleted', selected: false } : q)),
