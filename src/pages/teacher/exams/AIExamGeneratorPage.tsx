@@ -124,6 +124,34 @@ export default function AIExamGeneratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Seed a sample batch on first mount so the right pane is never empty.
+  useEffect(() => {
+    if (questions.length > 0 || batches.length > 0) return
+    const sampleConfig: AIExamConfig = {
+      subject: 'physics',
+      chapter: 'phy-1',
+      topics: [],
+      numberOfQuestions: 5,
+      difficulties: ['easy', 'medium', 'hard'],
+      questionType: 'single',
+      categories: ['Conceptual', 'Formulae'],
+      customInstructions: '',
+    }
+    const sampleBatchId = 'sample-batch'
+    const sampleBatch: AIQuestionBatch = {
+      id: sampleBatchId,
+      index: 1,
+      createdAt: new Date().toISOString(),
+      config: sampleConfig,
+      isSample: true,
+    }
+    const sampleQs = generateMockQuestions(sampleConfig, sampleBatchId, 1, 5)
+    setBatches([sampleBatch])
+    setQuestions(sampleQs)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+
 
   const subjectMeta = SUBJECT_OPTIONS.find((s) => s.id === config.subject)
   const chapterMeta = subjectMeta?.chapters.find((c) => c.id === config.chapter)
