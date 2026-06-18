@@ -325,6 +325,7 @@ export default function BatchProgramsPage() {
                 studyNoteCounts={Object.fromEntries(
                   Object.entries(studyNotes).map(([k, v]) => [k, v.length]),
                 )}
+                studyNotesByChapter={studyNotes}
                 testsByChapter={Object.fromEntries(
                   activeSubject.chapters.map((ch) => [ch.id, chapterTests[ch.id] ?? getChapterTests(ch.id)])
                 )}
@@ -475,6 +476,7 @@ interface ChapterListSectionProps {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCounts?: Record<string, number>;
+  studyNotesByChapter?: Record<string, ChapterStudyNote[]>;
   testsByChapter?: Record<string, ChapterTest[]>;
   onPreviewTest?: (testId: string) => void;
   onToggleTestEnabled?: (testId: string) => void;
@@ -495,6 +497,7 @@ function ChapterListSection({
   onAddMaterial,
   onAddStudyNote,
   studyNoteCounts,
+  studyNotesByChapter,
   testsByChapter,
   onPreviewTest,
   onToggleTestEnabled,
@@ -574,6 +577,7 @@ function ChapterListSection({
                 onAddMaterial={onAddMaterial}
                 onAddStudyNote={onAddStudyNote}
                 studyNoteCount={studyNoteCounts?.[ch.id] ?? 0}
+                studyNotes={studyNotesByChapter?.[ch.id] ?? []}
                 tests={testsByChapter?.[ch.id] ?? []}
                 onPreviewTest={onPreviewTest}
                 onToggleTestEnabled={onToggleTestEnabled}

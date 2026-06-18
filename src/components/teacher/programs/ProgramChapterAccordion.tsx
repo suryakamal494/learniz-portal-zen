@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion, CalendarDays, BookOpen, ClipboardList } from 'lucide-react';
-import { ProgramChapter, TopicStatus, ChapterTest } from '@/types/program';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion, CalendarDays, BookOpen, ClipboardList, Video, Download } from 'lucide-react';
+import { ProgramChapter, TopicStatus, ChapterTest, ChapterStudyNote } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -20,6 +20,7 @@ interface Props {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCount?: number;
+  studyNotes?: ChapterStudyNote[];
   tests?: ChapterTest[];
   onPreviewTest?: (testId: string) => void;
   onToggleTestEnabled?: (testId: string) => void;
@@ -56,7 +57,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, studyNotes = [], tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
@@ -181,7 +182,7 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
             }
 
             return (
-              <Tabs defaultValue="lesson-plans" className="px-5 py-4">
+              <Tabs defaultValue="schedule" className="px-5 py-4">
                 <TabsList className="bg-slate-200 border border-slate-300 p-1.5 h-auto rounded-xl shadow-sm">
                   <TabsTrigger
                     value="schedule"
@@ -191,11 +192,11 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                     Schedule <span className="ml-1 text-[10px] opacity-80 font-bold">{topics.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
-                    value="lesson-plans"
+                    value="study-notes"
                     className="text-xs font-semibold px-4 py-2 rounded-lg gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:text-slate-900 data-[state=inactive]:hover:bg-slate-300/60 transition-all"
                   >
-                    <BookOpen className="h-3.5 w-3.5" />
-                    Lesson plans <span className="ml-1 text-[10px] opacity-80 font-bold">{chapter.lessonPlans.length}</span>
+                    <NotebookPen className="h-3.5 w-3.5" />
+                    Study Notes <span className="ml-1 text-[10px] opacity-80 font-bold">{studyNotes.length || studyNoteCount}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="tests"
@@ -206,113 +207,170 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="schedule" className="mt-3">
-                  {topics.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-3">No schedule topics for this chapter yet.</p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {topics.map((t) => {
-                        const range = formatDateRange(t.plannedStartDate, t.plannedEndDate);
-                        return (
-                          <li
-                            key={t.id}
-                            className="bg-white rounded-lg border border-gray-200 px-3 py-2"
+                <TabsContent value="schedule" className="mt-3 space-y-5">
+                  {/* Topics */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CalendarDays className="h-3.5 w-3.5 text-gray-500" />
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Topics</h4>
+                    </div>
+                    {topics.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-2">No schedule topics for this chapter yet.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {topics.map((t) => {
+                          const range = formatDateRange(t.plannedStartDate, t.plannedEndDate);
+                          return (
+                            <li
+                              key={t.id}
+                              className="bg-white rounded-lg border border-gray-200 px-3 py-2"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="shrink-0">{topicStatusIcon(t.status)}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
+                                  <p className="text-[11px] text-gray-500">
+                                    {range ? `${range} · ` : ''}
+                                    {t.plannedHours}h planned
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  {t.status !== 'in-progress' && t.status !== 'done' && (
+                                    <button
+                                      onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
+                                      className="text-[11px] font-semibold px-2.5 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-1"
+                                    >
+                                      <Video className="h-3 w-3" />
+                                      Start Online Class
+                                    </button>
+                                  )}
+                                  {t.status === 'in-progress' && (
+                                    <button
+                                      onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
+                                      className="text-[11px] font-semibold px-2.5 py-1 rounded-md bg-amber-600 text-white hover:bg-amber-700 inline-flex items-center gap-1"
+                                    >
+                                      <Video className="h-3 w-3" />
+                                      Resume Online Class
+                                    </button>
+                                  )}
+                                  {t.status !== 'done' && (
+                                    <button
+                                      onClick={() => onTopicStatusChange?.(t.id, 'done')}
+                                      className="text-[11px] font-medium px-2 py-1 rounded-md text-emerald-700 hover:bg-emerald-50"
+                                    >
+                                      Mark done
+                                    </button>
+                                  )}
+                                  {t.status === 'done' && (
+                                    <button
+                                      onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
+                                      className="text-[11px] font-medium px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100"
+                                    >
+                                      Reopen
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Lesson plans (moved here from old tab) */}
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-3.5 w-3.5 text-gray-500" />
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                          Lesson Plans <span className="text-gray-400">({chapter.lessonPlans.length})</span>
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {onAddFromLibrary && (
+                          <button
+                            type="button"
+                            onClick={() => onAddFromLibrary(chapter.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
                           >
-                            <div className="flex items-center gap-3">
-                              <span className="shrink-0">{topicStatusIcon(t.status)}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
-                                <p className="text-[11px] text-gray-500">
-                                  {range ? `${range} · ` : ''}
-                                  {t.plannedHours}h planned
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                {t.status !== 'in-progress' && t.status !== 'done' && (
-                                  <button
-                                    onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
-                                    className="text-[11px] font-medium px-2 py-1 rounded-md text-amber-700 hover:bg-amber-50"
-                                  >
-                                    Start
-                                  </button>
-                                )}
-                                {t.status !== 'done' && (
-                                  <button
-                                    onClick={() => onTopicStatusChange?.(t.id, 'done')}
-                                    className="text-[11px] font-medium px-2 py-1 rounded-md text-emerald-700 hover:bg-emerald-50"
-                                  >
-                                    Mark done
-                                  </button>
-                                )}
-                                {t.status === 'done' && (
-                                  <button
-                                    onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
-                                    className="text-[11px] font-medium px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100"
-                                  >
-                                    Reopen
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
+                            <LibraryBig className="h-3.5 w-3.5" />
+                            Add from library
+                          </button>
+                        )}
+                        {onCreateLessonPlan && (
+                          <button
+                            type="button"
+                            onClick={() => onCreateLessonPlan(chapter.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Create lesson plan
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {chapter.lessonPlans.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-2">No lesson plans in this chapter yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {chapter.lessonPlans.map((lp) => (
+                          <LessonPlanCard
+                            key={lp.id}
+                            lessonPlan={lp}
+                            onPreview={() => onPreview(lp.id)}
+                            onEdit={onEditLessonPlan ? () => onEditLessonPlan(lp.id) : undefined}
+                            onAddMaterial={onAddMaterial ? () => onAddMaterial(lp.id) : undefined}
+                            usedInTopics={lpToTopics.get(lp.id) ?? []}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="lesson-plans" className="mt-3 space-y-3">
-                  <div className="flex items-center justify-end gap-2 flex-wrap">
-                    {studyNoteCount > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
-                        <CheckCircle2 className="h-3 w-3" />
-                        {studyNoteCount} study note{studyNoteCount === 1 ? '' : 's'} shared
-                      </span>
-                    )}
+                <TabsContent value="study-notes" className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="text-xs text-gray-600">
+                      <span className="font-semibold text-gray-900">{studyNotes.length} study note{studyNotes.length === 1 ? '' : 's'}</span>
+                      <span className="text-gray-500"> shared with this chapter</span>
+                    </div>
                     {onAddStudyNote && (
                       <button
                         type="button"
                         onClick={() => onAddStudyNote(chapter.id)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
-                      >
-                        <NotebookPen className="h-3.5 w-3.5" />
-                        Add study notes
-                      </button>
-                    )}
-                    {onAddFromLibrary && (
-                      <button
-                        type="button"
-                        onClick={() => onAddFromLibrary(chapter.id)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
-                      >
-                        <LibraryBig className="h-3.5 w-3.5" />
-                        Add from library
-                      </button>
-                    )}
-                    {onCreateLessonPlan && (
-                      <button
-                        type="button"
-                        onClick={() => onCreateLessonPlan(chapter.id)}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                       >
-                        <Plus className="h-3.5 w-3.5" />
-                        Create lesson plan
+                        <NotebookPen className="h-3.5 w-3.5" />
+                        Add study note
                       </button>
                     )}
                   </div>
-                  {chapter.lessonPlans.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-2">No lesson plans in this chapter yet.</p>
+                  {studyNotes.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-3">No study notes shared for this chapter yet.</p>
                   ) : (
-                    chapter.lessonPlans.map((lp) => (
-                      <LessonPlanCard
-                        key={lp.id}
-                        lessonPlan={lp}
-                        onPreview={() => onPreview(lp.id)}
-                        onEdit={onEditLessonPlan ? () => onEditLessonPlan(lp.id) : undefined}
-                        onAddMaterial={onAddMaterial ? () => onAddMaterial(lp.id) : undefined}
-                        usedInTopics={lpToTopics.get(lp.id) ?? []}
-                      />
-                    ))
+                    <ul className="space-y-2">
+                      {studyNotes.map((n) => (
+                        <li
+                          key={n.id}
+                          className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 flex items-center gap-3"
+                        >
+                          <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+                            <FileText className="h-4 w-4" />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{n.title}</p>
+                            <p className="text-[11px] text-gray-500 truncate">
+                              {n.fileName}
+                              {n.description ? ` · ${n.description}` : ''}
+                            </p>
+                          </div>
+                          <span className="text-[11px] text-gray-500 shrink-0">
+                            {new Date(n.sharedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </TabsContent>
 
