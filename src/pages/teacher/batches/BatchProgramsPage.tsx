@@ -476,6 +476,7 @@ interface ChapterListSectionProps {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCounts?: Record<string, number>;
+  studyNotesByChapter?: Record<string, ChapterStudyNote[]>;
   testsByChapter?: Record<string, ChapterTest[]>;
   onPreviewTest?: (testId: string) => void;
   onToggleTestEnabled?: (testId: string) => void;
