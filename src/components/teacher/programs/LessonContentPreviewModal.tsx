@@ -3,11 +3,16 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
 import { LessonPlanContent } from '@/types/program';
 import { AnnotationOverlay } from '@/components/teacher/preview/AnnotationOverlay';
+import { DemoSlideDeck } from '@/components/teacher/preview/DemoSlideDeck';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   content: LessonPlanContent | null;
+}
+
+function isYouTube(url: string) {
+  return /youtube\.com|youtu\.be/.test(url);
 }
 
 function PlaceholderSlide({ title, subtitle }: { title: string; subtitle: string }) {
@@ -25,6 +30,46 @@ function PlaceholderSlide({ title, subtitle }: { title: string; subtitle: string
   );
 }
 
+function RichNote({ title, body }: { title: string; body: string }) {
+  // Very light renderer: paragraph breaks on blank lines, bullets for "• " or "- " or "1. "
+  const blocks = body.split(/\n{2,}/);
+  return (
+    <div className="w-full h-full bg-white overflow-auto">
+      <div className="max-w-4xl mx-auto px-12 py-14">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">{title}</h1>
+        <div className="space-y-6 text-lg text-gray-800 leading-relaxed">
+          {blocks.map((block, bi) => {
+            const lines = block.split('\n');
+            const first = lines[0];
+            const rest = lines.slice(1);
+            const isBulletList = rest.length > 0 && rest.every((l) => /^(•|-|\d+\.)\s+/.test(l.trim()));
+            if (isBulletList) {
+              return (
+                <div key={bi}>
+                  <p className="font-semibold text-gray-900 mb-3">{first}</p>
+                  <ul className="space-y-2 pl-1">
+                    {rest.map((l, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-blue-600 flex-shrink-0" />
+                        <span>{l.replace(/^(•|-|\d+\.)\s+/, '')}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            }
+            return (
+              <p key={bi} className="whitespace-pre-wrap">
+                {block}
+              </p>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LessonContentPreviewModal({ open, onClose, content }: Props) {
   if (!content) return null;
 
@@ -33,41 +78,58 @@ export function LessonContentPreviewModal({ open, onClose, content }: Props) {
   const renderContent = () => {
     switch (content.type) {
       case 'video':
-        return url ? (
-          <video src={url} controls className="w-full h-full object-contain bg-black" />
-        ) : (
-          <PlaceholderSlide title={content.title} subtitle="Video preview" />
-        );
+        if (!url) return <PlaceholderSlide title={content.title} subtitle="Video preview" />;
+        if (isYouTube(url)) {
+          return (
+            <iframe
+              src={url}
+              title={content.title}
+              className="w-full h-full bg-black"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
+          );
+        }
+        return <video src={url} controls className="w-full h-full object-contain bg-black" />;
+
       case 'html':
-      case 'ppt':
-      case 'pdf':
         return url ? (
           <iframe
             src={url}
-            className="w-full h-full bg-white"
             title={content.title}
+            className="w-full h-full bg-white"
+            allow="accelerometer; gyroscope; fullscreen"
+            allowFullScreen
           />
         ) : (
-          <PlaceholderSlide
+          <PlaceholderSlide title={content.title} subtitle="Interactive simulation" />
+        );
+
+      case 'pdf':
+        return url ? (
+          <iframe
+            src={`${url}#toolbar=1&navpanes=0`}
             title={content.title}
-            subtitle={
-              content.type === 'html'
-                ? 'Interactive simulation'
-                : content.type === 'ppt'
-                  ? 'Presentation preview'
-                  : 'PDF preview'
+            className="w-full h-full bg-white"
+          />
+        ) : (
+          <PlaceholderSlide title={content.title} subtitle="PDF preview" />
+        );
+
+      case 'ppt':
+        return <DemoSlideDeck title={content.title} />;
+
+      case 'note':
+        return (
+          <RichNote
+            title={content.title}
+            body={
+              content.body ||
+              'Note content goes here. Use Pen / Marker / Highlighter to annotate while you teach.'
             }
           />
         );
-      case 'note':
-        return (
-          <div className="w-full h-full bg-white p-10 overflow-auto">
-            <h1 className="text-3xl font-bold mb-4 text-gray-900">{content.title}</h1>
-            <p className="text-lg text-gray-700 whitespace-pre-wrap">
-              {url || 'Note content goes here. Use Pen/Marker/Highlighter to annotate as you teach.'}
-            </p>
-          </div>
-        );
+
       default:
         return <PlaceholderSlide title={content.title} subtitle="Preview" />;
     }
@@ -76,9 +138,7 @@ export function LessonContentPreviewModal({ open, onClose, content }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="p-0 gap-0 border-0 rounded-none bg-black
-                   w-screen h-screen max-w-[100vw] sm:max-w-[100vw]
-                   sm:rounded-none translate-x-0 translate-y-0 left-0 top-0"
+        className="p-0 gap-0 border-0 rounded-none bg-black w-screen h-screen max-w-[100vw] sm:max-w-[100vw] sm:rounded-none"
         style={{ left: 0, top: 0, transform: 'none' }}
       >
         {/* Title chip */}
