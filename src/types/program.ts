@@ -63,6 +63,8 @@ export interface ProgramTopic {
   lastUpdatedAt?: string;
   /** Optional links to lesson plans inside the same chapter. */
   lessonPlanIds?: string[];
+  /** Online meeting link for this topic. When present, "Start Online Class" is shown. */
+  meetingLink?: string;
 }
 
 export interface ProgramEducator {
