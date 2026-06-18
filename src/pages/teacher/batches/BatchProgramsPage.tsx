@@ -577,6 +577,7 @@ function ChapterListSection({
                 onAddMaterial={onAddMaterial}
                 onAddStudyNote={onAddStudyNote}
                 studyNoteCount={studyNoteCounts?.[ch.id] ?? 0}
+                studyNotes={studyNotesByChapter?.[ch.id] ?? []}
                 tests={testsByChapter?.[ch.id] ?? []}
                 onPreviewTest={onPreviewTest}
                 onToggleTestEnabled={onToggleTestEnabled}
