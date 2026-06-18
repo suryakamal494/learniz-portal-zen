@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion, CalendarDays, BookOpen, ClipboardList } from 'lucide-react';
-import { ProgramChapter, TopicStatus, ChapterTest } from '@/types/program';
+import { ChevronDown, ChevronRight, CalendarRange, CheckCircle2, CircleDot, Circle, Clock, Sparkles, Plus, LibraryBig, FileText, NotebookPen, FileQuestion, CalendarDays, BookOpen, ClipboardList, Video, Download } from 'lucide-react';
+import { ProgramChapter, TopicStatus, ChapterTest, ChapterStudyNote } from '@/types/program';
 import { toneForPct } from '@/utils/programProgress';
 import { getScheduleDeltaForChapter, ScheduleState } from '@/utils/programSchedule';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
