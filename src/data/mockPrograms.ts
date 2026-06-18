@@ -437,13 +437,17 @@ function buildSubject(
         status: 'not-started',
         hoursPlanned: tmpl.hours,
         hoursSpent: 0,
-        contents: tmpl.contents.map((c, ci2) => ({
-          id: `${chId}-lp-${li + 1}-c${ci2 + 1}`,
-          type: c.type,
-          title: c.title,
-          duration: c.duration,
-          url: '#',
-        })),
+        contents: tmpl.contents.map((c, ci2) => {
+          const src = pickContentSource(subjectPrefix, c.type, c.title, ci + li + ci2);
+          return {
+            id: `${chId}-lp-${li + 1}-c${ci2 + 1}`,
+            type: c.type,
+            title: c.title,
+            duration: c.duration,
+            url: src.url,
+            body: src.body,
+          };
+        }),
       };
     });
 
