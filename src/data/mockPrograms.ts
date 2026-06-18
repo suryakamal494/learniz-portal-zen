@@ -549,13 +549,17 @@ function lpManual(
     hoursPlanned,
     hoursSpent,
     lastTaughtDate,
-    contents: contents.map((c, i) => ({
-      id: `${id}-c${i + 1}`,
-      type: c.type,
-      title: c.title,
-      duration: c.duration,
-      url: '#',
-    })),
+    contents: contents.map((c, i) => {
+      const src = pickContentSource('phy', c.type, c.title, i);
+      return {
+        id: `${id}-c${i + 1}`,
+        type: c.type,
+        title: c.title,
+        duration: c.duration,
+        url: src.url,
+        body: src.body,
+      };
+    }),
   };
 }
 
