@@ -20,6 +20,7 @@ interface Props {
   onAddMaterial?: (lessonPlanId: string) => void;
   onAddStudyNote?: (chapterId: string) => void;
   studyNoteCount?: number;
+  studyNotes?: ChapterStudyNote[];
   tests?: ChapterTest[];
   onPreviewTest?: (testId: string) => void;
   onToggleTestEnabled?: (testId: string) => void;
