@@ -57,7 +57,7 @@ function topicStatusIcon(status: TopicStatus) {
   return <Circle className="h-4 w-4 text-gray-400" />;
 }
 
-export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
+export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, studyNotes = [], tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
 
   // Chapter % from lesson-plan hours
