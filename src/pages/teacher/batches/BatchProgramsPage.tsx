@@ -497,6 +497,7 @@ function ChapterListSection({
   onAddMaterial,
   onAddStudyNote,
   studyNoteCounts,
+  studyNotesByChapter,
   testsByChapter,
   onPreviewTest,
   onToggleTestEnabled,
