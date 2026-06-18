@@ -11,12 +11,13 @@ import {
   Globe,
   StickyNote,
   Presentation,
-  ExternalLink,
+  PlayCircle,
   Plus,
   ArrowLeft,
 } from 'lucide-react';
 import { ProgramLessonPlan, LessonPlanContent, LessonPlanContentType } from '@/types/program';
 import { useToast } from '@/hooks/use-toast';
+import { LessonContentPreviewModal } from './LessonContentPreviewModal';
 
 interface Props {
   open: boolean;
@@ -63,6 +64,7 @@ export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onA
   const [url, setUrl] = useState('');
   const [fileName, setFileName] = useState('');
   const [noteBody, setNoteBody] = useState('');
+  const [previewContent, setPreviewContent] = useState<LessonPlanContent | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -161,9 +163,14 @@ export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onA
                             {c.duration ? ` · ${c.duration}` : ''}
                           </p>
                         </div>
-                        <Button size="sm" variant="ghost" className="text-blue-700 hover:bg-blue-100">
-                          <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                          View
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPreviewContent(c)}
+                          className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                        >
+                          <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                          Preview
                         </Button>
                       </li>
                     );
