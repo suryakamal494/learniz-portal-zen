@@ -59,6 +59,7 @@ function topicStatusIcon(status: TopicStatus) {
 
 export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPreview, onTopicStatusChange, onCreateLessonPlan, onAddFromLibrary, onEditLessonPlan, onAddMaterial, onAddStudyNote, studyNoteCount = 0, studyNotes = [], tests = [], onPreviewTest, onToggleTestEnabled, onAddTestsFromLibrary, onCreateTest }: Props) {
   const [open, setOpen] = useState(!!defaultOpen);
+  const [openTopics, setOpenTopics] = useState<Record<string, boolean>>({});
 
   // Chapter % from lesson-plan hours
   let planned = 0;
@@ -171,18 +172,9 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
       {open && (
         <div id={panelId} className="border-t border-gray-100 bg-gray-50/50">
           {(() => {
-            // Build lessonPlan ↔ topic linking map (still used to pass usedInTopics to LessonPlanCard).
-            const lpToTopics = new Map<string, Array<{ id: string; name: string }>>();
-            for (const t of topics) {
-              for (const lpId of t.lessonPlanIds ?? []) {
-                const arr = lpToTopics.get(lpId) ?? [];
-                arr.push({ id: t.id, name: t.name });
-                lpToTopics.set(lpId, arr);
-              }
-            }
-
             return (
               <Tabs defaultValue="schedule" className="px-5 py-4">
+
                 <TabsList className="bg-slate-200 border border-slate-300 p-1.5 h-auto rounded-xl shadow-sm">
                   <TabsTrigger
                     value="schedule"
