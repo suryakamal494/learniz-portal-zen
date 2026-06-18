@@ -468,6 +468,9 @@ function buildSubject(
         status,
         lastUpdatedAt: status !== 'not-started' ? `${e}T15:00:00Z` : undefined,
         lessonPlanIds: [lp1, lp2],
+        // Attach a meeting link to roughly half the topics so "Start Online Class"
+        // only appears where it actually makes sense.
+        meetingLink: ti % 2 === 0 ? `https://meet.learniz.app/${chId}-t${ti + 1}` : undefined,
       };
     });
 
