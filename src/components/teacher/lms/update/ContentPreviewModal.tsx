@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LMSContentItem } from '@/types/lmsContent'
+import { AnnotationOverlay } from '@/components/teacher/preview/AnnotationOverlay'
 
 interface ContentPreviewModalProps {
   item: LMSContentItem
@@ -171,10 +172,14 @@ export const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
             </div>
           )}
 
-          {/* Preview */}
+          {/* Preview with annotation overlay */}
           <div>
             <h4 className="font-medium mb-2">Content Preview</h4>
-            {renderPreviewContent()}
+            <div className="relative w-full" style={{ height: '60vh' }}>
+              <AnnotationOverlay className="rounded-lg overflow-hidden border border-gray-200">
+                {renderPreviewContent()}
+              </AnnotationOverlay>
+            </div>
           </div>
         </div>
       </DialogContent>
