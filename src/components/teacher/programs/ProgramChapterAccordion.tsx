@@ -208,126 +208,229 @@ export function ProgramChapterAccordion({ chapter, defaultOpen, isCurrent, onPre
                 </TabsList>
 
                 <TabsContent value="schedule" className="mt-3 space-y-5">
-                  {/* Topics */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CalendarDays className="h-3.5 w-3.5 text-gray-500" />
-                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Topics</h4>
-                    </div>
-                    {topics.length === 0 ? (
-                      <p className="text-sm text-gray-500 py-2">No schedule topics for this chapter yet.</p>
-                    ) : (
-                      <ul className="space-y-1.5">
-                        {topics.map((t) => {
-                          const range = formatDateRange(t.plannedStartDate, t.plannedEndDate);
-                          return (
-                            <li
-                              key={t.id}
-                              className="bg-white rounded-lg border border-gray-200 px-3 py-2"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="shrink-0">{topicStatusIcon(t.status)}</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
-                                  <p className="text-[11px] text-gray-500">
-                                    {range ? `${range} · ` : ''}
-                                    {t.plannedHours}h planned
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  {t.status !== 'in-progress' && t.status !== 'done' && (
-                                    <button
-                                      onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
-                                      className="text-[11px] font-semibold px-2.5 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-1"
-                                    >
-                                      <Video className="h-3 w-3" />
-                                      Start Online Class
-                                    </button>
-                                  )}
-                                  {t.status === 'in-progress' && (
-                                    <button
-                                      onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
-                                      className="text-[11px] font-semibold px-2.5 py-1 rounded-md bg-amber-600 text-white hover:bg-amber-700 inline-flex items-center gap-1"
-                                    >
-                                      <Video className="h-3 w-3" />
-                                      Resume Online Class
-                                    </button>
-                                  )}
-                                  {t.status !== 'done' && (
-                                    <button
-                                      onClick={() => onTopicStatusChange?.(t.id, 'done')}
-                                      className="text-[11px] font-medium px-2 py-1 rounded-md text-emerald-700 hover:bg-emerald-50"
-                                    >
-                                      Mark done
-                                    </button>
-                                  )}
-                                  {t.status === 'done' && (
-                                    <button
-                                      onClick={() => onTopicStatusChange?.(t.id, 'in-progress')}
-                                      className="text-[11px] font-medium px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100"
-                                    >
-                                      Reopen
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
+                  {/* Topic → lesson plans inverse map */}
+                  {(() => {
+                    const topicToLps = new Map<string, typeof chapter.lessonPlans>();
+                    for (const t of topics) {
+                      const arr: typeof chapter.lessonPlans = [];
+                      for (const lpId of t.lessonPlanIds ?? []) {
+                        const lp = chapter.lessonPlans.find((p) => p.id === lpId);
+                        if (lp) arr.push(lp);
+                      }
+                      topicToLps.set(t.id, arr);
+                    }
+                    const linkedLpIds = new Set<string>();
+                    topics.forEach((t) => (t.lessonPlanIds ?? []).forEach((id) => linkedLpIds.add(id)));
+                    const unlinkedLps = chapter.lessonPlans.filter((lp) => !linkedLpIds.has(lp.id));
 
-                  {/* Lesson plans (moved here from old tab) */}
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-3.5 w-3.5 text-gray-500" />
-                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
-                          Lesson Plans <span className="text-gray-400">({chapter.lessonPlans.length})</span>
-                        </h4>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {onAddFromLibrary && (
-                          <button
-                            type="button"
-                            onClick={() => onAddFromLibrary(chapter.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
-                          >
-                            <LibraryBig className="h-3.5 w-3.5" />
-                            Add from library
-                          </button>
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="h-3.5 w-3.5 text-gray-500" />
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Topics</h4>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {onAddFromLibrary && (
+                              <button
+                                type="button"
+                                onClick={() => onAddFromLibrary(chapter.id)}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-white hover:border-blue-300 hover:text-blue-700 transition-colors"
+                              >
+                                <LibraryBig className="h-3.5 w-3.5" />
+                                Add from library
+                              </button>
+                            )}
+                            {onCreateLessonPlan && (
+                              <button
+                                type="button"
+                                onClick={() => onCreateLessonPlan(chapter.id)}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                Create lesson plan
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {topics.length === 0 ? (
+                          <p className="text-sm text-gray-500 py-2">No schedule topics for this chapter yet.</p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {topics.map((t) => {
+                              const range = formatDateRange(t.plannedStartDate, t.plannedEndDate);
+                              const isOpen = !!openTopics[t.id];
+                              const tLps = topicToLps.get(t.id) ?? [];
+                              return (
+                                <li
+                                  key={t.id}
+                                  className="bg-white rounded-lg border border-gray-200"
+                                >
+                                  <div className="flex items-center gap-3 px-3 py-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setOpenTopics((prev) => ({ ...prev, [t.id]: !prev[t.id] }))
+                                      }
+                                      className="shrink-0 text-gray-400 hover:text-gray-600"
+                                      aria-label={isOpen ? 'Collapse topic' : 'Expand topic'}
+                                      aria-expanded={isOpen}
+                                    >
+                                      {isOpen ? (
+                                        <ChevronDown className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4" />
+                                      )}
+                                    </button>
+                                    <span className="shrink-0">{topicStatusIcon(t.status)}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setOpenTopics((prev) => ({ ...prev, [t.id]: !prev[t.id] }))
+                                      }
+                                      className="flex-1 min-w-0 text-left"
+                                    >
+                                      <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
+                                      <p className="text-[11px] text-gray-500">
+                                        {range ? `${range} · ` : ''}
+                                        {t.plannedHours}h planned
+                                        {tLps.length > 0 ? ` · ${tLps.length} lesson plan${tLps.length === 1 ? '' : 's'}` : ''}
+                                      </p>
+                                    </button>
+                                    <div className="flex items-center gap-1">
+                                      {t.meetingLink && t.status !== 'done' && (
+                                        <a
+                                          href={t.meetingLink}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          onClick={() => {
+                                            if (t.status === 'not-started') {
+                                              onTopicStatusChange?.(t.id, 'in-progress');
+                                            }
+                                          }}
+                                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-md inline-flex items-center gap-1 ${
+                                            t.status === 'in-progress'
+                                              ? 'bg-amber-600 text-white hover:bg-amber-700'
+                                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                                          }`}
+                                        >
+                                          <Video className="h-3 w-3" />
+                                          {t.status === 'in-progress' ? 'Resume Online Class' : 'Start Online Class'}
+                                        </a>
+                                      )}
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <button
+                                            type="button"
+                                            className="text-[11px] font-medium px-2 py-1 rounded-md text-gray-700 hover:bg-gray-100 border border-gray-200"
+                                          >
+                                            Mark status
+                                          </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                          side="bottom"
+                                          align="end"
+                                          className="w-60 p-2 border border-gray-200 shadow-lg"
+                                        >
+                                          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-1 pb-1">
+                                            Set topic status
+                                          </p>
+                                          {(
+                                            [
+                                              { v: 'not-started', label: 'Not started', cls: 'text-gray-700' },
+                                              { v: 'in-progress', label: 'In progress', cls: 'text-amber-700' },
+                                              { v: 'done', label: 'Done', cls: 'text-emerald-700' },
+                                            ] as const
+                                          ).map((opt) => (
+                                            <button
+                                              key={opt.v}
+                                              type="button"
+                                              onClick={() => onTopicStatusChange?.(t.id, opt.v)}
+                                              className={`w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 flex items-center justify-between ${opt.cls}`}
+                                            >
+                                              <span>{opt.label}</span>
+                                              {t.status === opt.v && (
+                                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                              )}
+                                            </button>
+                                          ))}
+                                          <p className="text-[10px] text-gray-500 px-1 pt-2 border-t border-gray-100 mt-1">
+                                            Reflects overall progress across all scheduled periods for this topic.
+                                          </p>
+                                        </PopoverContent>
+                                      </Popover>
+                                    </div>
+                                  </div>
+
+                                  {isOpen && (
+                                    <div className="border-t border-gray-100 px-3 py-2 bg-gray-50/60 rounded-b-lg">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <BookOpen className="h-3 w-3 text-gray-500" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600">
+                                          Lesson plans ({tLps.length})
+                                        </span>
+                                      </div>
+                                      {tLps.length === 0 ? (
+                                        <div className="text-xs text-gray-500 py-1.5 flex items-center justify-between gap-2">
+                                          <span>No lesson plans linked to this topic yet.</span>
+                                          {onAddFromLibrary && (
+                                            <button
+                                              type="button"
+                                              onClick={() => onAddFromLibrary(chapter.id)}
+                                              className="text-xs font-semibold text-blue-700 hover:underline"
+                                            >
+                                              Link lesson plan
+                                            </button>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {tLps.map((lp) => (
+                                            <LessonPlanCard
+                                              key={lp.id}
+                                              lessonPlan={lp}
+                                              onPreview={() => onPreview(lp.id)}
+                                              onEdit={onEditLessonPlan ? () => onEditLessonPlan(lp.id) : undefined}
+                                              onAddMaterial={onAddMaterial ? () => onAddMaterial(lp.id) : undefined}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
                         )}
-                        {onCreateLessonPlan && (
-                          <button
-                            type="button"
-                            onClick={() => onCreateLessonPlan(chapter.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Create lesson plan
-                          </button>
+
+                        {unlinkedLps.length > 0 && (
+                          <div className="mt-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <BookOpen className="h-3.5 w-3.5 text-gray-500" />
+                              <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                                Unlinked lesson plans ({unlinkedLps.length})
+                              </h4>
+                            </div>
+                            <div className="space-y-2">
+                              {unlinkedLps.map((lp) => (
+                                <LessonPlanCard
+                                  key={lp.id}
+                                  lessonPlan={lp}
+                                  onPreview={() => onPreview(lp.id)}
+                                  onEdit={onEditLessonPlan ? () => onEditLessonPlan(lp.id) : undefined}
+                                  onAddMaterial={onAddMaterial ? () => onAddMaterial(lp.id) : undefined}
+                                />
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    {chapter.lessonPlans.length === 0 ? (
-                      <p className="text-sm text-gray-500 py-2">No lesson plans in this chapter yet.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {chapter.lessonPlans.map((lp) => (
-                          <LessonPlanCard
-                            key={lp.id}
-                            lessonPlan={lp}
-                            onPreview={() => onPreview(lp.id)}
-                            onEdit={onEditLessonPlan ? () => onEditLessonPlan(lp.id) : undefined}
-                            onAddMaterial={onAddMaterial ? () => onAddMaterial(lp.id) : undefined}
-                            usedInTopics={lpToTopics.get(lp.id) ?? []}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    );
+                  })()}
                 </TabsContent>
+
 
                 <TabsContent value="study-notes" className="mt-3 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
