@@ -325,6 +325,7 @@ export default function BatchProgramsPage() {
                 studyNoteCounts={Object.fromEntries(
                   Object.entries(studyNotes).map(([k, v]) => [k, v.length]),
                 )}
+                studyNotesByChapter={studyNotes}
                 testsByChapter={Object.fromEntries(
                   activeSubject.chapters.map((ch) => [ch.id, chapterTests[ch.id] ?? getChapterTests(ch.id)])
                 )}
