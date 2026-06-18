@@ -296,6 +296,12 @@ export function LessonPlanPreviewModal({ open, onClose, lessonPlan, context, onA
           </>
         )}
       </DialogContent>
+
+      <LessonContentPreviewModal
+        open={!!previewContent}
+        onClose={() => setPreviewContent(null)}
+        content={previewContent}
+      />
     </Dialog>
   );
 }
