@@ -55,13 +55,91 @@ function advanceWorkingDays(startIso: string, days: number): { start: string; en
 
 /* ──────────────── Lesson plan pool (reusable across chapters) ──────────── */
 
+type LpContentType = 'ppt' | 'html' | 'video' | 'pdf' | 'note';
+
 type LpTemplate = {
   key: string;
   title: string;
   summary: string;
   hours: number;
-  contents: Array<{ type: 'ppt' | 'html' | 'video' | 'pdf' | 'note'; title: string; duration?: string }>;
+  contents: Array<{ type: LpContentType; title: string; duration?: string }>;
 };
+
+/* Real, embeddable mock sources per subject + content type.
+ * - html  → PhET HTML5 simulations (allow iframe embedding)
+ * - video → YouTube embed URLs
+ * - pdf   → public sample PDFs
+ * - ppt   → no URL → modal renders the in-app DemoSlideDeck
+ * - note  → rich body text
+ */
+const HTML_SIMS: Record<string, string[]> = {
+  phy: [
+    'https://phet.colorado.edu/sims/html/magnets-and-electromagnets/latest/magnets-and-electromagnets_en.html',
+    'https://phet.colorado.edu/sims/html/faradays-law/latest/faradays-law_en.html',
+    'https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc_en.html',
+    'https://phet.colorado.edu/sims/html/projectile-motion/latest/projectile-motion_en.html',
+    'https://phet.colorado.edu/sims/html/charges-and-fields/latest/charges-and-fields_en.html',
+  ],
+  chem: [
+    'https://phet.colorado.edu/sims/html/build-an-atom/latest/build-an-atom_en.html',
+    'https://phet.colorado.edu/sims/html/molecule-shapes/latest/molecule-shapes_en.html',
+    'https://phet.colorado.edu/sims/html/balancing-chemical-equations/latest/balancing-chemical-equations_en.html',
+    'https://phet.colorado.edu/sims/html/ph-scale/latest/ph-scale_en.html',
+  ],
+};
+
+const VIDEO_URLS: Record<string, string[]> = {
+  phy: [
+    'https://www.youtube.com/embed/sBE9-NhWqB4?rel=0&modestbranding=1', // Magnetic fields
+    'https://www.youtube.com/embed/hFAOXdXZ5TM?rel=0&modestbranding=1', // Electromagnetic induction
+    'https://www.youtube.com/embed/mdulzEfQXDE?rel=0&modestbranding=1', // Electricity
+  ],
+  chem: [
+    'https://www.youtube.com/embed/FSyAehMdpyI?rel=0&modestbranding=1',
+    'https://www.youtube.com/embed/0RRVV4Diomg?rel=0&modestbranding=1',
+  ],
+};
+
+const PDF_URLS = [
+  'https://www.africau.edu/images/default/sample.pdf',
+  'https://www.orimi.com/pdf-test.pdf',
+  'https://www.clickdimensions.com/links/TestPDFfile.pdf',
+];
+
+const NOTE_BODIES: Record<string, string> = {
+  default: `Key idea\nThis chapter develops the relationship between moving charges and the magnetic fields they produce. We begin with the experimental observation (Oersted, 1820) that a current-carrying wire deflects a compass needle, then build a quantitative framework.\n\nWhat to emphasise in class\n• The right-hand rule — direction of B for a straight wire and a loop.\n• Biot–Savart law as the magnetic analogue of Coulomb's law.\n• Ampère's circuital law as a shortcut for symmetric current distributions.\n• Force on a moving charge: F = qv × B — vector nature, circular motion.\n\nCommon student mistakes\n• Confusing the direction of B vs. F on a moving charge.\n• Forgetting that B is zero on the axis of an infinite straight wire only at infinity.\n• Treating Ampère's law as universally applicable — it needs symmetry.\n\nQuick check\nA proton enters a uniform magnetic field perpendicular to its velocity. What is the shape of its path? Why does its kinetic energy stay constant?`,
+  recap: `Recap checklist\n• Definition and units of magnetic field (tesla, gauss).\n• Biot–Savart formula and three worked geometries.\n• Ampère's law applied to a solenoid and toroid.\n• Lorentz force and the motion of charged particles.\n\nCommon mistakes to call out\n1. Mixing up B and H.\n2. Forgetting the sin θ factor in F = qvB sin θ.\n3. Incorrect right-hand rule orientation when the current direction reverses.\n\nOne-line summary\nMoving charges create magnetic fields; magnetic fields exert forces on moving charges. Everything else is geometry.`,
+};
+
+function pickContentSource(
+  subjectPrefix: string,
+  type: LpContentType,
+  contentTitle: string,
+  bucketIdx: number,
+): { url?: string; body?: string } {
+  const subj = HTML_SIMS[subjectPrefix] ? subjectPrefix : 'phy';
+  switch (type) {
+    case 'html': {
+      const arr = HTML_SIMS[subj];
+      return { url: arr[bucketIdx % arr.length] };
+    }
+    case 'video': {
+      const arr = VIDEO_URLS[subj] ?? VIDEO_URLS.phy;
+      return { url: arr[bucketIdx % arr.length] };
+    }
+    case 'pdf':
+      return { url: PDF_URLS[bucketIdx % PDF_URLS.length] };
+    case 'ppt':
+      return {}; // DemoSlideDeck renders from title
+    case 'note': {
+      const key = /recap|mistake|highlight/i.test(contentTitle) ? 'recap' : 'default';
+      return { body: NOTE_BODIES[key] };
+    }
+    default:
+      return {};
+  }
+}
+
 
 const LP_POOL: LpTemplate[] = [
   {
@@ -359,13 +437,17 @@ function buildSubject(
         status: 'not-started',
         hoursPlanned: tmpl.hours,
         hoursSpent: 0,
-        contents: tmpl.contents.map((c, ci2) => ({
-          id: `${chId}-lp-${li + 1}-c${ci2 + 1}`,
-          type: c.type,
-          title: c.title,
-          duration: c.duration,
-          url: '#',
-        })),
+        contents: tmpl.contents.map((c, ci2) => {
+          const src = pickContentSource(subjectPrefix, c.type, c.title, ci + li + ci2);
+          return {
+            id: `${chId}-lp-${li + 1}-c${ci2 + 1}`,
+            type: c.type,
+            title: c.title,
+            duration: c.duration,
+            url: src.url,
+            body: src.body,
+          };
+        }),
       };
     });
 
@@ -467,13 +549,17 @@ function lpManual(
     hoursPlanned,
     hoursSpent,
     lastTaughtDate,
-    contents: contents.map((c, i) => ({
-      id: `${id}-c${i + 1}`,
-      type: c.type,
-      title: c.title,
-      duration: c.duration,
-      url: '#',
-    })),
+    contents: contents.map((c, i) => {
+      const src = pickContentSource('phy', c.type, c.title, i);
+      return {
+        id: `${id}-c${i + 1}`,
+        type: c.type,
+        title: c.title,
+        duration: c.duration,
+        url: src.url,
+        body: src.body,
+      };
+    }),
   };
 }
 

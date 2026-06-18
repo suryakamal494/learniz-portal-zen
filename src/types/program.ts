@@ -28,6 +28,8 @@ export interface LessonPlanContent {
   title: string;
   url?: string;
   duration?: string;
+  /** Rich text body for `note` content type (preview mode renders this). */
+  body?: string;
 }
 
 export type LessonPlanStatus = 'completed' | 'partial' | 'not-started';
