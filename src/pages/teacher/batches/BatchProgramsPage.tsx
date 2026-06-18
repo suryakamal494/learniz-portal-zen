@@ -40,7 +40,26 @@ export default function BatchProgramsPage() {
   const [previewLpId, setPreviewLpId] = useState<string | null>(null);
   const [addMaterialLpId, setAddMaterialLpId] = useState<string | null>(null);
   const [addNotesChapterId, setAddNotesChapterId] = useState<string | null>(null);
-  const [studyNotes, setStudyNotes] = useState<Record<string, ChapterStudyNote[]>>({});
+  const [studyNotes, setStudyNotes] = useState<Record<string, ChapterStudyNote[]>>(() => {
+    if (!baseProgram) return {};
+    const seed: Record<string, ChapterStudyNote[]> = {};
+    const templates: Array<Omit<ChapterStudyNote, 'id'>> = [
+      { title: 'Concept summary handout', fileName: 'concept-summary.pdf', description: 'Key definitions + worked examples (4 pages)', sharedAt: '2025-06-14T10:00:00Z' },
+      { title: 'Practice problem set', fileName: 'practice-problems.pdf', description: '12 graded problems with answer key', sharedAt: '2025-06-15T11:30:00Z' },
+      { title: 'Lecture handwritten notes', fileName: 'lecture-notes-scan.pdf', description: 'Scanned board work from last class', sharedAt: '2025-06-16T09:15:00Z' },
+      { title: 'Quick recap one-pager', fileName: 'recap-one-pager.pdf', description: 'For students to review before the test', sharedAt: '2025-06-17T17:00:00Z' },
+    ];
+    baseProgram.subjects.forEach((s) => {
+      s.chapters.forEach((ch, idx) => {
+        const count = (idx % 3) + 2; // 2, 3, or 4 notes per chapter
+        seed[ch.id] = templates.slice(0, count).map((t, i) => ({
+          ...t,
+          id: `${ch.id}-note-${i + 1}`,
+        }));
+      });
+    });
+    return seed;
+  });
   const [chapterTests, setChapterTests] = useState<Record<string, ChapterTest[]>>({});
   const [previewTestId, setPreviewTestId] = useState<string | null>(null);
   const { toast } = useToast();
