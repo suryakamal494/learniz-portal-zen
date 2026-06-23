@@ -581,7 +581,7 @@ const WorkloadStep: React.FC<{
                       </div>
                     </td>
                     <td className="p-3 text-right tabular-nums text-slate-700">{s.topics}</td>
-                    <td className="p-3 text-right tabular-nums text-slate-700">{s.hours}h</td>
+                    <td className="p-3 text-right tabular-nums text-slate-700">{formatHoursShort(s.hours)}</td>
                     <td className="p-3 text-right tabular-nums text-slate-700">{s.periods}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center gap-2 justify-end">
