@@ -405,7 +405,7 @@ const ProgramHoursPage: React.FC = () => {
                         <div key={s.subjectId} className="flex items-center gap-2 text-sm">
                           <span className={cn('h-2 w-2 rounded-full', pal.dot)} />
                           <span className="flex-1 truncate text-slate-700">{s.subjectName}</span>
-                          <span className="text-slate-500 text-xs tabular-nums">{s.hours}h · {s.periods}p</span>
+                          <span className="text-slate-500 text-xs tabular-nums">{formatHoursShort(s.hours)} · {s.periods}p</span>
                         </div>
                       );
                     })}
