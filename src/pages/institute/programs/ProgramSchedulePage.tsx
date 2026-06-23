@@ -536,7 +536,7 @@ const WorkloadStep: React.FC<{
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <Stat label="Periods needed" value={check.needed} sub={`${roll.hours}h teaching`} />
+            <Stat label="Periods needed" value={check.needed} sub={`${formatHoursShort(roll.hours)} teaching`} />
             <Stat label="Slots available" value={check.available} sub={`${config.periodsPerDay}/day`} />
             <Stat label="Surplus" value={check.surplus} sub={ok ? 'comfortable' : 'extend window'} negative={!ok} />
           </div>
