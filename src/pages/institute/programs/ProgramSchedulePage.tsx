@@ -54,7 +54,7 @@ import {
 } from '@/utils/calendarAutomation';
 import { formatHoursShort } from '@/utils/formatUtils';
 
-import { ScheduleConfig, ScheduleSlot, WeekDay } from '@/types/instituteProgram';
+import { Holiday, ScheduleConfig, ScheduleSlot, WeekDay } from '@/types/instituteProgram';
 import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
