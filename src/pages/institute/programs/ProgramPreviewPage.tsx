@@ -340,7 +340,7 @@ const ProgramPreviewPage: React.FC = () => {
                                             {tPlan ? formatShort(tPlan.endDate) : <span className="text-slate-300">—</span>}
                                           </td>
                                           <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                            {t.hours > 0 ? `${t.hours}h` : <span className="text-slate-300">—</span>}
+                                            {t.hours > 0 ? formatHoursShort(t.hours) : <span className="text-slate-300">—</span>}
                                           </td>
                                           <td className="py-1.5 text-right tabular-nums text-slate-700">
                                             {periods || <span className="text-slate-300">—</span>}
