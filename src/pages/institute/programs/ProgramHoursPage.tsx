@@ -622,8 +622,9 @@ const TopicRow: React.FC<{
         </TooltipTrigger>
         <TooltipContent className="text-xs">
           {periods > 0
-            ? `≈ ${periods} period${periods > 1 ? 's' : ''} of ${periodMins} min, rounded up from ${topic.hours} h.`
+            ? `≈ ${periods} period${periods > 1 ? 's' : ''} of ${periodMins} min, rounded up from ${formatHoursShort(topic.hours)}.`
             : 'Enter hours to compute periods.'}
+
         </TooltipContent>
       </Tooltip>
       {set ? (
