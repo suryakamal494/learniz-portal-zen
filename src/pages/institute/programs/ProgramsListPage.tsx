@@ -112,8 +112,7 @@ const ProgramsListPage: React.FC = () => {
             {filtered.map((p) => {
               const colors = p.subjects.map((s) => s.color);
               const bgGradient = gradientFor(colors);
-              const goSchedule = () =>
-                navigate(p.hoursFinalised ? `/institute/programs/${p.id}/schedule` : `/institute/programs/${p.id}/hours`);
+              const goSchedule = () => navigate(`/institute/programs/${p.id}/schedule`);
 
               return (
                 <Card
@@ -194,24 +193,8 @@ const ProgramsListPage: React.FC = () => {
                           <Clock className="h-3.5 w-3.5" />
                           Teaching Hours
                         </Button>
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border',
-                            p.hoursFinalised
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200',
-                          )}
-                          title={p.hoursFinalised ? 'Hours finalised' : 'Hours not finalised'}
-                        >
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 rounded-full',
-                              p.hoursFinalised ? 'bg-emerald-500' : 'bg-amber-500',
-                            )}
-                          />
-                          {p.hoursFinalised ? 'Finalised' : 'Draft'}
-                        </span>
                       </div>
+
                       <Button
                         size="sm"
                         className="gap-1.5 h-8 bg-slate-900 hover:bg-slate-800 text-white shadow-sm group-hover:bg-indigo-600 group-hover:shadow-md transition-colors"
