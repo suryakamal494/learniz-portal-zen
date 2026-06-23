@@ -355,8 +355,10 @@ const ProgramPreviewPage: React.FC = () => {
             );
           })}
         </div>
+        </>)}
       </div>
     </div>
+
   );
 };
 
