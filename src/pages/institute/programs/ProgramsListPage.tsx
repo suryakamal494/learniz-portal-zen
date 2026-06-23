@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CalendarRange,
+  Clock,
   GraduationCap,
   Plus,
   Search,
