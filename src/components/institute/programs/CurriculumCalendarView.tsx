@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { subjectPalette } from '@/lib/subjectColors';
@@ -14,6 +14,7 @@ import {
   ScheduleConfig,
   ScheduleSlot,
 } from '@/types/instituteProgram';
+import { MOCK_FACULTY } from '@/data/mockInstitutePrograms';
 
 type Granularity = 'day' | 'week' | 'month';
 
@@ -21,6 +22,14 @@ interface Props {
   program: InstituteProgram;
   schedule: ScheduleConfig;
 }
+
+function shortName(full: string): string {
+  // "Ms. Anika Rao" -> "A. Rao"
+  const parts = full.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '').split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+}
+
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
