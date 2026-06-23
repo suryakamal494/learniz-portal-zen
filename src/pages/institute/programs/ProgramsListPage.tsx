@@ -193,23 +193,8 @@ const ProgramsListPage: React.FC = () => {
                           <Clock className="h-3.5 w-3.5" />
                           Teaching Hours
                         </Button>
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border',
-                            p.hoursFinalised
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200',
-                          )}
-                          title={p.hoursFinalised ? 'Hours finalised' : 'Hours not finalised'}
-                        >
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 rounded-full',
-                              p.hoursFinalised ? 'bg-emerald-500' : 'bg-amber-500',
-                            )}
-                          />
-                          {p.hoursFinalised ? 'Finalised' : 'Draft'}
-                        </span>
+                      </div>
+
                       </div>
                       <Button
                         size="sm"
