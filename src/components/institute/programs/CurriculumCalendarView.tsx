@@ -172,6 +172,24 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
         })}
       </div>
 
+      {/* Faculty legend */}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+        <span className="font-medium text-slate-500 inline-flex items-center gap-1">
+          <UserRound className="h-3 w-3" /> Faculty:
+        </span>
+        {program.subjects.map((s) => {
+          const pal = subjectPalette(s.color);
+          const fac = facultyBySubject[s.id] ?? 'Unassigned';
+          return (
+            <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 bg-white">
+              <span className={cn('h-1.5 w-1.5 rounded-full', pal.dot)} />
+              <span className="text-slate-500">{s.name}:</span>
+              <span className="font-medium text-slate-800">{fac}</span>
+            </span>
+          );
+        })}
+      </div>
+
       {granularity === 'day' && (
         <DayView
           dateIso={cursor}
@@ -180,6 +198,7 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           subjectById={subjectById}
           chapterById={chapterById}
           topicById={topicById}
+          facultyFor={facultyFor}
         />
       )}
 
@@ -191,6 +210,7 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           slotsByDate={slotsByDate}
           subjectById={subjectById}
           topicById={topicById}
+          facultyFor={facultyFor}
         />
       )}
 
@@ -199,12 +219,14 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           monthAnchor={startOfMonth(cursor)}
           slotsByDate={slotsByDate}
           subjectById={subjectById}
+          facultyFor={facultyFor}
           onPickDay={(iso) => {
             setCursor(iso);
             setGranularity('day');
           }}
         />
       )}
+
 
       {slots.length === 0 && (
         <div className="text-sm text-slate-500 italic px-4 py-6 text-center border border-dashed rounded-md">
