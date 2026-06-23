@@ -135,17 +135,44 @@ const ProgramPreviewPage: React.FC = () => {
                   <span className="font-semibold text-slate-800">{roll.hours}h · ~{roll.periods}p</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 no-print">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={expandAll}>
-                  <Maximize2 className="h-3.5 w-3.5" /> Expand all
-                </Button>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={collapseAll}>
-                  <Minimize2 className="h-3.5 w-3.5" /> Collapse all
-                </Button>
+              <div className="flex items-center gap-2 no-print flex-wrap">
+                <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+                      viewMode === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900',
+                    )}
+                  >
+                    <LayoutList className="h-3.5 w-3.5" /> List
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('calendar')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+                      viewMode === 'calendar' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900',
+                    )}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" /> Calendar
+                  </button>
+                </div>
+                {viewMode === 'list' && (
+                  <>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={expandAll}>
+                      <Maximize2 className="h-3.5 w-3.5" /> Expand all
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={collapseAll}>
+                      <Minimize2 className="h-3.5 w-3.5" /> Collapse all
+                    </Button>
+                  </>
+                )}
                 <Button size="sm" className="gap-1.5 bg-slate-900 hover:bg-slate-800 text-white" onClick={handlePrint}>
                   <Printer className="h-3.5 w-3.5" /> Print
                 </Button>
               </div>
+
             </div>
           </CardContent>
         </Card>
