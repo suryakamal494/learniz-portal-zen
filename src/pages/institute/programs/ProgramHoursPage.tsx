@@ -375,7 +375,7 @@ const ProgramHoursPage: React.FC = () => {
                 <CardContent className="p-5 space-y-4">
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Summary</div>
-                    <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{roll.hours} hrs</div>
+                    <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{formatHoursShort(roll.hours)}</div>
                     <div className="text-sm text-slate-600 mt-0.5">
                       ≈ <span className="font-semibold text-slate-800 tabular-nums">{roll.periods}</span> periods of{' '}
                       {periodMins} min
