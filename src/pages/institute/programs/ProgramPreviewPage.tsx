@@ -27,6 +27,8 @@ import {
 } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
+import { formatHoursShort } from '@/utils/formatUtils';
+
 
 const DEFAULT_SCHEDULE = {
   startDate: '2025-04-14',
@@ -115,9 +117,9 @@ const ProgramPreviewPage: React.FC = () => {
         {/* Header */}
         <Card className="border-slate-200/70 shadow-sm overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
-          <CardContent className="p-6">
+          <CardContent className="p-6 space-y-4">
             <div className="flex flex-col sm:flex-row gap-4 sm:items-start sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
                   <Eye className="h-3.5 w-3.5" /> Curriculum preview
                 </div>
@@ -132,32 +134,10 @@ const ProgramPreviewPage: React.FC = () => {
                   <span className="text-slate-400">·</span>
                   <span>{program.subjects.length} subjects · {chaptersCount} chapters · {roll.totalTopics} topics</span>
                   <span className="text-slate-400">·</span>
-                  <span className="font-semibold text-slate-800">{roll.hours}h · ~{roll.periods}p</span>
+                  <span className="font-semibold text-slate-800">{formatHoursShort(roll.hours)} · ~{roll.periods}p</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 no-print flex-wrap">
-                <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('list')}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
-                      viewMode === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900',
-                    )}
-                  >
-                    <LayoutList className="h-3.5 w-3.5" /> List
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('calendar')}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
-                      viewMode === 'calendar' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900',
-                    )}
-                  >
-                    <CalendarDays className="h-3.5 w-3.5" /> Calendar
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 no-print flex-wrap sm:justify-end">
                 {viewMode === 'list' && (
                   <>
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={expandAll}>
@@ -168,14 +148,41 @@ const ProgramPreviewPage: React.FC = () => {
                     </Button>
                   </>
                 )}
-                <Button size="sm" className="gap-1.5 bg-slate-900 hover:bg-slate-800 text-white" onClick={handlePrint}>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={handlePrint}>
                   <Printer className="h-3.5 w-3.5" /> Print
                 </Button>
               </div>
+            </div>
 
+            {/* Primary view toggle */}
+            <div className="no-print flex items-center gap-2 pt-1 border-t border-slate-100">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 mr-1">View</span>
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors',
+                    viewMode === 'list' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900',
+                  )}
+                >
+                  <LayoutList className="h-4 w-4" /> List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('calendar')}
+                  className={cn(
+                    'inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors',
+                    viewMode === 'calendar' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900',
+                  )}
+                >
+                  <CalendarDays className="h-4 w-4" /> Calendar
+                </button>
+              </div>
             </div>
           </CardContent>
         </Card>
+
 
         {viewMode === 'calendar' && (
           <CurriculumCalendarView program={program} schedule={schedule} />
@@ -256,7 +263,7 @@ const ProgramPreviewPage: React.FC = () => {
                         {formatShort(sPlan.startDate)} → {formatShort(sPlan.endDate)}
                       </span>
                     )}
-                    <span className="font-semibold">{sRoll.hours}h · ~{sRoll.periods}p</span>
+                    <span className="font-semibold">{formatHoursShort(sRoll.hours)} · ~{sRoll.periods}p</span>
                   </div>
                 </button>
 
@@ -299,7 +306,7 @@ const ProgramPreviewPage: React.FC = () => {
                                 </span>
                               )}
                               <span>
-                                {c.topics.length} topics · {chapterHours(c)}h · ~{cPeriods}p
+                                {c.topics.length} topics · {formatHoursShort(chapterHours(c))} · ~{cPeriods}p
                               </span>
                             </div>
                           </button>
@@ -333,7 +340,7 @@ const ProgramPreviewPage: React.FC = () => {
                                             {tPlan ? formatShort(tPlan.endDate) : <span className="text-slate-300">—</span>}
                                           </td>
                                           <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                            {t.hours > 0 ? `${t.hours}h` : <span className="text-slate-300">—</span>}
+                                            {t.hours > 0 ? formatHoursShort(t.hours) : <span className="text-slate-300">—</span>}
                                           </td>
                                           <td className="py-1.5 text-right tabular-nums text-slate-700">
                                             {periods || <span className="text-slate-300">—</span>}

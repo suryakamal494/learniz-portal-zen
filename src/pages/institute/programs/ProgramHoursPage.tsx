@@ -46,6 +46,8 @@ import {
   useInstituteProgram,
 } from '@/hooks/useInstitutePrograms';
 import { chapterHours, hoursToPeriods, rollupProgram, rollupSubject } from '@/utils/calendarAutomation';
+import { formatHoursShort } from '@/utils/formatUtils';
+
 import { subjectPalette } from '@/lib/subjectColors';
 import { PROGRAM_TOOLTIPS } from '@/lib/programTooltips';
 import { toast } from '@/hooks/use-toast';
@@ -316,7 +318,7 @@ const ProgramHoursPage: React.FC = () => {
                       <div className="hidden sm:flex items-center gap-5 text-sm">
                         <div className="text-right">
                           <div className="text-[10px] uppercase tracking-wider text-slate-500">Hours</div>
-                          <div className={cn('font-bold tabular-nums', pal.text)}>{sRoll.hours}h</div>
+                          <div className={cn('font-bold tabular-nums', pal.text)}>{formatHoursShort(sRoll.hours)}</div>
                         </div>
                         <div className="text-right">
                           <div className="text-[10px] uppercase tracking-wider text-slate-500">Periods</div>
@@ -373,7 +375,7 @@ const ProgramHoursPage: React.FC = () => {
                 <CardContent className="p-5 space-y-4">
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Summary</div>
-                    <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{roll.hours} hrs</div>
+                    <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{formatHoursShort(roll.hours)}</div>
                     <div className="text-sm text-slate-600 mt-0.5">
                       ≈ <span className="font-semibold text-slate-800 tabular-nums">{roll.periods}</span> periods of{' '}
                       {periodMins} min
@@ -403,7 +405,7 @@ const ProgramHoursPage: React.FC = () => {
                         <div key={s.subjectId} className="flex items-center gap-2 text-sm">
                           <span className={cn('h-2 w-2 rounded-full', pal.dot)} />
                           <span className="flex-1 truncate text-slate-700">{s.subjectName}</span>
-                          <span className="text-slate-500 text-xs tabular-nums">{s.hours}h · {s.periods}p</span>
+                          <span className="text-slate-500 text-xs tabular-nums">{formatHoursShort(s.hours)} · {s.periods}p</span>
                         </div>
                       );
                     })}
@@ -620,8 +622,9 @@ const TopicRow: React.FC<{
         </TooltipTrigger>
         <TooltipContent className="text-xs">
           {periods > 0
-            ? `≈ ${periods} period${periods > 1 ? 's' : ''} of ${periodMins} min, rounded up from ${topic.hours} h.`
+            ? `≈ ${periods} period${periods > 1 ? 's' : ''} of ${periodMins} min, rounded up from ${formatHoursShort(topic.hours)}.`
             : 'Enter hours to compute periods.'}
+
         </TooltipContent>
       </Tooltip>
       {set ? (

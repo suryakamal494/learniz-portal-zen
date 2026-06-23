@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { subjectPalette } from '@/lib/subjectColors';
@@ -14,6 +14,7 @@ import {
   ScheduleConfig,
   ScheduleSlot,
 } from '@/types/instituteProgram';
+import { MOCK_FACULTY } from '@/data/mockInstitutePrograms';
 
 type Granularity = 'day' | 'week' | 'month';
 
@@ -21,6 +22,14 @@ interface Props {
   program: InstituteProgram;
   schedule: ScheduleConfig;
 }
+
+function shortName(full: string): string {
+  // "Ms. Anika Rao" -> "A. Rao"
+  const parts = full.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '').split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+}
+
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -51,7 +60,7 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
   const [granularity, setGranularity] = useState<Granularity>('week');
   const [cursor, setCursor] = useState<string>(() => schedule.startDate);
 
-  const { slots, slotsByDate, subjectById, chapterById, topicById, planEnd } = useMemo(() => {
+  const { slots, slotsByDate, subjectById, chapterById, topicById, facultyById, facultyBySubject, planEnd } = useMemo(() => {
     const res = generateSchedule(program, schedule, []);
     const byDate: Record<string, ScheduleSlot[]> = {};
     res.slots.forEach((s) => {
@@ -68,15 +77,29 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
         c.topics.forEach((t) => (tMap[t.id] = t.name));
       });
     });
+    const fMap: Record<string, string> = {};
+    const fBySubj: Record<string, string> = {};
+    MOCK_FACULTY.forEach((f) => {
+      fMap[f.id] = f.name;
+      if (f.subjectId && !fBySubj[f.subjectId]) fBySubj[f.subjectId] = f.name;
+    });
     return {
       slots: res.slots,
       slotsByDate: byDate,
       subjectById: sMap,
       chapterById: cMap,
       topicById: tMap,
+      facultyById: fMap,
+      facultyBySubject: fBySubj,
       planEnd: res.endDate,
     };
   }, [program, schedule]);
+
+  const facultyFor = (slot: ScheduleSlot): string => {
+    if (slot.facultyId && facultyById[slot.facultyId]) return facultyById[slot.facultyId];
+    return facultyBySubject[slot.subjectId] ?? 'Unassigned';
+  };
+
 
   const periodsPerDay = schedule.periodsPerDay;
 
@@ -149,6 +172,24 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
         })}
       </div>
 
+      {/* Faculty legend */}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+        <span className="font-medium text-slate-500 inline-flex items-center gap-1">
+          <UserRound className="h-3 w-3" /> Faculty:
+        </span>
+        {program.subjects.map((s) => {
+          const pal = subjectPalette(s.color);
+          const fac = facultyBySubject[s.id] ?? 'Unassigned';
+          return (
+            <span key={s.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 bg-white">
+              <span className={cn('h-1.5 w-1.5 rounded-full', pal.dot)} />
+              <span className="text-slate-500">{s.name}:</span>
+              <span className="font-medium text-slate-800">{fac}</span>
+            </span>
+          );
+        })}
+      </div>
+
       {granularity === 'day' && (
         <DayView
           dateIso={cursor}
@@ -157,6 +198,7 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           subjectById={subjectById}
           chapterById={chapterById}
           topicById={topicById}
+          facultyFor={facultyFor}
         />
       )}
 
@@ -168,6 +210,7 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           slotsByDate={slotsByDate}
           subjectById={subjectById}
           topicById={topicById}
+          facultyFor={facultyFor}
         />
       )}
 
@@ -176,12 +219,14 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           monthAnchor={startOfMonth(cursor)}
           slotsByDate={slotsByDate}
           subjectById={subjectById}
+          facultyFor={facultyFor}
           onPickDay={(iso) => {
             setCursor(iso);
             setGranularity('day');
           }}
         />
       )}
+
 
       {slots.length === 0 && (
         <div className="text-sm text-slate-500 italic px-4 py-6 text-center border border-dashed rounded-md">
@@ -205,7 +250,8 @@ const DayView: React.FC<{
   subjectById: Record<string, { name: string; color: string }>;
   chapterById: Record<string, string>;
   topicById: Record<string, string>;
-}> = ({ dateIso, periodsPerDay, slots, subjectById, chapterById, topicById }) => {
+  facultyFor: (slot: ScheduleSlot) => string;
+}> = ({ dateIso, periodsPerDay, slots, subjectById, chapterById, topicById, facultyFor }) => {
   const slotMap = new Map(slots.map((s) => [s.periodIndex, s]));
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
@@ -221,6 +267,7 @@ const DayView: React.FC<{
         }
         const sub = subjectById[sl.subjectId];
         const pal = subjectPalette(sub?.color ?? 'blue');
+        const fac = facultyFor(sl);
         return (
           <div key={i} className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-0">
             <span className="w-16 text-xs font-semibold text-slate-700">P{i + 1}</span>
@@ -233,12 +280,17 @@ const DayView: React.FC<{
               <span className="font-medium">{topicById[sl.topicId]}</span>
               <span className="text-slate-400"> · {chapterById[sl.chapterId]}</span>
             </div>
+            <span className="hidden sm:inline-flex items-center gap-1 text-xs text-slate-600 shrink-0">
+              <UserRound className="h-3 w-3 text-slate-400" />
+              <span className="font-medium">{fac}</span>
+            </span>
           </div>
         );
       })}
     </div>
   );
 };
+
 
 /* ── Week view ─────────────────────────────────────────────────── */
 const WeekView: React.FC<{
@@ -248,7 +300,8 @@ const WeekView: React.FC<{
   slotsByDate: Record<string, ScheduleSlot[]>;
   subjectById: Record<string, { name: string; color: string }>;
   topicById: Record<string, string>;
-}> = ({ weekStart, periodsPerDay, workingDays, slotsByDate, subjectById, topicById }) => {
+  facultyFor: (slot: ScheduleSlot) => string;
+}> = ({ weekStart, periodsPerDay, workingDays, slotsByDate, subjectById, topicById, facultyFor }) => {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const today = toISO(new Date());
   return (
@@ -288,11 +341,12 @@ const WeekView: React.FC<{
                 }
                 const sub = subjectById[sl.subjectId];
                 const pal = subjectPalette(sub?.color ?? 'blue');
+                const fac = facultyFor(sl);
                 return (
                   <div
                     key={iso + p}
                     className={cn('border-b border-l border-slate-100 p-1', pal.bgSoft)}
-                    title={`${sub?.name} · ${topicById[sl.topicId]}`}
+                    title={`${sub?.name} · ${topicById[sl.topicId]} · ${fac}`}
                   >
                     <div className={cn('text-[10px] font-semibold uppercase tracking-wide', pal.text)}>
                       {sub?.name}
@@ -300,11 +354,16 @@ const WeekView: React.FC<{
                     <div className="text-[11px] text-slate-700 leading-tight line-clamp-2">
                       {topicById[sl.topicId]}
                     </div>
+                    <div className="text-[10px] text-slate-500 leading-tight truncate mt-0.5 inline-flex items-center gap-0.5">
+                      <UserRound className="h-2.5 w-2.5 shrink-0" />
+                      <span className="truncate">{shortName(fac)}</span>
+                    </div>
                   </div>
                 );
               })}
             </React.Fragment>
           ))}
+
         </div>
       </div>
     </div>
@@ -316,8 +375,9 @@ const MonthView: React.FC<{
   monthAnchor: string;
   slotsByDate: Record<string, ScheduleSlot[]>;
   subjectById: Record<string, { name: string; color: string }>;
+  facultyFor: (slot: ScheduleSlot) => string;
   onPickDay: (iso: string) => void;
-}> = ({ monthAnchor, slotsByDate, subjectById, onPickDay }) => {
+}> = ({ monthAnchor, slotsByDate, subjectById, facultyFor, onPickDay }) => {
   const anchor = parseISO(monthAnchor);
   const monthIdx = anchor.getMonth();
   const gridStart = startOfWeek(monthAnchor);
@@ -337,21 +397,30 @@ const MonthView: React.FC<{
           const d = parseISO(iso);
           const inMonth = d.getMonth() === monthIdx;
           const daySlots = slotsByDate[iso] ?? [];
-          // Aggregate subject counts
+          // Aggregate subject counts and faculty per subject
           const counts: Record<string, number> = {};
-          daySlots.forEach((s) => (counts[s.subjectId] = (counts[s.subjectId] || 0) + 1));
+          const facBySubj: Record<string, Set<string>> = {};
+          daySlots.forEach((s) => {
+            counts[s.subjectId] = (counts[s.subjectId] || 0) + 1;
+            (facBySubj[s.subjectId] ||= new Set()).add(facultyFor(s));
+          });
           const entries = Object.entries(counts);
+          const tooltip = entries
+            .map(([sid, n]) => `${subjectById[sid]?.name ?? '?'} (${n}) — ${[...(facBySubj[sid] ?? [])].join(', ')}`)
+            .join('\n');
           return (
             <button
               type="button"
               key={iso}
               onClick={() => onPickDay(iso)}
+              title={tooltip || undefined}
               className={cn(
                 'min-h-[88px] border-b border-l border-slate-100 p-1.5 text-left hover:bg-slate-50 transition-colors flex flex-col gap-1',
                 !inMonth && 'bg-slate-50/60 text-slate-400',
                 iso === today && 'ring-1 ring-inset ring-indigo-400',
               )}
             >
+
               <div className={cn('text-[11px] font-semibold', iso === today ? 'text-indigo-700' : 'text-slate-700')}>
                 {d.getDate()}
               </div>

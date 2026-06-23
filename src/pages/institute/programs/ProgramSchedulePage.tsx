@@ -49,6 +49,8 @@ import {
   rollupProgram,
   toISO,
 } from '@/utils/calendarAutomation';
+import { formatHoursShort } from '@/utils/formatUtils';
+
 import { ScheduleConfig, ScheduleSlot, WeekDay } from '@/types/instituteProgram';
 import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
@@ -534,7 +536,7 @@ const WorkloadStep: React.FC<{
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <Stat label="Periods needed" value={check.needed} sub={`${roll.hours}h teaching`} />
+            <Stat label="Periods needed" value={check.needed} sub={`${formatHoursShort(roll.hours)} teaching`} />
             <Stat label="Slots available" value={check.available} sub={`${config.periodsPerDay}/day`} />
             <Stat label="Surplus" value={check.surplus} sub={ok ? 'comfortable' : 'extend window'} negative={!ok} />
           </div>
@@ -579,7 +581,7 @@ const WorkloadStep: React.FC<{
                       </div>
                     </td>
                     <td className="p-3 text-right tabular-nums text-slate-700">{s.topics}</td>
-                    <td className="p-3 text-right tabular-nums text-slate-700">{s.hours}h</td>
+                    <td className="p-3 text-right tabular-nums text-slate-700">{formatHoursShort(s.hours)}</td>
                     <td className="p-3 text-right tabular-nums text-slate-700">{s.periods}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center gap-2 justify-end">
