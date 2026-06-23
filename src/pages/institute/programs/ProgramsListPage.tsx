@@ -3,33 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CalendarRange,
-  CheckCircle2,
-  Clock,
-  Eye,
   GraduationCap,
-  Layers,
   Plus,
   Search,
-  Sparkles,
-  Timer,
+  Users,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useInstitutePrograms } from '@/hooks/useInstitutePrograms';
-import { rollupProgram } from '@/utils/calendarAutomation';
-import { MetricChip } from '@/components/institute/programs/MetricChip';
-import { PROGRAM_TOOLTIPS } from '@/lib/programTooltips';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
+
 
 const ProgramsListPage: React.FC = () => {
   const navigate = useNavigate();
