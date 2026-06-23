@@ -276,3 +276,149 @@ export function capacityCheck(
   }
   return { needed, available, surplus, suggestedEndDate };
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * planDates — lightweight, deterministic date layout per topic.
+ * Walks subjects round-robin across working days using periodsPerDay,
+ * and emits per-topic, per-chapter, per-subject {start, end} ranges.
+ * Used by the curriculum preview so users see WHEN each topic falls
+ * even before a full schedule is generated.
+ * ───────────────────────────────────────────────────────────────────── */
+
+export interface TopicDateRange {
+  topicId: string;
+  startDate: string;
+  endDate: string;
+  periods: number;
+}
+
+export interface ChapterDateRange {
+  chapterId: string;
+  startDate: string;
+  endDate: string;
+  topics: Record<string, TopicDateRange>;
+}
+
+export interface SubjectDateRange {
+  subjectId: string;
+  startDate: string;
+  endDate: string;
+  chapters: Record<string, ChapterDateRange>;
+}
+
+export interface DatePlan {
+  startDate: string;
+  endDate: string;
+  workingDaysUsed: number;
+  totalPeriods: number;
+  subjects: Record<string, SubjectDateRange>;
+  topicById: Record<string, TopicDateRange>;
+  chapterById: Record<string, ChapterDateRange>;
+}
+
+export function planDates(program: InstituteProgram, config: ScheduleConfig): DatePlan {
+  const periodMins = config.periodLengthMins;
+  type Need = { subjectId: string; chapterId: string; topicId: string; remaining: number; totalPeriods: number };
+  const queues: Record<string, Need[]> = {};
+  program.subjects.forEach((s) => {
+    const list: Need[] = [];
+    s.chapters.forEach((c) => {
+      c.topics.forEach((t) => {
+        const p = hoursToPeriods(t.hours, periodMins);
+        if (p > 0) list.push({ subjectId: s.id, chapterId: c.id, topicId: t.id, remaining: p, totalPeriods: p });
+      });
+    });
+    queues[s.id] = list;
+  });
+
+  const endIso = addDays(config.startDate, 1500);
+  const holidaySet = new Set(config.holidays.map((h) => h.date));
+  const workingDays = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
+
+  const topicById: Record<string, TopicDateRange> = {};
+  const subjectIds = program.subjects.map((s) => s.id);
+  let rrCursor = 0;
+  let consumed = 0;
+  let lastUsedDate = config.startDate;
+  let firstUsedDate = '';
+
+  outer: for (const date of workingDays) {
+    for (let p = 0; p < config.periodsPerDay; p++) {
+      let pickedSubject: string | null = null;
+      for (let i = 0; i < subjectIds.length; i++) {
+        const sid = subjectIds[(rrCursor + i) % subjectIds.length];
+        if (queues[sid].length > 0) {
+          pickedSubject = sid;
+          rrCursor = (rrCursor + i + 1) % subjectIds.length;
+          break;
+        }
+      }
+      if (!pickedSubject) break outer;
+      const need = queues[pickedSubject][0];
+      const entry = topicById[need.topicId] ?? {
+        topicId: need.topicId,
+        startDate: date,
+        endDate: date,
+        periods: need.totalPeriods,
+      };
+      entry.endDate = date;
+      topicById[need.topicId] = entry;
+      if (!firstUsedDate) firstUsedDate = date;
+      lastUsedDate = date;
+      consumed += 1;
+      need.remaining -= 1;
+      if (need.remaining <= 0) queues[pickedSubject].shift();
+    }
+    if (subjectIds.every((sid) => queues[sid].length === 0)) break;
+  }
+
+  // Roll up to chapter & subject ranges.
+  const chapterById: Record<string, ChapterDateRange> = {};
+  const subjects: Record<string, SubjectDateRange> = {};
+  program.subjects.forEach((s) => {
+    const cMap: Record<string, ChapterDateRange> = {};
+    let sStart = '';
+    let sEnd = '';
+    s.chapters.forEach((c) => {
+      const tMap: Record<string, TopicDateRange> = {};
+      let cStart = '';
+      let cEnd = '';
+      c.topics.forEach((t) => {
+        const tr = topicById[t.id];
+        if (!tr) return;
+        tMap[t.id] = tr;
+        if (!cStart || tr.startDate < cStart) cStart = tr.startDate;
+        if (!cEnd || tr.endDate > cEnd) cEnd = tr.endDate;
+      });
+      if (cStart) {
+        const range: ChapterDateRange = { chapterId: c.id, startDate: cStart, endDate: cEnd, topics: tMap };
+        cMap[c.id] = range;
+        chapterById[c.id] = range;
+        if (!sStart || cStart < sStart) sStart = cStart;
+        if (!sEnd || cEnd > sEnd) sEnd = cEnd;
+      }
+    });
+    if (sStart) subjects[s.id] = { subjectId: s.id, startDate: sStart, endDate: sEnd, chapters: cMap };
+  });
+
+  return {
+    startDate: firstUsedDate || config.startDate,
+    endDate: lastUsedDate,
+    workingDaysUsed: workingDays.findIndex((d) => d === lastUsedDate) + 1,
+    totalPeriods: consumed,
+    subjects,
+    topicById,
+    chapterById,
+  };
+}
+
+export function formatShort(iso: string): string {
+  if (!iso) return '—';
+  return parseISO(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+export function daysBetween(a: string, b: string): number {
+  if (!a || !b) return 0;
+  return Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / MS_PER_DAY) + 1;
+}
+
