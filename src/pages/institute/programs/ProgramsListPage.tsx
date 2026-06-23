@@ -179,29 +179,63 @@ const ProgramsListPage: React.FC = () => {
                       })}
                     </div>
 
-                    {/* CTA row — minimal */}
-                    <div className="flex items-center justify-between pt-2">
+                    {/* CTA row */}
+                    <div className="flex items-center justify-between gap-2 pt-2">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 h-8 bg-white/90 backdrop-blur border-slate-300 text-slate-700 hover:bg-white hover:text-indigo-700 hover:border-indigo-300"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/institute/programs/${p.id}/hours`);
+                          }}
+                        >
+                          <Clock className="h-3.5 w-3.5" />
+                          Teaching Hours
+                        </Button>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border',
+                            p.hoursFinalised
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200',
+                          )}
+                          title={p.hoursFinalised ? 'Hours finalised' : 'Hours not finalised'}
+                        >
+                          <span
+                            className={cn(
+                              'h-1.5 w-1.5 rounded-full',
+                              p.hoursFinalised ? 'bg-emerald-500' : 'bg-amber-500',
+                            )}
+                          />
+                          {p.hoursFinalised ? 'Finalised' : 'Draft'}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="gap-1.5 h-8 bg-slate-900 hover:bg-slate-800 text-white shadow-sm group-hover:bg-indigo-600 group-hover:shadow-md transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goSchedule();
+                        }}
+                      >
+                        Open
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </Button>
+                    </div>
+
+                    <div className="flex justify-end">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/institute/programs/${p.id}/preview`);
                         }}
-                        className="text-xs font-medium text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline"
+                        className="text-[11px] font-medium text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline"
                       >
-                        View curriculum
+                        View curriculum →
                       </button>
-                      <Button
-                        size="sm"
-                        className="gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm group-hover:bg-indigo-600 group-hover:shadow-md transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goSchedule();
-                        }}
-                      >
-                        Open program
-                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
