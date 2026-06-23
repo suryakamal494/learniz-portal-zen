@@ -375,8 +375,9 @@ const MonthView: React.FC<{
   monthAnchor: string;
   slotsByDate: Record<string, ScheduleSlot[]>;
   subjectById: Record<string, { name: string; color: string }>;
+  facultyFor: (slot: ScheduleSlot) => string;
   onPickDay: (iso: string) => void;
-}> = ({ monthAnchor, slotsByDate, subjectById, onPickDay }) => {
+}> = ({ monthAnchor, slotsByDate, subjectById, facultyFor, onPickDay }) => {
   const anchor = parseISO(monthAnchor);
   const monthIdx = anchor.getMonth();
   const gridStart = startOfWeek(monthAnchor);
@@ -396,21 +397,30 @@ const MonthView: React.FC<{
           const d = parseISO(iso);
           const inMonth = d.getMonth() === monthIdx;
           const daySlots = slotsByDate[iso] ?? [];
-          // Aggregate subject counts
+          // Aggregate subject counts and faculty per subject
           const counts: Record<string, number> = {};
-          daySlots.forEach((s) => (counts[s.subjectId] = (counts[s.subjectId] || 0) + 1));
+          const facBySubj: Record<string, Set<string>> = {};
+          daySlots.forEach((s) => {
+            counts[s.subjectId] = (counts[s.subjectId] || 0) + 1;
+            (facBySubj[s.subjectId] ||= new Set()).add(facultyFor(s));
+          });
           const entries = Object.entries(counts);
+          const tooltip = entries
+            .map(([sid, n]) => `${subjectById[sid]?.name ?? '?'} (${n}) — ${[...(facBySubj[sid] ?? [])].join(', ')}`)
+            .join('\n');
           return (
             <button
               type="button"
               key={iso}
               onClick={() => onPickDay(iso)}
+              title={tooltip || undefined}
               className={cn(
                 'min-h-[88px] border-b border-l border-slate-100 p-1.5 text-left hover:bg-slate-50 transition-colors flex flex-col gap-1',
                 !inMonth && 'bg-slate-50/60 text-slate-400',
                 iso === today && 'ring-1 ring-inset ring-indigo-400',
               )}
             >
+
               <div className={cn('text-[11px] font-semibold', iso === today ? 'text-indigo-700' : 'text-slate-700')}>
                 {d.getDate()}
               </div>
