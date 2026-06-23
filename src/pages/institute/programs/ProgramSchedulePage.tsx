@@ -1236,14 +1236,6 @@ const SlotEditor: React.FC<{
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs uppercase tracking-wider text-slate-500">Class URL</Label>
-          <Input
-            value={slot.classUrl}
-            onChange={(e) => onChange({ classUrl: e.target.value })}
-            className="bg-white mt-1 font-mono text-xs"
-          />
-        </div>
       </div>
       <div className="flex gap-2 pt-2">
         <Button
