@@ -318,7 +318,7 @@ const ProgramHoursPage: React.FC = () => {
                       <div className="hidden sm:flex items-center gap-5 text-sm">
                         <div className="text-right">
                           <div className="text-[10px] uppercase tracking-wider text-slate-500">Hours</div>
-                          <div className={cn('font-bold tabular-nums', pal.text)}>{sRoll.hours}h</div>
+                          <div className={cn('font-bold tabular-nums', pal.text)}>{formatHoursShort(sRoll.hours)}</div>
                         </div>
                         <div className="text-right">
                           <div className="text-[10px] uppercase tracking-wider text-slate-500">Periods</div>
