@@ -250,7 +250,8 @@ const DayView: React.FC<{
   subjectById: Record<string, { name: string; color: string }>;
   chapterById: Record<string, string>;
   topicById: Record<string, string>;
-}> = ({ dateIso, periodsPerDay, slots, subjectById, chapterById, topicById }) => {
+  facultyFor: (slot: ScheduleSlot) => string;
+}> = ({ dateIso, periodsPerDay, slots, subjectById, chapterById, topicById, facultyFor }) => {
   const slotMap = new Map(slots.map((s) => [s.periodIndex, s]));
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
@@ -266,6 +267,7 @@ const DayView: React.FC<{
         }
         const sub = subjectById[sl.subjectId];
         const pal = subjectPalette(sub?.color ?? 'blue');
+        const fac = facultyFor(sl);
         return (
           <div key={i} className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-0">
             <span className="w-16 text-xs font-semibold text-slate-700">P{i + 1}</span>
@@ -278,12 +280,17 @@ const DayView: React.FC<{
               <span className="font-medium">{topicById[sl.topicId]}</span>
               <span className="text-slate-400"> · {chapterById[sl.chapterId]}</span>
             </div>
+            <span className="hidden sm:inline-flex items-center gap-1 text-xs text-slate-600 shrink-0">
+              <UserRound className="h-3 w-3 text-slate-400" />
+              <span className="font-medium">{fac}</span>
+            </span>
           </div>
         );
       })}
     </div>
   );
 };
+
 
 /* ── Week view ─────────────────────────────────────────────────── */
 const WeekView: React.FC<{
