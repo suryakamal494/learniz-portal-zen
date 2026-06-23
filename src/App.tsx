@@ -88,8 +88,11 @@ import StudentReportsPage from './pages/institute/StudentReportsPage';
 import SectionStudentsPage from './pages/institute/SectionStudentsPage';
 import StudentDetailPage from './pages/institute/StudentDetailPage';
 import { InstituteLayout } from './components/institute/InstituteLayout';
-import InstituteTimetablePage from './pages/institute/timetable/InstituteTimetablePage';
 import InstituteExamsPage from './pages/institute/exams/InstituteExamsPage';
+import ProgramsListPage from './pages/institute/programs/ProgramsListPage';
+import ProgramHoursPage from './pages/institute/programs/ProgramHoursPage';
+import ProgramPreviewPage from './pages/institute/programs/ProgramPreviewPage';
+import ProgramSchedulePage from './pages/institute/programs/ProgramSchedulePage';
 
 
 function TeacherLayoutWrapper() {
@@ -201,8 +204,14 @@ function App() {
           <Route path="insights/schedule-tracking" element={<ScheduleTrackingPage />} />
           <Route path="insights/learning-response" element={<LearningResponsePage />} />
 
-          {/* Timetable module */}
-          <Route path="timetable" element={<InstituteTimetablePage />} />
+          {/* Programs module */}
+          <Route path="programs" element={<ProgramsListPage />} />
+          <Route path="programs/:programId/hours" element={<ProgramHoursPage />} />
+          <Route path="programs/:programId/preview" element={<ProgramPreviewPage />} />
+          <Route path="programs/:programId/schedule" element={<ProgramSchedulePage />} />
+
+          {/* Legacy timetable → programs */}
+          <Route path="timetable" element={<Navigate to="/institute/programs" replace />} />
 
           {/* Exam module */}
           <Route path="exams" element={<InstituteExamsPage />} />

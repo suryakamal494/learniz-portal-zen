@@ -23,7 +23,7 @@ import {
   Activity,
   ArrowLeft,
   Building2,
-  CalendarDays,
+  CalendarRange,
   ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,9 +51,9 @@ const moduleGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'Timetable',
+    label: 'Programs',
     items: [
-      { title: 'Timetable', url: '/institute/timetable', icon: CalendarDays },
+      { title: 'Programs', url: '/institute/programs', icon: CalendarRange },
     ],
   },
   {
