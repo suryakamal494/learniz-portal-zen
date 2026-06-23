@@ -6,10 +6,13 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  LayoutList,
   Maximize2,
   Minimize2,
   Printer,
 } from 'lucide-react';
+import CurriculumCalendarView from '@/components/institute/programs/CurriculumCalendarView';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useInstituteProgram } from '@/hooks/useInstitutePrograms';
@@ -53,6 +56,8 @@ const ProgramPreviewPage: React.FC = () => {
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
   const [activeSubject, setActiveSubject] = useState<string>('all');
   const [forcePrintOpen, setForcePrintOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
 
   const periodMins = program?.schedule?.periodLengthMins ?? 40;
   const schedule = program?.schedule ?? DEFAULT_SCHEDULE;
@@ -130,23 +135,56 @@ const ProgramPreviewPage: React.FC = () => {
                   <span className="font-semibold text-slate-800">{roll.hours}h · ~{roll.periods}p</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 no-print">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={expandAll}>
-                  <Maximize2 className="h-3.5 w-3.5" /> Expand all
-                </Button>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={collapseAll}>
-                  <Minimize2 className="h-3.5 w-3.5" /> Collapse all
-                </Button>
+              <div className="flex items-center gap-2 no-print flex-wrap">
+                <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+                      viewMode === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900',
+                    )}
+                  >
+                    <LayoutList className="h-3.5 w-3.5" /> List
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('calendar')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
+                      viewMode === 'calendar' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900',
+                    )}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" /> Calendar
+                  </button>
+                </div>
+                {viewMode === 'list' && (
+                  <>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={expandAll}>
+                      <Maximize2 className="h-3.5 w-3.5" /> Expand all
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={collapseAll}>
+                      <Minimize2 className="h-3.5 w-3.5" /> Collapse all
+                    </Button>
+                  </>
+                )}
                 <Button size="sm" className="gap-1.5 bg-slate-900 hover:bg-slate-800 text-white" onClick={handlePrint}>
                   <Printer className="h-3.5 w-3.5" /> Print
                 </Button>
               </div>
+
             </div>
           </CardContent>
         </Card>
 
+        {viewMode === 'calendar' && (
+          <CurriculumCalendarView program={program} schedule={schedule} />
+        )}
+
+        {viewMode === 'list' && (<>
         {/* Subject filter tabs */}
         <div className="no-print flex flex-wrap items-center gap-2 sticky top-0 z-10 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 py-2 -mx-1 px-1">
+
           <button
             type="button"
             onClick={() => setActiveSubject('all')}
@@ -317,8 +355,10 @@ const ProgramPreviewPage: React.FC = () => {
             );
           })}
         </div>
+        </>)}
       </div>
     </div>
+
   );
 };
 
