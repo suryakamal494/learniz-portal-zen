@@ -88,6 +88,8 @@ import StudentReportsPage from './pages/institute/StudentReportsPage';
 import SectionStudentsPage from './pages/institute/SectionStudentsPage';
 import StudentDetailPage from './pages/institute/StudentDetailPage';
 import { InstituteLayout } from './components/institute/InstituteLayout';
+import InstituteTimetablePage from './pages/institute/timetable/InstituteTimetablePage';
+import InstituteExamsPage from './pages/institute/exams/InstituteExamsPage';
 
 
 function TeacherLayoutWrapper() {
@@ -180,21 +182,41 @@ function App() {
           <Route path="courses/:courseId/edit" element={<EditCoursePage />} />
         </Route>
 
-        {/* Institute Analytics Routes */}
+        {/* Institute Panel Routes */}
         <Route path="/institute" element={<InstituteLayout />}>
-          <Route path="dashboard" element={<InstituteDashboardPage />} />
-          <Route index element={<InstituteSnapshotPage />} />
-          <Route path="teachers" element={<TeacherPerformancePage />} />
-          <Route path="teachers/:teacherId" element={<TeacherDetailPage />} />
-          <Route path="subjects" element={<SubjectHealthPage />} />
-          <Route path="classes" element={<ClassOverviewPage />} />
-          <Route path="students" element={<StudentReportsPage />} />
-          <Route path="students/:classId/:sectionId" element={<SectionStudentsPage />} />
-          <Route path="students/:classId/:sectionId/:studentId" element={<StudentDetailPage />} />
-          <Route path="grand-tests" element={<GrandTestsPage />} />
-          <Route path="grand-tests/:testId" element={<GrandTestDetailPage />} />
-          <Route path="schedule-tracking" element={<ScheduleTrackingPage />} />
-          <Route path="learning-response" element={<LearningResponsePage />} />
+          <Route index element={<Navigate to="/institute/insights" replace />} />
+
+          {/* Academic Insights module */}
+          <Route path="insights" element={<InstituteSnapshotPage />} />
+          <Route path="insights/dashboard" element={<InstituteDashboardPage />} />
+          <Route path="insights/teachers" element={<TeacherPerformancePage />} />
+          <Route path="insights/teachers/:teacherId" element={<TeacherDetailPage />} />
+          <Route path="insights/subjects" element={<SubjectHealthPage />} />
+          <Route path="insights/classes" element={<ClassOverviewPage />} />
+          <Route path="insights/students" element={<StudentReportsPage />} />
+          <Route path="insights/students/:classId/:sectionId" element={<SectionStudentsPage />} />
+          <Route path="insights/students/:classId/:sectionId/:studentId" element={<StudentDetailPage />} />
+          <Route path="insights/grand-tests" element={<GrandTestsPage />} />
+          <Route path="insights/grand-tests/:testId" element={<GrandTestDetailPage />} />
+          <Route path="insights/schedule-tracking" element={<ScheduleTrackingPage />} />
+          <Route path="insights/learning-response" element={<LearningResponsePage />} />
+
+          {/* Timetable module */}
+          <Route path="timetable" element={<InstituteTimetablePage />} />
+
+          {/* Exam module */}
+          <Route path="exams" element={<InstituteExamsPage />} />
+
+          {/* Legacy redirects */}
+          <Route path="dashboard" element={<Navigate to="/institute/insights/dashboard" replace />} />
+          <Route path="teachers" element={<Navigate to="/institute/insights/teachers" replace />} />
+          <Route path="teachers/:teacherId" element={<Navigate to="/institute/insights/teachers" replace />} />
+          <Route path="subjects" element={<Navigate to="/institute/insights/subjects" replace />} />
+          <Route path="classes" element={<Navigate to="/institute/insights/classes" replace />} />
+          <Route path="students" element={<Navigate to="/institute/insights/students" replace />} />
+          <Route path="grand-tests" element={<Navigate to="/institute/insights/grand-tests" replace />} />
+          <Route path="schedule-tracking" element={<Navigate to="/institute/insights/schedule-tracking" replace />} />
+          <Route path="learning-response" element={<Navigate to="/institute/insights/learning-response" replace />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

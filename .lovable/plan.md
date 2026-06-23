@@ -1,54 +1,74 @@
-## Summary
 
-Restructure the Schedule tab on each chapter: topics become expandable rows, each topic shows its linked lesson plans inside, "Mark done" is replaced by a topic-status control, and "Start Online Class" only renders when the topic actually has a meeting link. The chapter-level "Lesson Plans" section is removed from the Schedule tab; its "Add from library" / "Create lesson plan" actions move up to the Schedule tab header.
+## Understanding
 
----
+Today the green graph button on the Teacher Panel opens `/institute`, which is a single-purpose "Academic Insights" sidebar (Dashboard, Overview, Teachers, Subjects, Classes, Students, Grand Tests, Schedule Tracking, Learning Response).
 
-## Changes in detail
+You want `/institute` to become a real **Institute Panel** — a parent shell that hosts multiple top-level modules in its sidebar. The very first module is **Academic Insights** (everything that currently lives at `/institute/*` moves under it, unchanged). Then we add two more top-level modules now: **Timetable** and **Exam Module**, with more to come later.
 
-### 1. Drop the chapter-level Lesson Plans block on the Schedule tab
-- Remove the standalone `Lesson Plans` list (currently rendered below the Topics list) from `ProgramChapterAccordion.tsx`.
-- Move the two action buttons — **Add from library** and **+ Create lesson plan** — to the top of the Schedule tab content, right-aligned on the row that currently shows the "Topics" header.
-  - On click these still call the existing `onAddFromLibrary(chapter.id)` / `onCreateLessonPlan(chapter.id)` handlers; the lesson plan they create / pick is attached to the chapter (no topic auto-link yet — same as today).
+Yes — requirement is clear.
 
-### 2. Topic rows become expandable, with their lesson plans nested inside
-- Each topic `<li>` becomes an accordion: clicking the row (or a chevron on the left) toggles an inner panel.
-- Inner panel content:
-  - List of lesson plans for that topic, resolved via the existing `topic.lessonPlanIds → chapter.lessonPlans` lookup (the `lpToTopics` map already in the file, inverted).
-  - Each lesson plan is rendered with the existing `LessonPlanCard` so Preview / Edit / Add material keep working unchanged.
-  - Empty state: small muted line `No lesson plans linked to this topic yet.` plus a tiny `Link lesson plan` link that opens the existing Add-from-library modal pre-scoped to the chapter (re-uses `onAddFromLibrary`).
-- Lesson plans not linked to any topic stay visible in a collapsed `Unlinked lesson plans (n)` group below the topic list, so nothing disappears from the UI.
+## What changes
 
-### 3. Replace "Mark done" with "Mark status"
-Per-topic controls become:
-- **Mark status** button → opens a small popover (Radix `Popover`, already imported) with three options matching `TopicStatus`:
-  - Not started
-  - In progress
-  - Done
-  - Selecting one calls the existing `onTopicStatusChange(topicId, status)` — no schema change.
-- The status icon on the left of the topic row stays (visual indicator).
-- Rationale for the user's confusion about multi-period topics: the **Mark status** here represents the topic's **overall teaching status across all its scheduled periods**, not per-period. Per-period completion still lives in the Academic Schedule page where each period instance is logged independently. We will add a one-line helper under the popover: _"Reflects overall progress across all scheduled periods for this topic."_ so the distinction is explicit.
+### 1. Re-brand the shell
+- `InstituteSidebar` header label changes from "Academic Insights" → "Institute Panel" (icon stays `Building2`).
+- Add a tiny module switcher / grouped nav (see structure below) so it's obvious this shell hosts multiple modules.
 
-### 4. Conditional "Start Online Class"
-- Add an optional `meetingLink?: string` field on `ProgramTopic` (in `src/types/program.ts`).
-- Update mock data in `src/data/mockPrograms.ts` so for the sample chapter (e.g. Magnetic Effects of Current) only 2 of the 4 topics get a `meetingLink`; the rest stay undefined.
-- In the topic row, render **Start Online Class** / **Resume Online Class** only when `t.meetingLink` is truthy. When it's missing, show nothing in that slot (no greyed-out button, no placeholder), so the row stays clean.
-- Clicking the button opens `t.meetingLink` in a new tab in addition to flipping status to `in-progress`.
+### 2. New sidebar information architecture
+Sidebar becomes grouped by module instead of one flat list:
 
-### 5. Files to edit
+```text
+Institute Panel
+├── Academic Insights              (group label)
+│   ├── Dashboard                  → /institute/insights/dashboard
+│   ├── Overview                   → /institute/insights
+│   ├── Teachers                   → /institute/insights/teachers
+│   ├── Subjects                   → /institute/insights/subjects
+│   ├── Classes                    → /institute/insights/classes
+│   ├── Students                   → /institute/insights/students
+│   ├── Grand Tests                → /institute/insights/grand-tests
+│   ├── Schedule Tracking          → /institute/insights/schedule-tracking
+│   └── Learning Response          → /institute/insights/learning-response
+├── Timetable                      (group label)
+│   └── Timetable                  → /institute/timetable
+└── Exam Module                    (group label)
+    └── Exams                      → /institute/exams
+```
 
-- `src/types/program.ts` — add `meetingLink?: string` to `ProgramTopic`.
-- `src/data/mockPrograms.ts` — sprinkle `meetingLink` onto ~2 topics per active chapter.
-- `src/components/teacher/programs/ProgramChapterAccordion.tsx`
-  - Add a per-topic open/closed state map (`useState<Record<string, boolean>>`).
-  - Build `topicToLessonPlans` map from `lpToTopics`.
-  - Render expandable topic rows with nested `LessonPlanCard` list.
-  - Replace `Mark done` / `Reopen` buttons with a `Mark status` popover.
-  - Gate `Start Online Class` on `t.meetingLink`.
-  - Move `Add from library` / `Create lesson plan` to the Schedule-tab topics header; delete the lower Lesson Plans block.
-- No changes to Study Notes tab, Tests tab, or chapter header.
+Each group uses shadcn `SidebarGroup` + `SidebarGroupLabel`. When the sidebar is collapsed, only icons show (existing behavior preserved).
 
-### Out of scope
-- Per-period mark-status logging (lives in Academic Schedule, untouched).
-- Auto-linking newly created lesson plans to a specific topic (still chapter-scoped for now).
-- Backend / API wiring.
+### 3. Routing updates (`src/App.tsx`)
+- Move every existing Academic Insights route under `/institute/insights/*` (Overview becomes the `index` of `/institute/insights`).
+- Add `/institute` `index` redirect → `/institute/insights` so the green button still lands cleanly.
+- Add two new routes:
+  - `/institute/timetable` → new `InstituteTimetablePage`
+  - `/institute/exams` → new `InstituteExamsPage`
+- Keep the legacy `/institute/dashboard`, `/institute/teachers`, etc. as `<Navigate>` redirects to their `/institute/insights/...` counterparts so any existing links (e.g. the green button, deep links) keep working.
+
+### 4. New scaffold pages (placeholders, mock-data ready, follow the institute design language)
+- `src/pages/institute/timetable/InstituteTimetablePage.tsx`
+  - Header "Institute Timetable" + subtitle
+  - Filter row (Class / Section / Week)
+  - Empty weekly grid placeholder with a "Coming soon" hint card so you can iterate next
+- `src/pages/institute/exams/InstituteExamsPage.tsx`
+  - Header "Exam Module" + subtitle
+  - Tabs placeholder: Schedule · Question Papers · Results
+  - Stat cards row (Upcoming, Ongoing, Completed) with mock numbers
+  - Empty list placeholder
+
+Both pages reuse existing tokens, `Card`, `Button`, pastel theme, "Data WITH Understanding" header pattern (title → subtitle → "what's next" hint), per project memory.
+
+### 5. Entry button from Teacher Panel
+The existing green graph button already points at `/institute`. We only need to make sure it lands on the new Institute Panel home, which the index redirect handles. **No teacher-sidebar changes** required for this step (the request is the destination, not the button itself).
+
+## Files to touch
+
+- `src/components/institute/InstituteSidebar.tsx` — relabel to "Institute Panel", regroup nav into Academic Insights / Timetable / Exam Module, update URLs to `/institute/insights/*`.
+- `src/App.tsx` — re-nest insights routes under `/institute/insights`, add timetable + exams routes, add legacy redirects, set `/institute` index redirect.
+- `src/pages/institute/timetable/InstituteTimetablePage.tsx` — new scaffold.
+- `src/pages/institute/exams/InstituteExamsPage.tsx` — new scaffold.
+
+## Out of scope (now)
+
+- Real timetable editor logic, exam CRUD, or any backend wiring.
+- Renaming/relocating the green button itself.
+- Visual redesign of existing Academic Insights pages — they only move under `/institute/insights/*`, internals unchanged.
