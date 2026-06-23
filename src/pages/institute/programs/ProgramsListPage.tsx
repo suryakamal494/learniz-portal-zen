@@ -195,7 +195,6 @@ const ProgramsListPage: React.FC = () => {
                         </Button>
                       </div>
 
-                      </div>
                       <Button
                         size="sm"
                         className="gap-1.5 h-8 bg-slate-900 hover:bg-slate-800 text-white shadow-sm group-hover:bg-indigo-600 group-hover:shadow-md transition-colors"
