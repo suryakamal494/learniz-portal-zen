@@ -56,6 +56,8 @@ const ProgramPreviewPage: React.FC = () => {
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
   const [activeSubject, setActiveSubject] = useState<string>('all');
   const [forcePrintOpen, setForcePrintOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
 
   const periodMins = program?.schedule?.periodLengthMins ?? 40;
   const schedule = program?.schedule ?? DEFAULT_SCHEDULE;
