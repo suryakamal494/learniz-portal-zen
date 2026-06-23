@@ -6,10 +6,13 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  LayoutList,
   Maximize2,
   Minimize2,
   Printer,
 } from 'lucide-react';
+import CurriculumCalendarView from '@/components/institute/programs/CurriculumCalendarView';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useInstituteProgram } from '@/hooks/useInstitutePrograms';
