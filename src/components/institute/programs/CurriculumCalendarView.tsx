@@ -300,7 +300,8 @@ const WeekView: React.FC<{
   slotsByDate: Record<string, ScheduleSlot[]>;
   subjectById: Record<string, { name: string; color: string }>;
   topicById: Record<string, string>;
-}> = ({ weekStart, periodsPerDay, workingDays, slotsByDate, subjectById, topicById }) => {
+  facultyFor: (slot: ScheduleSlot) => string;
+}> = ({ weekStart, periodsPerDay, workingDays, slotsByDate, subjectById, topicById, facultyFor }) => {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const today = toISO(new Date());
   return (
@@ -340,11 +341,12 @@ const WeekView: React.FC<{
                 }
                 const sub = subjectById[sl.subjectId];
                 const pal = subjectPalette(sub?.color ?? 'blue');
+                const fac = facultyFor(sl);
                 return (
                   <div
                     key={iso + p}
                     className={cn('border-b border-l border-slate-100 p-1', pal.bgSoft)}
-                    title={`${sub?.name} · ${topicById[sl.topicId]}`}
+                    title={`${sub?.name} · ${topicById[sl.topicId]} · ${fac}`}
                   >
                     <div className={cn('text-[10px] font-semibold uppercase tracking-wide', pal.text)}>
                       {sub?.name}
@@ -352,11 +354,16 @@ const WeekView: React.FC<{
                     <div className="text-[11px] text-slate-700 leading-tight line-clamp-2">
                       {topicById[sl.topicId]}
                     </div>
+                    <div className="text-[10px] text-slate-500 leading-tight truncate mt-0.5 inline-flex items-center gap-0.5">
+                      <UserRound className="h-2.5 w-2.5 shrink-0" />
+                      <span className="truncate">{shortName(fac)}</span>
+                    </div>
                   </div>
                 );
               })}
             </React.Fragment>
           ))}
+
         </div>
       </div>
     </div>
