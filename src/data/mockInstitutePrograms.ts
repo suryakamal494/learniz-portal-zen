@@ -1,8 +1,8 @@
-import { InstituteFaculty, InstituteProgram } from '@/types/instituteProgram';
+import { InstituteFaculty, InstituteProgram, InstituteSubject } from '@/types/instituteProgram';
 
-/** Lightweight seed for the institute-side Programs module.
- * Topic hours are intentionally left 0 for some programs so the gating flow
- * (set hours → unlock scheduling) is visible during demos.
+/** Seed data for the institute Programs module.
+ *  Class 12 PCM has the full 3 subjects \u00d7 12 chapters \u00d7 5 topics shape
+ *  so layout decisions are validated against realistic page lengths.
  */
 
 const SUBJECT_COLORS = {
@@ -11,165 +11,159 @@ const SUBJECT_COLORS = {
   maths: 'violet',
   biology: 'rose',
   english: 'amber',
-  cs: 'cyan',
 } as const;
 
-function topics(names: string[], hours: number[] = []) {
-  return names.map((name, i) => ({
-    id: `t-${Math.random().toString(36).slice(2, 9)}`,
+/* ---------- Class 12 PCM canonical chapter \u2192 topics ---------- */
+
+const PHYSICS_12: { chapter: string; topics: string[] }[] = [
+  { chapter: 'Electrostatics', topics: ["Coulomb's Law", "Gauss's Law", 'Electric Potential', 'Capacitance', 'Dielectrics & Polarisation'] },
+  { chapter: 'Current Electricity', topics: ["Ohm's Law", "Kirchhoff's Laws", 'Wheatstone Bridge', 'Potentiometer', 'Drift Velocity & Resistivity'] },
+  { chapter: 'Magnetic Effects of Current', topics: ['Biot\u2013Savart Law', "Ampere's Circuital Law", 'Force on Moving Charge', 'Solenoid & Toroid', 'Moving Coil Galvanometer'] },
+  { chapter: 'Magnetism & Matter', topics: ['Bar Magnet as Solenoid', 'Magnetic Field Lines', 'Earth\u2019s Magnetism', 'Para / Dia / Ferro', 'Magnetic Hysteresis'] },
+  { chapter: 'Electromagnetic Induction', topics: ["Faraday's Law", "Lenz's Law", 'Self & Mutual Induction', 'Eddy Currents', 'AC Generator'] },
+  { chapter: 'Alternating Current', topics: ['RMS & Average Values', 'AC through R, L, C', 'LCR Series Circuit', 'Resonance & Q-factor', 'Transformer'] },
+  { chapter: 'Electromagnetic Waves', topics: ['Displacement Current', 'EM Wave Equation', 'EM Spectrum', 'Properties of EM Waves', 'Applications of EM Waves'] },
+  { chapter: 'Ray Optics & Optical Instruments', topics: ['Reflection at Spherical Mirrors', 'Refraction & Snell\u2019s Law', 'Total Internal Reflection', 'Lenses & Lens Maker Formula', 'Microscope & Telescope'] },
+  { chapter: 'Wave Optics', topics: ['Huygens Principle', 'Interference & Young\u2019s Experiment', 'Diffraction at Single Slit', 'Polarisation', 'Resolving Power'] },
+  { chapter: 'Dual Nature of Radiation & Matter', topics: ['Photoelectric Effect', "Einstein's Equation", 'de Broglie Hypothesis', 'Davisson\u2013Germer', 'Wave Particle Duality'] },
+  { chapter: 'Atoms & Nuclei', topics: ['Rutherford Model', 'Bohr Model & Spectra', 'Nuclear Composition', 'Mass\u2013Energy & Binding', 'Radioactivity & Decay'] },
+  { chapter: 'Semiconductor Electronics', topics: ['Energy Bands', 'p\u2013n Junction', 'Diode as Rectifier', 'Zener & Photodiode', 'Transistor & Logic Gates'] },
+];
+
+const CHEM_12: { chapter: string; topics: string[] }[] = [
+  { chapter: 'The Solid State', topics: ['Crystal Lattices', 'Unit Cells & Packing', 'Imperfections in Solids', 'Electrical Properties', 'Magnetic Properties'] },
+  { chapter: 'Solutions', topics: ['Concentration Terms', "Raoult's Law", 'Ideal & Non-ideal Solutions', 'Colligative Properties', 'Abnormal Molar Mass'] },
+  { chapter: 'Electrochemistry', topics: ['Redox & Electrode Potentials', 'Galvanic Cells', 'Nernst Equation', 'Conductance of Electrolytes', 'Batteries & Fuel Cells'] },
+  { chapter: 'Chemical Kinetics', topics: ['Rate of Reaction', 'Order & Molecularity', 'Integrated Rate Laws', 'Arrhenius Equation', 'Collision Theory'] },
+  { chapter: 'Surface Chemistry', topics: ['Adsorption', 'Catalysis', 'Colloids', 'Emulsions', 'Applications of Colloids'] },
+  { chapter: 'p\u2011Block Elements', topics: ['Group 15 Elements', 'Group 16 Elements', 'Group 17 Elements', 'Group 18 Elements', 'Compounds & Trends'] },
+  { chapter: 'd & f Block Elements', topics: ['General Trends', 'Transition Metals', 'Inner Transition Metals', 'Lanthanoid Contraction', 'Important Compounds'] },
+  { chapter: 'Coordination Compounds', topics: ['Werner\u2019s Theory', 'Nomenclature', 'Isomerism', 'Crystal Field Theory', 'Applications'] },
+  { chapter: 'Haloalkanes & Haloarenes', topics: ['Nomenclature & Prep', 'Physical Properties', 'SN1 & SN2', 'Elimination Reactions', 'Polyhalogen Compounds'] },
+  { chapter: 'Alcohols, Phenols & Ethers', topics: ['Preparation Methods', 'Physical Properties', 'Reactions of Alcohols', 'Reactions of Phenols', 'Ethers'] },
+  { chapter: 'Aldehydes, Ketones & Acids', topics: ['Preparation', 'Nucleophilic Addition', 'Oxidation & Reduction', 'Carboxylic Acids', 'Mechanisms'] },
+  { chapter: 'Amines & Biomolecules', topics: ['Amines: Prep & Properties', 'Diazonium Salts', 'Carbohydrates', 'Proteins', 'Nucleic Acids'] },
+];
+
+const MATH_12: { chapter: string; topics: string[] }[] = [
+  { chapter: 'Relations & Functions', topics: ['Types of Relations', 'Types of Functions', 'Composition & Inverse', 'Binary Operations', 'Practice Problems'] },
+  { chapter: 'Inverse Trigonometric Functions', topics: ['Definitions & Domains', 'Principal Value Branch', 'Properties', 'Graphs', 'Identities'] },
+  { chapter: 'Matrices', topics: ['Types of Matrices', 'Matrix Operations', 'Transpose & Symmetric', 'Elementary Operations', 'Inverse of a Matrix'] },
+  { chapter: 'Determinants', topics: ['Properties of Determinants', 'Area of Triangle', 'Minors & Cofactors', 'Adjoint & Inverse', 'System of Equations'] },
+  { chapter: 'Continuity & Differentiability', topics: ['Continuity', 'Differentiability', 'Chain Rule', 'Logarithmic Differentiation', 'Mean Value Theorems'] },
+  { chapter: 'Application of Derivatives', topics: ['Rate of Change', 'Tangents & Normals', 'Increasing / Decreasing', 'Maxima & Minima', 'Approximations'] },
+  { chapter: 'Integrals', topics: ['Indefinite Integrals', 'Methods of Integration', 'Integration by Parts', 'Definite Integrals', 'Properties of Definite Integrals'] },
+  { chapter: 'Application of Integrals', topics: ['Area under Curves', 'Area between Two Curves', 'Standard Regions', 'Mixed Problems', 'Real-life Applications'] },
+  { chapter: 'Differential Equations', topics: ['Order & Degree', 'Variable Separable', 'Homogeneous Equations', 'Linear Differential Eqns', 'Applications'] },
+  { chapter: 'Vector Algebra', topics: ['Types of Vectors', 'Addition & Subtraction', 'Dot Product', 'Cross Product', 'Scalar Triple Product'] },
+  { chapter: 'Three Dimensional Geometry', topics: ['Direction Cosines', 'Equation of a Line', 'Equation of a Plane', 'Angle between Lines / Planes', 'Distance Formulas'] },
+  { chapter: 'Linear Programming & Probability', topics: ['LPP Formulation', 'Graphical Method', 'Conditional Probability', "Bayes' Theorem", 'Random Variables'] },
+];
+
+/* ---------- Hour seeding strategy ----------
+   We want hours to vary so totals look real. We use a small deterministic
+   pattern keyed on chapter index + topic index so reloading is stable.
+*/
+
+function hoursFor(chIdx: number, tIdx: number): number {
+  // Cycle through [1.5, 2, 1, 2.5, 1.5] with a chapter offset of 0.25h on even chapters.
+  const base = [1.5, 2, 1, 2.5, 1.5][tIdx % 5];
+  const bump = chIdx % 2 === 0 ? 0 : 0.25;
+  // Make a few chapters lighter to vary the rollup.
+  if (chIdx === 5 || chIdx === 10) return base - 0.5 > 0 ? base - 0.5 : base;
+  return base + bump;
+}
+
+let topicSeq = 0;
+let chapterSeq = 0;
+
+function buildSubject(
+  id: string,
+  name: string,
+  color: string,
+  spec: { chapter: string; topics: string[] }[],
+  seedHours: boolean,
+): InstituteSubject {
+  return {
+    id,
     name,
-    hours: hours[i] ?? 0,
-  }));
-}
-
-function chapter(name: string, ts: { id: string; name: string; hours: number }[]) {
-  return { id: `c-${Math.random().toString(36).slice(2, 9)}`, name, topics: ts };
-}
-
-function buildPhysics12(seeded = false): InstituteProgram['subjects'][number] {
-  return {
-    id: 'subj-phy',
-    name: 'Physics',
-    color: SUBJECT_COLORS.physics,
-    chapters: [
-      chapter('Electrostatics', topics(
-        ["Coulomb's Law", "Gauss's Law", 'Electric Potential', 'Capacitance'],
-        seeded ? [2, 2, 1.5, 2] : [],
-      )),
-      chapter('Current Electricity', topics(
-        ["Ohm's Law", "Kirchhoff's Laws", 'Wheatstone Bridge', 'Potentiometer'],
-        seeded ? [1.5, 2, 1, 1.5] : [],
-      )),
-      chapter('Magnetic Effects', topics(
-        ['Biot–Savart Law', "Ampère's Law", 'Force on Moving Charge'],
-        seeded ? [2, 2, 1.5] : [],
-      )),
-      chapter('Electromagnetic Induction', topics(
-        ["Faraday's Law", "Lenz's Law", 'Self & Mutual Induction'],
-        seeded ? [1.5, 1, 2] : [],
-      )),
-    ],
+    color,
+    chapters: spec.map((ch, chIdx) => ({
+      id: `c-${id}-${++chapterSeq}`,
+      name: ch.chapter,
+      topics: ch.topics.map((tName, tIdx) => ({
+        id: `t-${id}-${++topicSeq}`,
+        name: tName,
+        hours: seedHours ? hoursFor(chIdx, tIdx) : 0,
+      })),
+    })),
   };
 }
 
-function buildChemistry12(seeded = false): InstituteProgram['subjects'][number] {
+const ACADEMIC_START = '2025-04-14'; // Monday
+
+function defaultSchedule(startDate = ACADEMIC_START) {
   return {
-    id: 'subj-chem',
-    name: 'Chemistry',
-    color: SUBJECT_COLORS.chemistry,
-    chapters: [
-      chapter('Solid State', topics(['Crystal Lattices', 'Packing Efficiency', 'Imperfections'], seeded ? [1.5, 1, 1] : [])),
-      chapter('Solutions', topics(['Concentration Terms', "Raoult's Law", 'Colligative Properties'], seeded ? [1, 1.5, 2] : [])),
-      chapter('Electrochemistry', topics(['Redox & Electrode Potentials', 'Galvanic Cells', 'Nernst Equation'], seeded ? [2, 1.5, 1.5] : [])),
-      chapter('Chemical Kinetics', topics(['Rate of Reaction', 'Order & Molecularity', 'Arrhenius Equation'], seeded ? [1, 1, 1.5] : [])),
-    ],
+    startDate,
+    workingDays: [1, 2, 3, 4, 5, 6] as (0 | 1 | 2 | 3 | 4 | 5 | 6)[],
+    periodsPerDay: 6,
+    periodLengthMins: 40,
+    holidays: [],
+    defaultFaculty: {},
+    classUrlTemplate: 'https://meet.example.com/{date}-p{period}',
   };
 }
 
-function buildMaths12(seeded = false): InstituteProgram['subjects'][number] {
-  return {
-    id: 'subj-math',
-    name: 'Mathematics',
-    color: SUBJECT_COLORS.maths,
-    chapters: [
-      chapter('Relations & Functions', topics(['Types of Relations', 'Types of Functions', 'Composition & Inverse'], seeded ? [1, 1.5, 2] : [])),
-      chapter('Matrices', topics(['Matrix Operations', 'Transpose & Symmetric', 'Elementary Operations'], seeded ? [1.5, 1, 1.5] : [])),
-      chapter('Determinants', topics(['Properties', 'Area of Triangle', 'Adjoint & Inverse'], seeded ? [1.5, 1, 2] : [])),
-      chapter('Continuity & Differentiability', topics(['Continuity', 'Differentiability', 'Logarithmic Differentiation'], seeded ? [2, 2, 1.5] : [])),
-    ],
-  };
-}
-
-function buildBiology12(): InstituteProgram['subjects'][number] {
-  return {
-    id: 'subj-bio',
-    name: 'Biology',
-    color: SUBJECT_COLORS.biology,
-    chapters: [
-      chapter('Reproduction', topics(['Sexual Reproduction', 'Human Reproduction', 'Reproductive Health'])),
-      chapter('Genetics & Evolution', topics(["Mendel's Principles", 'Molecular Basis', 'Evolution'])),
-      chapter('Biology & Human Welfare', topics(['Health & Disease', 'Strategies for Enhancement'])),
-    ],
-  };
-}
-
-function buildEnglish12(): InstituteProgram['subjects'][number] {
-  return {
-    id: 'subj-eng',
-    name: 'English',
-    color: SUBJECT_COLORS.english,
-    chapters: [
-      chapter('Reading Skills', topics(['Comprehension', 'Note Making', 'Summary Writing'])),
-      chapter('Writing Skills', topics(['Notice & Advertisement', 'Letter Writing', 'Article Writing'])),
-      chapter('Literature', topics(['Flamingo Poems', 'Flamingo Prose', 'Vistas Stories'])),
-    ],
-  };
-}
+/* ---------- Programs ---------- */
 
 export const MOCK_FACULTY: InstituteFaculty[] = [
-  { id: 'fac-1', name: 'Ms. Anika Rao', subjectId: 'subj-phy' },
-  { id: 'fac-2', name: 'Mr. Vivek Menon', subjectId: 'subj-phy' },
-  { id: 'fac-3', name: 'Ms. Priya Sharma', subjectId: 'subj-chem' },
-  { id: 'fac-4', name: 'Dr. Kavita Nair', subjectId: 'subj-chem' },
-  { id: 'fac-5', name: 'Mr. Arjun Kapoor', subjectId: 'subj-math' },
-  { id: 'fac-6', name: 'Ms. Neha Gupta', subjectId: 'subj-math' },
-  { id: 'fac-7', name: 'Dr. Ravi Patel', subjectId: 'subj-bio' },
-  { id: 'fac-8', name: 'Ms. Sunita Joshi', subjectId: 'subj-eng' },
+  { id: 'fac-1', name: 'Ms. Anika Rao', subjectId: 'subj-phy-12' },
+  { id: 'fac-2', name: 'Mr. Vivek Menon', subjectId: 'subj-phy-12' },
+  { id: 'fac-3', name: 'Ms. Priya Sharma', subjectId: 'subj-chem-12' },
+  { id: 'fac-4', name: 'Dr. Kavita Nair', subjectId: 'subj-chem-12' },
+  { id: 'fac-5', name: 'Mr. Arjun Kapoor', subjectId: 'subj-math-12' },
+  { id: 'fac-6', name: 'Ms. Neha Gupta', subjectId: 'subj-math-12' },
 ];
 
 export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
   {
     id: 'prog-1',
-    name: 'Class 12 PCM — Excellence',
+    name: 'Class 12 PCM \u2014 Excellence',
     className: 'Class 12',
     sections: ['A', 'B'],
     fee: 85000,
     hoursFinalised: true,
-    subjects: [buildPhysics12(true), buildChemistry12(true), buildMaths12(true)],
+    subjects: [
+      buildSubject('subj-phy-12', 'Physics', SUBJECT_COLORS.physics, PHYSICS_12, true),
+      buildSubject('subj-chem-12', 'Chemistry', SUBJECT_COLORS.chemistry, CHEM_12, true),
+      buildSubject('subj-math-12', 'Mathematics', SUBJECT_COLORS.maths, MATH_12, true),
+    ],
+    schedule: defaultSchedule(),
   },
   {
     id: 'prog-2',
-    name: 'Class 12 PCB — Medical Edge',
-    className: 'Class 12',
-    sections: ['C'],
-    fee: 92000,
-    hoursFinalised: false,
-    subjects: [buildPhysics12(true), buildChemistry12(true), buildBiology12()],
-  },
-  {
-    id: 'prog-3',
     name: 'Class 11 PCM Foundation',
     className: 'Class 11',
     sections: ['A', 'B'],
     fee: 78000,
     hoursFinalised: false,
-    subjects: [buildPhysics12(), buildChemistry12(), buildMaths12()],
+    subjects: [
+      buildSubject('subj-phy-11', 'Physics', SUBJECT_COLORS.physics, PHYSICS_12.slice(0, 8), false),
+      buildSubject('subj-chem-11', 'Chemistry', SUBJECT_COLORS.chemistry, CHEM_12.slice(0, 8), false),
+      buildSubject('subj-math-11', 'Mathematics', SUBJECT_COLORS.maths, MATH_12.slice(0, 8), false),
+    ],
+    schedule: defaultSchedule('2025-06-02'),
   },
   {
-    id: 'prog-4',
+    id: 'prog-3',
     name: 'Class 10 CBSE Core',
     className: 'Class 10',
     sections: ['A', 'B', 'C'],
     fee: 65000,
     hoursFinalised: false,
-    subjects: [buildMaths12(), buildEnglish12()],
-  },
-  {
-    id: 'prog-5',
-    name: 'Class 11 Bio Foundation',
-    className: 'Class 11',
-    sections: ['C'],
-    fee: 76000,
-    hoursFinalised: false,
-    subjects: [buildBiology12(), buildChemistry12(), buildEnglish12()],
-  },
-  {
-    id: 'prog-6',
-    name: 'Class 12 Commerce',
-    className: 'Class 12',
-    sections: ['D'],
-    fee: 58000,
-    hoursFinalised: false,
-    subjects: [buildEnglish12(), buildMaths12()],
+    subjects: [
+      buildSubject('subj-math-10', 'Mathematics', SUBJECT_COLORS.maths, MATH_12.slice(0, 6), false),
+    ],
+    schedule: defaultSchedule('2025-04-21'),
   },
 ];
