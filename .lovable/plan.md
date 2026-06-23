@@ -1,70 +1,28 @@
-## Scope
-Two surfaces. No backend/logic changes.
+## Changes
 
----
+### 1. Show faculty name in calendar view (`CurriculumCalendarView.tsx`)
+- Import `MOCK_FACULTY` from `@/data/mockInstitutePrograms` and build a `facultyById` lookup (id → name, short initials).
+- **Day view**: append a small "· <Faculty Name>" line/chip next to topic on each period row.
+- **Week view**: add a `text-[10px] text-slate-500 truncate` line under topic showing faculty name (initials on narrow cells).
+- **Month view**: keep subject chips; add a tooltip listing faculty per subject for that day.
+- Add "Faculty" mini-legend row under subject legend showing each subject → assigned faculty.
 
-## Phase 1 — Programs list card: add Teaching Hours access
+### 2. Promote List / Calendar toggle (`ProgramPreviewPage.tsx`)
+Currently buried in the right-side header cluster with Expand/Collapse/Print. Restructure header so:
+- The List/Calendar segmented toggle becomes a **primary control directly under the program title** (left side, larger pill with icons + labels).
+- Expand all / Collapse all / Print stay on the right as secondary actions (smaller, ghost styling), and Expand/Collapse only render in List mode (already the case).
+- On mobile, toggle stacks above secondary actions.
 
-`ProgramsListPage.tsx` — keep current clean card design, just add the missing entry point.
+### 3. Replace decimal-hour displays with `Xh Ym` everywhere in program modules
+Use existing `formatHoursShort` from `src/utils/formatUtils.ts` (e.g. `52.5 → "52h 30m"`, `33 → "33h"`).
 
-Footer row becomes a 3-action layout:
-```text
-[ Teaching Hours ]   👁 View curriculum         [ Open program → ]
-```
+Files & lines to update:
+- `ProgramPreviewPage.tsx` — header roll-up (`309.9h`), subject totals (`{sRoll.hours}h`), topic hours (`{t.hours}h`).
+- `ProgramSchedulePage.tsx` — `${roll.hours}h teaching`, subject row `{s.hours}h`.
+- `ProgramHoursPage.tsx` — subject pill (`{sRoll.hours}h`), big total (`{roll.hours} hrs`), subject summary (`{s.hours}h · {s.periods}p`), topic helper text (`${topic.hours} h`).
+- `ProgramsListPage.tsx` — any remaining hour readouts on cards (verify and convert if present).
 
-- **Teaching Hours** → outline/ghost button, navigates to `/institute/programs/:id/hours`. Always visible regardless of `hoursFinalised`.
-- **View curriculum** → existing link, navigates to `/institute/programs/:id/preview`.
-- **Open program** → primary CTA. Routes to `/hours` if not finalized, `/preview` if finalized (existing behavior).
-- All three use `e.stopPropagation()`; card-level click stays as today.
-- Tiny status pill (Finalized green / Draft amber) sits next to the Teaching Hours button so user sees state at a glance.
-- No fee, no metric grid, no chapters/topics/hours numbers on the card — keeps the clean look the user approved.
+Periods (`~546p`, `{periods}p`) stay unchanged — only hours are reformatted.
 
----
-
-## Phase 2 — Curriculum Preview restructured as collapsible tree
-
-Rewrite `ProgramPreviewPage.tsx` layout only. `planDates()` and data untouched.
-
-### Header (sticky)
-```text
-Class 12 PCM — Excellence · Starts 14 Apr · Ends 28 Nov
-[ Expand all ] [ Collapse all ]                    [ 🖨 Print ]
-```
-
-### Body — 3-level accordion
-1. **Subject row** (always visible): color rail, name, summary chips `12 chapters · 60 topics · 88h · ~132p · 14 Apr → 22 Jul`.
-2. **Chapter card** (visible when subject expanded): title, `5 topics · 7.5h · ~12p`, date range `14 Apr → 21 Apr`.
-3. **Topic table** (visible when chapter expanded): Topic · Hours · Periods · Start · End.
-
-Default: all collapsed.
-- **Expand all** opens every subject + chapter.
-- **Collapse all** closes everything.
-
-Optional subject filter tabs above accordion: `[ All ] [ • Physics ] [ • Chemistry ] [ • Mathematics ]`.
-
----
-
-## Phase 3 — Print always renders fully expanded
-
-`@media print` rules:
-- Force every subject + chapter open regardless of on-screen state.
-- Hide: Expand/Collapse buttons, Print button, subject filter tabs, sticky shadow.
-- `page-break-inside: avoid` on chapter cards.
-
-Print button calls `expandAll()` (state update) then `window.print()` so React-driven collapses also render expanded — belt + suspenders with CSS.
-
----
-
-## Phase 4 — Polish
-- Smooth chevron rotation + height transition.
-- Empty-state guards (0 chapters / 0 topics).
-- Keyboard Enter/Space toggles on subject + chapter headers.
-
----
-
-## Files touched
-- `src/pages/institute/programs/ProgramsListPage.tsx` — add Teaching Hours button + status pill in footer.
-- `src/pages/institute/programs/ProgramPreviewPage.tsx` — full restructure (accordion, tabs, expand/collapse, print CSS).
-
-## Out of scope
-Schedule generation, LMS unlock, backend persistence, hours-page internals.
+### Out of scope
+No data-model changes; faculty assignments already exist on `ScheduleSlot.facultyId` and `MOCK_FACULTY`. No backend work.
