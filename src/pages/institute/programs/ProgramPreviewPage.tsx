@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, ChevronRight, Eye, Printer } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  Maximize2,
+  Minimize2,
+  Printer,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useInstituteProgram } from '@/hooks/useInstitutePrograms';
-import { updateProgram } from '@/hooks/useInstitutePrograms';
 import {
   chapterHours,
   daysBetween,
@@ -22,8 +23,6 @@ import {
   rollupSubject,
 } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
-import { MetricChip } from '@/components/institute/programs/MetricChip';
-import { PROGRAM_TOOLTIPS } from '@/lib/programTooltips';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_SCHEDULE = {
@@ -36,103 +35,181 @@ const DEFAULT_SCHEDULE = {
   classUrlTemplate: 'https://meet.example.com/{date}-p{period}',
 };
 
+const PRINT_CSS = `
+@media print {
+  .no-print { display: none !important; }
+  .print-open > .accordion-body { display: block !important; }
+  .print-open .accordion-chevron { transform: rotate(90deg); }
+  .chapter-block { break-inside: avoid; page-break-inside: avoid; }
+  body { background: white !important; }
+}
+`;
+
 const ProgramPreviewPage: React.FC = () => {
   const { programId } = useParams<{ programId: string }>();
   const program = useInstituteProgram(programId);
-  if (!program) return <div className="p-10 text-slate-500">Program not found.</div>;
 
-  const schedule = program.schedule ?? DEFAULT_SCHEDULE;
-  const periodMins = schedule.periodLengthMins;
-  const roll = rollupProgram(program, periodMins);
-  const plan = planDates(program, schedule);
+  const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>({});
+  const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
+  const [activeSubject, setActiveSubject] = useState<string>('all');
+  const [forcePrintOpen, setForcePrintOpen] = useState(false);
+
+  const periodMins = program?.schedule?.periodLengthMins ?? 40;
+  const schedule = program?.schedule ?? DEFAULT_SCHEDULE;
+
+  const roll = useMemo(() => (program ? rollupProgram(program, periodMins) : null), [program, periodMins]);
+  const plan = useMemo(() => (program ? planDates(program, schedule) : null), [program, schedule]);
+
+  if (!program || !roll || !plan) return <div className="p-10 text-slate-500">Program not found.</div>;
+
   const chaptersCount = program.subjects.reduce((a, s) => a + s.chapters.length, 0);
   const termDays = daysBetween(plan.startDate, plan.endDate);
 
+  const expandAll = () => {
+    const subs: Record<string, boolean> = {};
+    const chs: Record<string, boolean> = {};
+    program.subjects.forEach((s) => {
+      subs[s.id] = true;
+      s.chapters.forEach((c) => (chs[c.id] = true));
+    });
+    setOpenSubjects(subs);
+    setOpenChapters(chs);
+  };
+
+  const collapseAll = () => {
+    setOpenSubjects({});
+    setOpenChapters({});
+  };
+
+  const handlePrint = () => {
+    setForcePrintOpen(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setForcePrintOpen(false), 300);
+    }, 50);
+  };
+
+  const visibleSubjects = activeSubject === 'all'
+    ? program.subjects
+    : program.subjects.filter((s) => s.id === activeSubject);
+
   return (
-    <TooltipProvider delayDuration={120}>
-      <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
-        <div className="max-w-6xl mx-auto p-6 space-y-5">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
-              <ArrowLeft className="h-3.5 w-3.5" /> Programs
-            </Link>
-            <ChevronRight className="h-3.5 w-3.5" />
-            <span className="text-slate-900 font-medium">{program.name}</span>
-            <ChevronRight className="h-3.5 w-3.5" />
-            <span>Curriculum preview</span>
-          </div>
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
+      <style>{PRINT_CSS}</style>
+      <div className="max-w-6xl mx-auto p-6 space-y-5">
+        <div className="flex items-center gap-2 text-sm text-slate-500 no-print">
+          <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
+            <ArrowLeft className="h-3.5 w-3.5" /> Programs
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-slate-900 font-medium">{program.name}</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span>Curriculum preview</span>
+        </div>
 
-          {/* Header card */}
-          <Card className="border-slate-200/70 shadow-sm overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
-            <CardContent className="p-6 space-y-5">
-              <div className="flex flex-col sm:flex-row gap-4 sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
-                    <Eye className="h-3.5 w-3.5" /> Read-only preview
-                  </div>
-                  <h1 className="text-2xl font-bold text-slate-900">{program.name}</h1>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-slate-600">
-                    <CalendarDays className="h-4 w-4 text-slate-400" />
-                    <span className="font-medium text-slate-700">
-                      Term: {formatShort(plan.startDate)} → {formatShort(plan.endDate)}
-                    </span>
-                    <span className="text-slate-400">·</span>
-                    <span>{termDays} days</span>
-                  </div>
+        {/* Header */}
+        <Card className="border-slate-200/70 shadow-sm overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-start sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
+                  <Eye className="h-3.5 w-3.5" /> Curriculum preview
                 </div>
-                <div className="flex items-end gap-3">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                          Term start date
-                        </label>
-                        <Input
-                          type="date"
-                          value={schedule.startDate}
-                          onChange={(e) =>
-                            updateProgram(program.id, (p) => ({
-                              ...p,
-                              schedule: { ...(p.schedule ?? DEFAULT_SCHEDULE), startDate: e.target.value },
-                            }))
-                          }
-                          className="w-44 bg-white"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs">{PROGRAM_TOOLTIPS.termWindow}</TooltipContent>
-                  </Tooltip>
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
-                    <Printer className="h-4 w-4" /> Print
-                  </Button>
+                <h1 className="text-2xl font-bold text-slate-900">{program.name}</h1>
+                <div className="flex items-center gap-2 mt-2 text-sm text-slate-600 flex-wrap">
+                  <CalendarDays className="h-4 w-4 text-slate-400" />
+                  <span className="font-medium text-slate-700">
+                    {formatShort(plan.startDate)} → {formatShort(plan.endDate)}
+                  </span>
+                  <span className="text-slate-400">·</span>
+                  <span>{termDays} days</span>
+                  <span className="text-slate-400">·</span>
+                  <span>{program.subjects.length} subjects · {chaptersCount} chapters · {roll.totalTopics} topics</span>
+                  <span className="text-slate-400">·</span>
+                  <span className="font-semibold text-slate-800">{roll.hours}h · ~{roll.periods}p</span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                <MetricChip label="Subjects" accent="indigo" value={program.subjects.length} tooltip={PROGRAM_TOOLTIPS.subjects} />
-                <MetricChip label="Chapters" accent="blue" value={chaptersCount} tooltip={PROGRAM_TOOLTIPS.chapters} />
-                <MetricChip label="Topics" accent="slate" value={roll.totalTopics} tooltip={PROGRAM_TOOLTIPS.topics} />
-                <MetricChip label="Hours" accent="emerald" value={`${roll.hours}h`} tooltip={PROGRAM_TOOLTIPS.hours} />
-                <MetricChip
-                  label="Periods"
-                  accent="violet"
-                  value={`≈${roll.periods}`}
-                  sub={`${periodMins}m each`}
-                  tooltip={PROGRAM_TOOLTIPS.periods}
-                />
+              <div className="flex items-center gap-2 no-print">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={expandAll}>
+                  <Maximize2 className="h-3.5 w-3.5" /> Expand all
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={collapseAll}>
+                  <Minimize2 className="h-3.5 w-3.5" /> Collapse all
+                </Button>
+                <Button size="sm" className="gap-1.5 bg-slate-900 hover:bg-slate-800 text-white" onClick={handlePrint}>
+                  <Printer className="h-3.5 w-3.5" /> Print
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* Subject filter tabs */}
+        <div className="no-print flex flex-wrap items-center gap-2 sticky top-0 z-10 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 py-2 -mx-1 px-1">
+          <button
+            type="button"
+            onClick={() => setActiveSubject('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+              activeSubject === 'all'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300',
+            )}
+          >
+            All subjects
+          </button>
           {program.subjects.map((s) => {
+            const pal = subjectPalette(s.color);
+            const active = activeSubject === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setActiveSubject(s.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                  active
+                    ? cn(pal.bgSoft, pal.text, pal.border)
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300',
+                )}
+              >
+                <span className={cn('h-1.5 w-1.5 rounded-full', pal.dot)} />
+                {s.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Subjects */}
+        <div className="space-y-3">
+          {visibleSubjects.map((s) => {
             const sRoll = rollupSubject(s, periodMins);
             const pal = subjectPalette(s.color);
             const sPlan = plan.subjects[s.id];
+            const isOpen = forcePrintOpen ? true : !!openSubjects[s.id];
+
             return (
-              <Card key={s.id} className="border-slate-200/70 shadow-sm overflow-hidden">
-                <div className={cn('flex items-center gap-3 px-5 py-3 border-b', pal.bgSoft)}>
-                  <span className={cn('h-2.5 w-2.5 rounded-full', pal.dot)} />
+              <Card
+                key={s.id}
+                className={cn('border-slate-200/70 shadow-sm overflow-hidden', forcePrintOpen && 'print-open')}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenSubjects((m) => ({ ...m, [s.id]: !m[s.id] }))}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-5 py-3 border-b transition-colors text-left',
+                    pal.bgSoft,
+                    'hover:brightness-95',
+                  )}
+                >
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 text-slate-500 transition-transform accordion-chevron shrink-0',
+                      isOpen ? 'rotate-0' : '-rotate-90',
+                    )}
+                  />
+                  <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', pal.dot)} />
                   <h2 className={cn('font-bold flex-1', pal.text)}>{s.name}</h2>
                   <div className="text-xs text-slate-600 hidden sm:flex items-center gap-3">
                     <span>{s.chapters.length} ch · {sRoll.topics} topics</span>
@@ -141,75 +218,107 @@ const ProgramPreviewPage: React.FC = () => {
                         {formatShort(sPlan.startDate)} → {formatShort(sPlan.endDate)}
                       </span>
                     )}
-                    <span className="font-semibold">{sRoll.hours}h · {sRoll.periods}p</span>
+                    <span className="font-semibold">{sRoll.hours}h · ~{sRoll.periods}p</span>
                   </div>
-                </div>
+                </button>
 
-                <div className="divide-y divide-slate-100">
-                  {s.chapters.map((c, ci) => {
-                    const cPlan = plan.chapterById[c.id];
-                    return (
-                      <div key={c.id} className="px-5 py-4">
-                        <div className="flex items-center justify-between mb-2 gap-3">
-                          <div className="font-semibold text-slate-800 text-sm">
-                            Ch {ci + 1}. {c.name}
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                            {cPlan && (
-                              <span className="font-medium text-slate-700">
-                                {formatShort(cPlan.startDate)} → {formatShort(cPlan.endDate)}
+                {isOpen && (
+                  <div className="accordion-body divide-y divide-slate-100">
+                    {s.chapters.length === 0 && (
+                      <div className="px-5 py-6 text-sm text-slate-400 italic">No chapters yet.</div>
+                    )}
+                    {s.chapters.map((c, ci) => {
+                      const cPlan = plan.chapterById[c.id];
+                      const cOpen = forcePrintOpen ? true : !!openChapters[c.id];
+                      const cPeriods = c.topics.reduce((a, t) => a + hoursToPeriods(t.hours, periodMins), 0);
+                      return (
+                        <div
+                          key={c.id}
+                          className={cn('chapter-block px-5 py-3', forcePrintOpen && 'print-open')}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenChapters((m) => ({ ...m, [c.id]: !m[c.id] }))
+                            }
+                            className="w-full flex items-center justify-between gap-3 text-left group"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <ChevronDown
+                                className={cn(
+                                  'h-3.5 w-3.5 text-slate-400 transition-transform accordion-chevron shrink-0',
+                                  cOpen ? 'rotate-0' : '-rotate-90',
+                                )}
+                              />
+                              <div className="font-semibold text-slate-800 text-sm truncate">
+                                Ch {ci + 1}. {c.name}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 shrink-0">
+                              {cPlan && (
+                                <span className="font-medium text-slate-700 hidden sm:inline">
+                                  {formatShort(cPlan.startDate)} → {formatShort(cPlan.endDate)}
+                                </span>
+                              )}
+                              <span>
+                                {c.topics.length} topics · {chapterHours(c)}h · ~{cPeriods}p
                               </span>
-                            )}
-                            <span>
-                              {chapterHours(c)}h ·{' '}
-                              {c.topics.reduce((a, t) => a + hoursToPeriods(t.hours, periodMins), 0)} periods
-                            </span>
-                          </div>
+                            </div>
+                          </button>
+
+                          {cOpen && (
+                            <div className="accordion-body mt-3">
+                              {c.topics.length === 0 ? (
+                                <div className="text-xs text-slate-400 italic py-2">No topics.</div>
+                              ) : (
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="text-[11px] uppercase tracking-wider text-slate-400 text-left">
+                                      <th className="font-medium py-1">Topic</th>
+                                      <th className="font-medium py-1 w-24 text-right">Start</th>
+                                      <th className="font-medium py-1 w-24 text-right">End</th>
+                                      <th className="font-medium py-1 w-16 text-right">Hours</th>
+                                      <th className="font-medium py-1 w-16 text-right">Periods</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {c.topics.map((t) => {
+                                      const tPlan = plan.topicById[t.id];
+                                      const periods = hoursToPeriods(t.hours, periodMins);
+                                      return (
+                                        <tr key={t.id} className="border-t border-slate-50 hover:bg-slate-50/60">
+                                          <td className="py-1.5 text-slate-700">{t.name}</td>
+                                          <td className="py-1.5 text-right tabular-nums text-slate-700">
+                                            {tPlan ? formatShort(tPlan.startDate) : <span className="text-slate-300">—</span>}
+                                          </td>
+                                          <td className="py-1.5 text-right tabular-nums text-slate-700">
+                                            {tPlan ? formatShort(tPlan.endDate) : <span className="text-slate-300">—</span>}
+                                          </td>
+                                          <td className="py-1.5 text-right tabular-nums text-slate-700">
+                                            {t.hours > 0 ? `${t.hours}h` : <span className="text-slate-300">—</span>}
+                                          </td>
+                                          <td className="py-1.5 text-right tabular-nums text-slate-700">
+                                            {periods || <span className="text-slate-300">—</span>}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-[11px] uppercase tracking-wider text-slate-400 text-left">
-                              <th className="font-medium py-1">Topic</th>
-                              <th className="font-medium py-1 w-24 text-right">Start</th>
-                              <th className="font-medium py-1 w-24 text-right">End</th>
-                              <th className="font-medium py-1 w-16 text-right">Hours</th>
-                              <th className="font-medium py-1 w-16 text-right">Periods</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {c.topics.map((t) => {
-                              const tPlan = plan.topicById[t.id];
-                              const periods = hoursToPeriods(t.hours, periodMins);
-                              return (
-                                <tr key={t.id} className="border-t border-slate-50 hover:bg-slate-50/60">
-                                  <td className="py-1.5 text-slate-700">{t.name}</td>
-                                  <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                    {tPlan ? formatShort(tPlan.startDate) : <span className="text-slate-300">—</span>}
-                                  </td>
-                                  <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                    {tPlan ? formatShort(tPlan.endDate) : <span className="text-slate-300">—</span>}
-                                  </td>
-                                  <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                    {t.hours > 0 ? `${t.hours}h` : <span className="text-slate-300">—</span>}
-                                  </td>
-                                  <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                    {periods || <span className="text-slate-300">—</span>}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Card>
             );
           })}
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 
