@@ -690,7 +690,7 @@ const GenerateStep: React.FC<{
         {result && (
           <p className="text-xs text-emerald-600">
             <CheckCircle2 className="h-3.5 w-3.5 inline mr-1" />
-            Schedule saved. Open the Calendar tab to review and override.
+            Schedule saved. Open the Preview tab to review and override.
           </p>
         )}
       </CardContent>
