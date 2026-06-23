@@ -27,6 +27,8 @@ import {
 } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
+import { formatHoursShort } from '@/utils/formatUtils';
+
 
 const DEFAULT_SCHEDULE = {
   startDate: '2025-04-14',
