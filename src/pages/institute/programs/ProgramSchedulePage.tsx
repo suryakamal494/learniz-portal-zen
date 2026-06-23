@@ -123,7 +123,7 @@ const ProgramSchedulePage: React.FC = () => {
     { id: 'setup', label: 'Setup', icon: CalendarDays },
     { id: 'workload', label: 'Workload', icon: Layers },
     { id: 'generate', label: 'Generate', icon: Wand2 },
-    { id: 'calendar', label: 'Calendar', icon: Sparkles },
+    { id: 'calendar', label: 'Preview', icon: Sparkles },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
 
