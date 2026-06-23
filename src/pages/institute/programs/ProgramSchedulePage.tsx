@@ -667,7 +667,10 @@ const GenerateStep: React.FC<{
         {result && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
             <Stat label="Slots created" value={result.slots} />
-            <Stat label="Ends on" value={0} sub={formatPretty(result.end)} />
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/50 p-4 text-left">
+              <div className="text-[11px] uppercase tracking-wider text-slate-500">Ends on</div>
+              <div className="text-base font-semibold text-slate-900 mt-1">{formatPretty(result.end)}</div>
+            </div>
             <Stat label="Free slots" value={result.free} />
             <Stat label="Unscheduled" value={result.short} negative={result.short > 0} />
           </div>
