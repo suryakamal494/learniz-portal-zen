@@ -177,8 +177,14 @@ const ProgramPreviewPage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {viewMode === 'calendar' && (
+          <CurriculumCalendarView program={program} schedule={schedule} />
+        )}
+
+        {viewMode === 'list' && (<>
         {/* Subject filter tabs */}
         <div className="no-print flex flex-wrap items-center gap-2 sticky top-0 z-10 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 py-2 -mx-1 px-1">
+
           <button
             type="button"
             onClick={() => setActiveSubject('all')}
