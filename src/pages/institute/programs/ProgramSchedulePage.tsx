@@ -244,8 +244,11 @@ const SetupStep: React.FC<{
 }> = ({ program, config, faculty, onChange, onNext }) => {
   const update = <K extends keyof ScheduleConfig>(k: K, v: ScheduleConfig[K]) => onChange({ ...config, [k]: v });
 
-  const [holidayDate, setHolidayDate] = useState('');
+  const [holidayDates, setHolidayDates] = useState<Date[]>([]);
   const [holidayName, setHolidayName] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   const toggleDay = (d: WeekDay) => {
     const next = config.workingDays.includes(d)
