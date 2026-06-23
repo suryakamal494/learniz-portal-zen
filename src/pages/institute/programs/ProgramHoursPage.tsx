@@ -46,6 +46,8 @@ import {
   useInstituteProgram,
 } from '@/hooks/useInstitutePrograms';
 import { chapterHours, hoursToPeriods, rollupProgram, rollupSubject } from '@/utils/calendarAutomation';
+import { formatHoursShort } from '@/utils/formatUtils';
+
 import { subjectPalette } from '@/lib/subjectColors';
 import { PROGRAM_TOOLTIPS } from '@/lib/programTooltips';
 import { toast } from '@/hooks/use-toast';
