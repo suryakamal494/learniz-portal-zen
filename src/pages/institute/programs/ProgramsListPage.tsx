@@ -112,8 +112,7 @@ const ProgramsListPage: React.FC = () => {
             {filtered.map((p) => {
               const colors = p.subjects.map((s) => s.color);
               const bgGradient = gradientFor(colors);
-              const goSchedule = () =>
-                navigate(p.hoursFinalised ? `/institute/programs/${p.id}/schedule` : `/institute/programs/${p.id}/hours`);
+              const goSchedule = () => navigate(`/institute/programs/${p.id}/schedule`);
 
               return (
                 <Card
