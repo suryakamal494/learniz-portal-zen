@@ -60,7 +60,7 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
   const [granularity, setGranularity] = useState<Granularity>('week');
   const [cursor, setCursor] = useState<string>(() => schedule.startDate);
 
-  const { slots, slotsByDate, subjectById, chapterById, topicById, planEnd } = useMemo(() => {
+  const { slots, slotsByDate, subjectById, chapterById, topicById, facultyById, facultyBySubject, planEnd } = useMemo(() => {
     const res = generateSchedule(program, schedule, []);
     const byDate: Record<string, ScheduleSlot[]> = {};
     res.slots.forEach((s) => {
@@ -77,15 +77,29 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
         c.topics.forEach((t) => (tMap[t.id] = t.name));
       });
     });
+    const fMap: Record<string, string> = {};
+    const fBySubj: Record<string, string> = {};
+    MOCK_FACULTY.forEach((f) => {
+      fMap[f.id] = f.name;
+      if (f.subjectId && !fBySubj[f.subjectId]) fBySubj[f.subjectId] = f.name;
+    });
     return {
       slots: res.slots,
       slotsByDate: byDate,
       subjectById: sMap,
       chapterById: cMap,
       topicById: tMap,
+      facultyById: fMap,
+      facultyBySubject: fBySubj,
       planEnd: res.endDate,
     };
   }, [program, schedule]);
+
+  const facultyFor = (slot: ScheduleSlot): string => {
+    if (slot.facultyId && facultyById[slot.facultyId]) return facultyById[slot.facultyId];
+    return facultyBySubject[slot.subjectId] ?? 'Unassigned';
+  };
+
 
   const periodsPerDay = schedule.periodsPerDay;
 
