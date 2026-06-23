@@ -1,28 +1,26 @@
-## Changes
+## Schedule Setup — Holidays, Class URL & Stepper rename
 
-### 1. Show faculty name in calendar view (`CurriculumCalendarView.tsx`)
-- Import `MOCK_FACULTY` from `@/data/mockInstitutePrograms` and build a `facultyById` lookup (id → name, short initials).
-- **Day view**: append a small "· <Faculty Name>" line/chip next to topic on each period row.
-- **Week view**: add a `text-[10px] text-slate-500 truncate` line under topic showing faculty name (initials on narrow cells).
-- **Month view**: keep subject chips; add a tooltip listing faculty per subject for that day.
-- Add "Faculty" mini-legend row under subject legend showing each subject → assigned faculty.
+All edits in `src/pages/institute/programs/ProgramSchedulePage.tsx`.
 
-### 2. Promote List / Calendar toggle (`ProgramPreviewPage.tsx`)
-Currently buried in the right-side header cluster with Expand/Collapse/Print. Restructure header so:
-- The List/Calendar segmented toggle becomes a **primary control directly under the program title** (left side, larger pill with icons + labels).
-- Expand all / Collapse all / Print stay on the right as secondary actions (smaller, ghost styling), and Expand/Collapse only render in List mode (already the case).
-- On mobile, toggle stacks above secondary actions.
+### 1. Holidays & non-teaching days — UX overhaul
+Replace the single-date + required-name row with a multi-select calendar flow.
 
-### 3. Replace decimal-hour displays with `Xh Ym` everywhere in program modules
-Use existing `formatHoursShort` from `src/utils/formatUtils.ts` (e.g. `52.5 → "52h 30m"`, `33 → "33h"`).
+- Swap the native `<input type="date">` for a shadcn `Calendar` (popover trigger showing "Pick dates") with `mode="multiple"` so the user can click several dates in one go.
+- Holiday name input becomes **optional** (remove required styling/placeholder hint, keep placeholder as `Description (optional)`).
+- **Add** button behavior:
+  - If 0 dates selected → disabled.
+  - If 1+ dates selected → create one holiday entry per date, using the description if provided, else label as `Holiday` (fallback).
+  - Clear both selected dates and description after adding.
+- Holiday list rows: add an inline **edit (pencil)** action that lets the user update the description later (in-place input with save/cancel). Delete action stays.
+- Sort displayed holidays by date ascending.
 
-Files & lines to update:
-- `ProgramPreviewPage.tsx` — header roll-up (`309.9h`), subject totals (`{sRoll.hours}h`), topic hours (`{t.hours}h`).
-- `ProgramSchedulePage.tsx` — `${roll.hours}h teaching`, subject row `{s.hours}h`.
-- `ProgramHoursPage.tsx` — subject pill (`{sRoll.hours}h`), big total (`{roll.hours} hrs`), subject summary (`{s.hours}h · {s.periods}p`), topic helper text (`${topic.hours} h`).
-- `ProgramsListPage.tsx` — any remaining hour readouts on cards (verify and convert if present).
+### 2. Remove "Class URL template"
+- Delete the entire `Class URL template` Label + Input block around line 363 in `SetupStep` (and the corresponding state/handler if only used here).
+- Also remove the per-slot `Class URL` field in the Calendar slot editor around line 1144 (paired with the template, no longer meaningful). Keep the rest of the slot editor intact.
 
-Periods (`~546p`, `{periods}p`) stay unchanged — only hours are reformatted.
+### 3. Stepper rename: Calendar → Preview
+- In the steps array (~line 126), rename `{ id: 'calendar', label: 'Calendar', icon: Sparkles }` to `label: 'Preview'`. Keep `id` as `calendar` to avoid breaking routing/state.
+- Update any user-visible copy that says "Open the Calendar tab" / "Back to Calendar" / heading inside `CalendarStep` to say "Preview" instead. Internal variable names stay as-is.
 
 ### Out of scope
-No data-model changes; faculty assignments already exist on `ScheduleSlot.facultyId` and `MOCK_FACULTY`. No backend work.
+No data-model changes beyond making `name` optional on the holiday entry type (string → string | undefined). No backend work.

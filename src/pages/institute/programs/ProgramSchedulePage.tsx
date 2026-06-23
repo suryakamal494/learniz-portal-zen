@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -32,6 +33,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   addFaculty,
   setGeneratedSlots,
@@ -51,7 +54,7 @@ import {
 } from '@/utils/calendarAutomation';
 import { formatHoursShort } from '@/utils/formatUtils';
 
-import { ScheduleConfig, ScheduleSlot, WeekDay } from '@/types/instituteProgram';
+import { Holiday, ScheduleConfig, ScheduleSlot, WeekDay } from '@/types/instituteProgram';
 import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -123,7 +126,7 @@ const ProgramSchedulePage: React.FC = () => {
     { id: 'setup', label: 'Setup', icon: CalendarDays },
     { id: 'workload', label: 'Workload', icon: Layers },
     { id: 'generate', label: 'Generate', icon: Wand2 },
-    { id: 'calendar', label: 'Calendar', icon: Sparkles },
+    { id: 'calendar', label: 'Preview', icon: Sparkles },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
 
@@ -241,8 +244,11 @@ const SetupStep: React.FC<{
 }> = ({ program, config, faculty, onChange, onNext }) => {
   const update = <K extends keyof ScheduleConfig>(k: K, v: ScheduleConfig[K]) => onChange({ ...config, [k]: v });
 
-  const [holidayDate, setHolidayDate] = useState('');
+  const [holidayDates, setHolidayDates] = useState<Date[]>([]);
   const [holidayName, setHolidayName] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   const toggleDay = (d: WeekDay) => {
     const next = config.workingDays.includes(d)
@@ -359,18 +365,6 @@ const SetupStep: React.FC<{
               );
             })}
           </div>
-          <div>
-            <Label className="text-xs uppercase tracking-wider text-slate-500">Class URL template</Label>
-            <Input
-              value={config.classUrlTemplate}
-              onChange={(e) => update('classUrlTemplate', e.target.value)}
-              placeholder="https://meet.example.com/{date}-p{period}"
-              className="bg-white mt-1 font-mono text-xs"
-            />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Use <code>{'{date}'}</code> and <code>{'{period}'}</code> as placeholders.
-            </p>
-          </div>
         </CardContent>
       </Card>
 
@@ -382,23 +376,54 @@ const SetupStep: React.FC<{
           </h3>
 
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input type="date" value={holidayDate} onChange={(e) => setHolidayDate(e.target.value)} className="bg-white sm:w-48" />
+            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="bg-white sm:w-56 justify-start font-normal">
+                  <CalendarDays className="h-4 w-4 mr-2 text-slate-500" />
+                  {holidayDates.length === 0
+                    ? 'Pick dates'
+                    : holidayDates.length === 1
+                      ? formatPretty(toISO(holidayDates[0]))
+                      : `${holidayDates.length} dates selected`}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="multiple"
+                  selected={holidayDates}
+                  onSelect={(dates) => setHolidayDates(dates ?? [])}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
             <Input
               value={holidayName}
               onChange={(e) => setHolidayName(e.target.value)}
-              placeholder="Holiday name (e.g. Diwali)"
+              placeholder="Description (optional, e.g. Diwali)"
               className="bg-white flex-1"
             />
             <Button
+              disabled={holidayDates.length === 0}
               onClick={() => {
-                if (!holidayDate || !holidayName.trim()) return;
-                if (config.holidays.some((h) => h.date === holidayDate)) {
-                  toast({ title: 'Already added', description: 'A holiday on that date already exists.' });
+                if (holidayDates.length === 0) return;
+                const existing = new Set(config.holidays.map((h) => h.date));
+                const trimmed = holidayName.trim();
+                const toAdd: Holiday[] = holidayDates
+                  .map((d) => toISO(d))
+                  .filter((iso) => !existing.has(iso))
+                  .map((iso) => ({ date: iso, name: trimmed || undefined }));
+                if (toAdd.length === 0) {
+                  toast({ title: 'Already added', description: 'Those dates are already in the list.' });
                   return;
                 }
-                update('holidays', [...config.holidays, { date: holidayDate, name: holidayName.trim() }].sort((a, b) => a.date.localeCompare(b.date)));
-                setHolidayDate('');
+                update(
+                  'holidays',
+                  [...config.holidays, ...toAdd].sort((a, b) => a.date.localeCompare(b.date)),
+                );
+                setHolidayDates([]);
                 setHolidayName('');
+                setPickerOpen(false);
               }}
               className="gap-1"
             >
@@ -409,28 +434,99 @@ const SetupStep: React.FC<{
           {config.holidays.length === 0 ? (
             <p className="text-sm text-slate-400 italic">No holidays added yet.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {config.holidays.map((h) => (
-                <Badge
-                  key={h.date}
-                  variant="outline"
-                  className="bg-rose-50 text-rose-700 border-rose-200 gap-1 pl-2 pr-1 py-1"
-                >
-                  <span className="font-medium">{formatPretty(h.date)}</span>
-                  <span className="text-rose-500">· {h.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => update('holidays', config.holidays.filter((x) => x.date !== h.date))}
-                    className="hover:bg-rose-200 rounded p-0.5"
+            <div className="flex flex-col gap-1.5">
+              {config.holidays.map((h) => {
+                const isEditing = editingDate === h.date;
+                return (
+                  <div
+                    key={h.date}
+                    className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm text-rose-700"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
+                    <span className="font-medium min-w-[8rem]">{formatPretty(h.date)}</span>
+                    {isEditing ? (
+                      <>
+                        <Input
+                          autoFocus
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          placeholder="Description (optional)"
+                          className="bg-white h-7 text-sm flex-1"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              update(
+                                'holidays',
+                                config.holidays.map((x) =>
+                                  x.date === h.date ? { ...x, name: editingName.trim() || undefined } : x,
+                                ),
+                              );
+                              setEditingDate(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingDate(null);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            update(
+                              'holidays',
+                              config.holidays.map((x) =>
+                                x.date === h.date ? { ...x, name: editingName.trim() || undefined } : x,
+                              ),
+                            );
+                            setEditingDate(null);
+                          }}
+                          className="hover:bg-rose-200 rounded p-1"
+                          aria-label="Save"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDate(null)}
+                          className="hover:bg-rose-200 rounded p-1"
+                          aria-label="Cancel"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className={cn('flex-1 truncate', !h.name && 'text-rose-400 italic')}>
+                          {h.name || 'No description'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingDate(h.date);
+                            setEditingName(h.name ?? '');
+                          }}
+                          className="hover:bg-rose-200 rounded p-1"
+                          aria-label="Edit description"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            update('holidays', config.holidays.filter((x) => x.date !== h.date))
+                          }
+                          className="hover:bg-rose-200 rounded p-1"
+                          aria-label="Remove"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
+
+
 
       <div className="lg:col-span-2 flex justify-end">
         <Button onClick={onNext} className="gap-2">
@@ -690,7 +786,7 @@ const GenerateStep: React.FC<{
         {result && (
           <p className="text-xs text-emerald-600">
             <CheckCircle2 className="h-3.5 w-3.5 inline mr-1" />
-            Schedule saved. Open the Calendar tab to review and override.
+            Schedule saved. Open the Preview tab to review and override.
           </p>
         )}
       </CardContent>
@@ -1139,14 +1235,6 @@ const SlotEditor: React.FC<{
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label className="text-xs uppercase tracking-wider text-slate-500">Class URL</Label>
-          <Input
-            value={slot.classUrl}
-            onChange={(e) => onChange({ classUrl: e.target.value })}
-            className="bg-white mt-1 font-mono text-xs"
-          />
         </div>
       </div>
       <div className="flex gap-2 pt-2">
