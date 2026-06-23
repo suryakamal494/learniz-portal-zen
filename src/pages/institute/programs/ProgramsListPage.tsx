@@ -3,33 +3,37 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CalendarRange,
-  CheckCircle2,
-  Clock,
-  Eye,
   GraduationCap,
-  Layers,
   Plus,
   Search,
-  Sparkles,
-  Timer,
+  Users,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useInstitutePrograms } from '@/hooks/useInstitutePrograms';
-import { rollupProgram } from '@/utils/calendarAutomation';
-import { MetricChip } from '@/components/institute/programs/MetricChip';
-import { PROGRAM_TOOLTIPS } from '@/lib/programTooltips';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
+
+/** Soft accent gradient drawn from each program's subject colors. */
+function gradientFor(colors: string[]): string {
+  const map: Record<string, string> = {
+    blue: '59, 130, 246',
+    emerald: '16, 185, 129',
+    violet: '139, 92, 246',
+    rose: '244, 63, 94',
+    amber: '245, 158, 11',
+    cyan: '6, 182, 212',
+  };
+  const stops = colors.slice(0, 3).map((c, i) => {
+    const rgb = map[c] ?? map.blue;
+    const positions = ['12% 18%', '88% 22%', '60% 92%'];
+    const alpha = [0.22, 0.18, 0.14];
+    return `radial-gradient(circle at ${positions[i] ?? '50% 50%'}, rgba(${rgb}, ${alpha[i] ?? 0.15}), transparent 55%)`;
+  });
+  return stops.join(', ');
+}
 
 const ProgramsListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -49,250 +53,163 @@ const ProgramsListPage: React.FC = () => {
   );
 
   return (
-    <TooltipProvider delayDuration={120}>
-      <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
-        <div className="max-w-7xl mx-auto p-6 space-y-6">
-          {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1 text-xs font-semibold text-blue-600 uppercase tracking-wider">
-                <CalendarRange className="h-3.5 w-3.5" />
-                Programs &amp; Calendar Automation
-              </div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Programs</h1>
-              <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-                Capture teaching hours per topic, then generate the full academic calendar in one click — the same plan
-                powers the teacher schedule and (later) student LMS access.
-              </p>
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1 text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              <CalendarRange className="h-3.5 w-3.5" />
+              Programs &amp; Calendar Automation
             </div>
-            <Button className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700" disabled title="Coming soon">
-              <Plus className="h-4 w-4" /> New Program
-            </Button>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Programs</h1>
+            <p className="text-sm text-slate-600 mt-1 max-w-2xl">
+              Configure teaching hours per program, then auto-generate the academic calendar that powers the teacher
+              schedule.
+            </p>
           </div>
+          <Button className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700" disabled title="Coming soon">
+            <Plus className="h-4 w-4" /> New Program
+          </Button>
+        </div>
 
-          {/* Filters */}
-          <Card className="border-slate-200/70 shadow-sm">
-            <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search programs..."
-                  className="pl-9 bg-white"
-                />
-              </div>
-              <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-white">
-                  <SelectValue placeholder="All classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All classes</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
+        {/* Filters */}
+        <Card className="border-slate-200/70 shadow-sm">
+          <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search programs..."
+                className="pl-9 bg-white"
+              />
+            </div>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="w-full sm:w-48 bg-white">
+                <SelectValue placeholder="All classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All classes</SelectItem>
+                {classes.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Cards grid */}
+        {filtered.length === 0 ? (
+          <Card className="p-12 text-center border-dashed">
+            <p className="text-slate-500">No programs match your filters.</p>
           </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filtered.map((p) => {
+              const colors = p.subjects.map((s) => s.color);
+              const bgGradient = gradientFor(colors);
+              const goSchedule = () =>
+                navigate(p.hoursFinalised ? `/institute/programs/${p.id}/schedule` : `/institute/programs/${p.id}/hours`);
 
-          {/* Cards grid */}
-          {filtered.length === 0 ? (
-            <Card className="p-12 text-center border-dashed">
-              <p className="text-slate-500">No programs match your filters.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {filtered.map((p) => {
-                const periodMins = p.schedule?.periodLengthMins ?? 40;
-                const roll = rollupProgram(p, periodMins);
-                const ready = p.hoursFinalised;
-                const scheduled = (p.generatedSlots?.length ?? 0) > 0;
-                const chaptersCount = p.subjects.reduce((a, s) => a + s.chapters.length, 0);
-                // Primary accent — use first subject's palette.
-                const primary = subjectPalette(p.subjects[0]?.color ?? 'blue');
+              return (
+                <Card
+                  key={p.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={goSchedule}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && goSchedule()}
+                  className="group relative cursor-pointer overflow-hidden border-slate-200/70 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white"
+                >
+                  {/* Aurora background */}
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 opacity-90 group-hover:opacity-100 transition-opacity"
+                    style={{ backgroundImage: bgGradient }}
+                  />
 
-                return (
-                  <Card
-                    key={p.id}
-                    className="group relative border-slate-200/70 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden bg-white"
-                  >
-                    {/* Left accent rail */}
-                    <div className={cn('absolute left-0 top-0 bottom-0 w-1', primary.bg)} />
+                  {/* Subject color rail */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1 flex flex-col">
+                    {p.subjects.map((s) => {
+                      const pal = subjectPalette(s.color);
+                      return <div key={s.id} className={cn('flex-1', pal.bg)} />;
+                    })}
+                  </div>
 
-                    {/* Soft gradient header strip */}
-                    <div
-                      className={cn(
-                        'pl-5 pr-5 pt-5 pb-3 bg-gradient-to-br',
-                        'from-white via-white to-slate-50/60',
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 text-lg leading-tight truncate">{p.name}</h3>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
-                            <GraduationCap className="h-3.5 w-3.5" />
-                            <span>{p.className}</span>
-                            <span className="text-slate-300">•</span>
-                            <span>Sections {p.sections.join(', ')}</span>
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-[10px] uppercase tracking-wider text-slate-400">Fee</div>
-                          <div className="font-semibold text-slate-700">₹{p.fee.toLocaleString('en-IN')}</div>
-                        </div>
-                      </div>
+                  <CardContent className="relative p-6 space-y-5">
+                    {/* Class badge */}
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+                        <GraduationCap className="h-3 w-3 text-slate-500" />
+                        {p.className}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                        <Users className="h-3 w-3" />
+                        {p.sections.length === 1 ? `Section ${p.sections[0]}` : `Sections ${p.sections.join(', ')}`}
+                      </span>
                     </div>
 
-                    <CardContent className="px-5 pb-5 pt-2 space-y-4">
-                      {/* Metric chips with tooltips */}
-                      <div className="grid grid-cols-4 gap-2">
-                        <MetricChip
-                          label="Subjects"
-                          accent="indigo"
-                          value={p.subjects.length}
-                          tooltip={PROGRAM_TOOLTIPS.subjects}
-                        />
-                        <MetricChip
-                          label="Chapters"
-                          accent="blue"
-                          value={chaptersCount}
-                          tooltip={PROGRAM_TOOLTIPS.chapters}
-                        />
-                        <MetricChip
-                          label="Hours"
-                          accent="emerald"
-                          value={`${roll.hours}h`}
-                          tooltip={PROGRAM_TOOLTIPS.hours}
-                        />
-                        <MetricChip
-                          label="Periods"
-                          accent="violet"
-                          value={`≈${roll.periods}`}
-                          sub={`${periodMins}m each`}
-                          tooltip={PROGRAM_TOOLTIPS.periods}
-                        />
-                      </div>
+                    {/* Program name */}
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-xl leading-snug tracking-tight">
+                        {p.name}
+                      </h3>
+                    </div>
 
-                      {/* Subject legend */}
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {p.subjects.map((s) => {
-                          const pal = subjectPalette(s.color);
-                          return (
-                            <Tooltip key={s.id}>
-                              <TooltipTrigger asChild>
-                                <span
-                                  className={cn(
-                                    'inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-2.5 py-1 text-xs border',
-                                    pal.bgSoft,
-                                    pal.text,
-                                    pal.border,
-                                  )}
-                                >
-                                  <span className={cn('h-1.5 w-1.5 rounded-full', pal.dot)} />
-                                  <span className="font-medium">{s.name}</span>
-                                  <span className="opacity-60">· {s.chapters.length} ch</span>
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent className="text-xs">
-                                {s.chapters.length} chapters ·{' '}
-                                {s.chapters.reduce((a, c) => a + c.topics.length, 0)} topics
-                              </TooltipContent>
-                            </Tooltip>
-                          );
-                        })}
-                      </div>
+                    {/* Subject chips — the primary identity */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {p.subjects.map((s) => {
+                        const pal = subjectPalette(s.color);
+                        return (
+                          <span
+                            key={s.id}
+                            className={cn(
+                              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border bg-white/85 backdrop-blur',
+                              pal.text,
+                              pal.border,
+                            )}
+                          >
+                            <span className={cn('h-1.5 w-1.5 rounded-full', pal.dot)} />
+                            {s.name}
+                          </span>
+                        );
+                      })}
+                    </div>
 
-                      {/* Status pills */}
-                      <div className="flex flex-wrap gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'gap-1 font-medium',
-                                ready
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200',
-                              )}
-                            >
-                              {ready ? (
-                                <CheckCircle2 className="h-3 w-3" />
-                              ) : (
-                                <Clock className="h-3 w-3" />
-                              )}
-                              {ready ? 'Hours finalised' : 'Hours pending'}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs text-xs">
-                            {ready
-                              ? PROGRAM_TOOLTIPS.hoursFinalised
-                              : `${roll.totalTopics - roll.topicsConfigured} of ${roll.totalTopics} topics still need hours.`}
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'gap-1 font-medium',
-                                scheduled
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                  : 'bg-slate-50 text-slate-600 border-slate-200',
-                              )}
-                            >
-                              {scheduled ? <Sparkles className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
-                              {scheduled ? `${p.generatedSlots!.length} slots scheduled` : 'Not scheduled'}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs text-xs">
-                            {scheduled
-                              ? 'Calendar generated. Open the Schedule workspace to view or edit.'
-                              : PROGRAM_TOOLTIPS.notScheduled}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 min-w-[8rem] gap-1.5"
-                          onClick={() => navigate(`/institute/programs/${p.id}/hours`)}
-                        >
-                          <Layers className="h-3.5 w-3.5" />
-                          Teaching Hours
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="gap-1.5"
-                          onClick={() => navigate(`/institute/programs/${p.id}/preview`)}
-                        >
-                          <Eye className="h-3.5 w-3.5" /> Preview
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 min-w-[8rem] gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400"
-                          disabled={!ready}
-                          onClick={() => navigate(`/institute/programs/${p.id}/schedule`)}
-                        >
-                          Schedule <ArrowRight className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                    {/* CTA row — minimal */}
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/institute/programs/${p.id}/preview`);
+                        }}
+                        className="text-xs font-medium text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline"
+                      >
+                        View curriculum
+                      </button>
+                      <Button
+                        size="sm"
+                        className="gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm group-hover:bg-indigo-600 group-hover:shadow-md transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goSchedule();
+                        }}
+                      >
+                        Open program
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 
