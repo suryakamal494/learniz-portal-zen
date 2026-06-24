@@ -735,9 +735,11 @@ const CalendarStep: React.FC<{
   program: any;
   slots: ScheduleSlot[];
   faculty: ReturnType<typeof useFaculty>;
+  config: ScheduleConfig;
   onChangeSlots: (s: ScheduleSlot[]) => void;
+  onRegenerate: () => void;
   onBack: () => void;
-}> = ({ program, slots, faculty, onChangeSlots, onBack }) => {
+}> = ({ program, slots, faculty, config, onChangeSlots, onRegenerate, onBack }) => {
   const [mode, setMode] = useState<ViewMode>('month');
   const [cursor, setCursor] = useState<string>(slots[0]?.date ?? new Date().toISOString().slice(0, 10));
   const [selectedSlot, setSelectedSlot] = useState<ScheduleSlot | null>(null);
