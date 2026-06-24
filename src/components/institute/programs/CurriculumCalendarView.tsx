@@ -229,6 +229,10 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule, storedSlot
           chapterById={chapterById}
           topicById={topicById}
           facultyFor={facultyFor}
+          facultyOptionsFor={facultyOptionsFor}
+          editable={editable}
+          isPast={isPast}
+          onChangeFaculty={handleFacultyChange}
         />
       )}
 
@@ -241,6 +245,10 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule, storedSlot
           subjectById={subjectById}
           topicById={topicById}
           facultyFor={facultyFor}
+          facultyOptionsFor={facultyOptionsFor}
+          editable={editable}
+          isPast={isPast}
+          onChangeFaculty={handleFacultyChange}
         />
       )}
 
