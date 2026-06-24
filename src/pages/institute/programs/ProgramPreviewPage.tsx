@@ -60,6 +60,8 @@ const PRINT_CSS = `
 const ProgramPreviewPage: React.FC = () => {
   const { programId } = useParams<{ programId: string }>();
   const program = useInstituteProgram(programId);
+  const faculty = useFaculty();
+  const instituteHolidays = useInstituteHolidays();
 
   const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>({});
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
@@ -69,7 +71,8 @@ const ProgramPreviewPage: React.FC = () => {
 
 
   const periodMins = program?.schedule?.periodLengthMins ?? 40;
-  const schedule = program?.schedule ?? DEFAULT_SCHEDULE;
+  const baseSchedule = program?.schedule ?? DEFAULT_SCHEDULE;
+  const schedule = configWithEffectiveHolidays(baseSchedule as never, instituteHolidays);
 
   const roll = useMemo(() => (program ? rollupProgram(program, periodMins) : null), [program, periodMins]);
   const plan = useMemo(() => (program ? planDates(program, schedule) : null), [program, schedule]);
