@@ -1071,6 +1071,7 @@ const CalendarStep: React.FC<{
           onCursor={setCursor}
           slotsByDate={slotsByDate}
           subjectMap={subjectMap}
+          faculty={faculty}
           onSelectSlot={setSelectedSlot}
         />
       )}
@@ -1085,7 +1086,13 @@ const CalendarStep: React.FC<{
         />
       )}
       {mode === 'list' && (
-        <ListView slots={slots} subjectMap={subjectMap} topicMap={topicMap} onSelectSlot={setSelectedSlot} />
+        <ListView
+          slots={slots}
+          subjectMap={subjectMap}
+          topicMap={topicMap}
+          faculty={faculty}
+          onSelectSlot={setSelectedSlot}
+        />
       )}
 
       <div className="flex justify-between">
@@ -1120,8 +1127,10 @@ const MonthView: React.FC<{
   onCursor: (iso: string) => void;
   slotsByDate: Map<string, ScheduleSlot[]>;
   subjectMap: Map<string, { name: string; color: string }>;
+  faculty: ReturnType<typeof useFaculty>;
   onSelectSlot: (s: ScheduleSlot) => void;
-}> = ({ cursor, onCursor, slotsByDate, subjectMap, onSelectSlot }) => {
+}> = ({ cursor, onCursor, slotsByDate, subjectMap, faculty, onSelectSlot }) => {
+  const facMap = useMemo(() => new Map(faculty.map((f) => [f.id, f.name])), [faculty]);
   const d = parseISO(cursor);
   const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
   const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
@@ -1182,6 +1191,8 @@ const MonthView: React.FC<{
                       {daySlots.slice(0, 4).map((sl) => {
                         const sub = subjectMap.get(sl.subjectId);
                         const pal = subjectPalette(sub?.color ?? 'blue');
+                        const facName = facMap.get(sl.facultyId);
+                        const facInit = facName ? shortFacultyName(facName) : '';
                         return (
                           <button
                             key={sl.id}
@@ -1192,9 +1203,10 @@ const MonthView: React.FC<{
                               pal.slot,
                               sl.locked && 'ring-1 ring-slate-400',
                             )}
-                            title={sub?.name}
+                            title={`${sub?.name ?? ''}${facName ? ' · ' + facName : ''}`}
                           >
                             {sl.startTime} {sub?.name}
+                            {facInit && <span className="opacity-70"> · {facInit}</span>}
                           </button>
                         );
                       })}
