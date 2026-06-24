@@ -606,8 +606,8 @@ const WorkloadStep: React.FC<{
   config: ScheduleConfig;
   onChange: (c: ScheduleConfig) => void;
   onBack: () => void;
-  onNext: () => void;
-}> = ({ program, config, onChange, onBack, onNext }) => {
+  onGenerate: () => void;
+}> = ({ program, config, onChange, onBack, onGenerate }) => {
   const roll = rollupProgram(program, config.periodLengthMins);
   const check = capacityCheck(program, config);
   const ok = check.surplus >= 0;
@@ -704,8 +704,8 @@ const WorkloadStep: React.FC<{
         <Button variant="outline" onClick={onBack} className="gap-2">
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
-        <Button onClick={onNext} className="gap-2" disabled={!ok}>
-          Next: Generate <ArrowRight className="h-4 w-4" />
+        <Button onClick={onGenerate} className="gap-2" disabled={!ok}>
+          Generate &amp; Preview <Wand2 className="h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -725,79 +725,7 @@ const Stat: React.FC<{ label: string; value: number; sub?: string; negative?: bo
   </div>
 );
 
-/* ──────────────── STEP 3 GENERATE ──────────────── */
-
-const GenerateStep: React.FC<{
-  program: any;
-  config: ScheduleConfig;
-  existing: ScheduleSlot[];
-  onGenerated: (s: ScheduleSlot[]) => void;
-  onBack: () => void;
-}> = ({ program, config, existing, onGenerated, onBack }) => {
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<{ slots: number; end: string; free: number; short: number } | null>(null);
-
-  const run = () => {
-    setRunning(true);
-    setTimeout(() => {
-      const lockedOnly = existing.filter((s) => s.locked);
-      const out = generateSchedule(program, config, lockedOnly);
-      onGenerated(out.slots);
-      setResult({
-        slots: out.slots.length,
-        end: out.endDate,
-        free: out.freeSlots,
-        short: out.unscheduledTopics.reduce((a, x) => a + x.periodsShort, 0),
-      });
-      setRunning(false);
-    }, 600);
-  };
-
-  return (
-    <Card className="border-slate-200/70 shadow-sm">
-      <CardContent className="p-8 text-center space-y-5">
-        <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-500 grid place-items-center shadow-lg">
-          <Wand2 className="h-8 w-8 text-white" />
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold text-slate-900">Generate academic schedule</h3>
-          <p className="text-sm text-slate-600 max-w-md mx-auto mt-2">
-            We'll walk your curriculum in order, round-robin across subjects, skip Sundays &amp; holidays, and place
-            every topic into the calendar.
-          </p>
-        </div>
-
-        {result && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
-            <Stat label="Slots created" value={result.slots} />
-            <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/50 p-4 text-left">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500">Ends on</div>
-              <div className="text-base font-semibold text-slate-900 mt-1">{formatPretty(result.end)}</div>
-            </div>
-            <Stat label="Free slots" value={result.free} />
-            <Stat label="Unscheduled" value={result.short} negative={result.short > 0} />
-          </div>
-        )}
-
-        <div className="flex justify-center gap-3 pt-2">
-          <Button variant="outline" onClick={onBack} className="gap-2">
-            <ChevronLeft className="h-4 w-4" /> Back
-          </Button>
-          <Button onClick={run} disabled={running} className="gap-2 min-w-[10rem]">
-            {running ? 'Generating…' : result ? 'Regenerate' : 'Generate now'}
-            {!running && <Wand2 className="h-4 w-4" />}
-          </Button>
-        </div>
-        {result && (
-          <p className="text-xs text-emerald-600">
-            <CheckCircle2 className="h-3.5 w-3.5 inline mr-1" />
-            Schedule saved. Open the Preview tab to review and override.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+/* (Generate step removed — Workload → Preview is now a single click.) */
 
 /* ──────────────── STEP 4 CALENDAR ──────────────── */
 
