@@ -248,12 +248,22 @@ const SetupStep: React.FC<{
   onNext: () => void;
 }> = ({ program, config, faculty, onChange, onNext }) => {
   const update = <K extends keyof ScheduleConfig>(k: K, v: ScheduleConfig[K]) => onChange({ ...config, [k]: v });
+  const instituteHolidays = useInstituteHolidays();
 
-  const [holidayDates, setHolidayDates] = useState<Date[]>([]);
-  const [holidayName, setHolidayName] = useState('');
-  const [pickerOpen, setPickerOpen] = useState(false);
+  // Program-only holiday picker state
+  const [progHolDates, setProgHolDates] = useState<Date[]>([]);
+  const [progHolName, setProgHolName] = useState('');
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+
+  // Break editor
+  const [breakAfter, setBreakAfter] = useState<number>(2);
+  const [breakName, setBreakName] = useState('Short break');
+  const [breakMins, setBreakMins] = useState<number>(15);
+
+  const overrides = config.holidayOverrides ?? { removed: [], added: [] };
+  const removedSet = new Set(overrides.removed);
 
   const toggleDay = (d: WeekDay) => {
     const next = config.workingDays.includes(d)
@@ -261,6 +271,52 @@ const SetupStep: React.FC<{
       : [...config.workingDays, d].sort();
     update('workingDays', next as WeekDay[]);
   };
+
+  const setOverrides = (next: typeof overrides) => update('holidayOverrides', next);
+
+  const toggleInstituteSkip = (date: string) => {
+    const removed = removedSet.has(date)
+      ? overrides.removed.filter((d) => d !== date)
+      : [...overrides.removed, date];
+    setOverrides({ ...overrides, removed });
+  };
+
+  const addProgramOnly = () => {
+    if (progHolDates.length === 0) return;
+    const existing = new Set([
+      ...instituteHolidays.map((h) => h.date),
+      ...overrides.added.map((h) => h.date),
+    ]);
+    const trimmed = progHolName.trim();
+    const toAdd: Holiday[] = progHolDates
+      .map((d) => toISO(d))
+      .filter((iso) => !existing.has(iso))
+      .map((iso) => ({ date: iso, name: trimmed || undefined }));
+    if (toAdd.length === 0) {
+      toast({ title: 'Already covered', description: 'Those dates already exist.' });
+      return;
+    }
+    setOverrides({ ...overrides, added: [...overrides.added, ...toAdd] });
+    setProgHolDates([]);
+    setProgHolName('');
+    setProgPickerOpen(false);
+  };
+
+  const removeProgramOnly = (date: string) =>
+    setOverrides({ ...overrides, added: overrides.added.filter((h) => h.date !== date) });
+
+  const layout = computeDayLayout(config);
+  const dayEnd = layout.length ? layout[layout.length - 1].endTime : config.dayStartTime;
+  const breaks = config.breaks ?? [];
+
+  const addBreak = () => {
+    const id = `brk-${Date.now()}`;
+    update('breaks', [
+      ...breaks,
+      { id, afterPeriod: Math.max(1, Math.min(config.periodsPerDay, breakAfter)), name: breakName.trim() || 'Break', durationMins: Math.max(5, breakMins) },
+    ]);
+  };
+  const removeBreak = (id: string) => update('breaks', breaks.filter((b) => b.id !== id));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -316,31 +372,6 @@ const SetupStep: React.FC<{
               })}
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs uppercase tracking-wider text-slate-500">Periods per day</Label>
-              <Input
-                type="number"
-                min={1}
-                max={12}
-                value={config.periodsPerDay}
-                onChange={(e) => update('periodsPerDay', Math.max(1, Number(e.target.value) || 1))}
-                className="bg-white mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs uppercase tracking-wider text-slate-500">Period length (min)</Label>
-              <Input
-                type="number"
-                min={15}
-                max={120}
-                value={config.periodLengthMins}
-                onChange={(e) => update('periodLengthMins', Math.max(15, Number(e.target.value) || 40))}
-                className="bg-white mt-1"
-              />
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -373,165 +404,344 @@ const SetupStep: React.FC<{
         </CardContent>
       </Card>
 
-      {/* Holidays */}
+      {/* School day builder */}
       <Card className="border-slate-200/70 shadow-sm lg:col-span-2">
         <CardContent className="p-5 space-y-4">
-          <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-blue-600" /> Holidays &amp; non-teaching days
-          </h3>
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="bg-white sm:w-56 justify-start font-normal">
-                  <CalendarDays className="h-4 w-4 mr-2 text-slate-500" />
-                  {holidayDates.length === 0
-                    ? 'Pick dates'
-                    : holidayDates.length === 1
-                      ? formatPretty(toISO(holidayDates[0]))
-                      : `${holidayDates.length} dates selected`}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="multiple"
-                  selected={holidayDates}
-                  onSelect={(dates) => setHolidayDates(dates ?? [])}
-                  initialFocus
-                  className={cn('p-3 pointer-events-auto')}
-                />
-              </PopoverContent>
-            </Popover>
-            <Input
-              value={holidayName}
-              onChange={(e) => setHolidayName(e.target.value)}
-              placeholder="Description (optional, e.g. Diwali)"
-              className="bg-white flex-1"
-            />
-            <Button
-              disabled={holidayDates.length === 0}
-              onClick={() => {
-                if (holidayDates.length === 0) return;
-                const existing = new Set(config.holidays.map((h) => h.date));
-                const trimmed = holidayName.trim();
-                const toAdd: Holiday[] = holidayDates
-                  .map((d) => toISO(d))
-                  .filter((iso) => !existing.has(iso))
-                  .map((iso) => ({ date: iso, name: trimmed || undefined }));
-                if (toAdd.length === 0) {
-                  toast({ title: 'Already added', description: 'Those dates are already in the list.' });
-                  return;
-                }
-                update(
-                  'holidays',
-                  [...config.holidays, ...toAdd].sort((a, b) => a.date.localeCompare(b.date)),
-                );
-                setHolidayDates([]);
-                setHolidayName('');
-                setPickerOpen(false);
-              }}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" /> Add
-            </Button>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-blue-600" /> School day
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Set the day start, period length and number of periods. Add breaks between periods — times are
+                computed automatically.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] uppercase tracking-wider text-slate-500">Day ends</div>
+              <div className="text-base font-semibold text-slate-900 tabular-nums">{dayEnd}</div>
+            </div>
           </div>
 
-          {config.holidays.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No holidays added yet.</p>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              {config.holidays.map((h) => {
-                const isEditing = editingDate === h.date;
-                return (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-slate-500">Day starts at</Label>
+              <Input
+                type="time"
+                value={config.dayStartTime || '08:30'}
+                onChange={(e) => update('dayStartTime', e.target.value || '08:30')}
+                className="bg-white mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-slate-500">Period length (min)</Label>
+              <Input
+                type="number"
+                min={15}
+                max={120}
+                value={config.periodLengthMins}
+                onChange={(e) => update('periodLengthMins', Math.max(15, Number(e.target.value) || 40))}
+                className="bg-white mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-slate-500">Number of periods</Label>
+              <Input
+                type="number"
+                min={1}
+                max={12}
+                value={config.periodsPerDay}
+                onChange={(e) => update('periodsPerDay', Math.max(1, Number(e.target.value) || 1))}
+                className="bg-white mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Day layout preview */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/40 overflow-hidden">
+              <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 bg-white border-b">
+                Your school day
+              </div>
+              <div className="divide-y divide-slate-100">
+                {layout.map((row, i) => (
                   <div
-                    key={h.date}
-                    className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm text-rose-700"
+                    key={i}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-1.5 text-sm',
+                      row.kind === 'break' && 'bg-amber-50/60 text-amber-800',
+                    )}
                   >
-                    <span className="font-medium min-w-[8rem]">{formatPretty(h.date)}</span>
-                    {isEditing ? (
-                      <>
-                        <Input
-                          autoFocus
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          placeholder="Description (optional)"
-                          className="bg-white h-7 text-sm flex-1"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              update(
-                                'holidays',
-                                config.holidays.map((x) =>
-                                  x.date === h.date ? { ...x, name: editingName.trim() || undefined } : x,
-                                ),
-                              );
-                              setEditingDate(null);
-                            } else if (e.key === 'Escape') {
-                              setEditingDate(null);
-                            }
-                          }}
-                        />
+                    <span className="w-12 text-xs font-semibold text-slate-600">
+                      {row.kind === 'period' ? row.label : '—'}
+                    </span>
+                    <span className="tabular-nums text-slate-700 text-xs w-28">
+                      {row.startTime} – {row.endTime}
+                    </span>
+                    <span className={cn('flex-1 truncate', row.kind === 'break' ? 'italic font-medium' : 'text-slate-700')}>
+                      {row.kind === 'period' ? `Period ${(row.index ?? 0) + 1}` : `${row.label} (${row.durationMins} min)`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Break editor */}
+            <div className="space-y-3">
+              <Label className="text-xs uppercase tracking-wider text-slate-500">Breaks</Label>
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-4">
+                  <Select value={String(breakAfter)} onValueChange={(v) => setBreakAfter(Number(v))}>
+                    <SelectTrigger className="bg-white h-9">
+                      <SelectValue placeholder="After period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: config.periodsPerDay }, (_, i) => i + 1).map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          After P{n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input
+                  value={breakName}
+                  onChange={(e) => setBreakName(e.target.value)}
+                  placeholder="Name (Lunch, Snacks…)"
+                  className="bg-white h-9 col-span-5"
+                />
+                <Input
+                  type="number"
+                  min={5}
+                  max={120}
+                  value={breakMins}
+                  onChange={(e) => setBreakMins(Number(e.target.value) || 15)}
+                  className="bg-white h-9 col-span-2 tabular-nums"
+                />
+                <Button onClick={addBreak} size="sm" className="col-span-1 h-9 p-0" aria-label="Add break">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {breaks.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No breaks configured.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {[...breaks]
+                    .sort((a, b) => a.afterPeriod - b.afterPeriod)
+                    .map((b) => (
+                      <div
+                        key={b.id}
+                        className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-800"
+                      >
+                        <span className="font-semibold text-xs w-16">After P{b.afterPeriod}</span>
+                        <span className="flex-1 truncate font-medium">{b.name}</span>
+                        <span className="text-xs tabular-nums">{b.durationMins} min</span>
                         <button
                           type="button"
-                          onClick={() => {
-                            update(
-                              'holidays',
-                              config.holidays.map((x) =>
-                                x.date === h.date ? { ...x, name: editingName.trim() || undefined } : x,
-                              ),
-                            );
-                            setEditingDate(null);
-                          }}
-                          className="hover:bg-rose-200 rounded p-1"
-                          aria-label="Save"
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingDate(null)}
-                          className="hover:bg-rose-200 rounded p-1"
-                          aria-label="Cancel"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <span className={cn('flex-1 truncate', !h.name && 'text-rose-400 italic')}>
-                          {h.name || 'No description'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingDate(h.date);
-                            setEditingName(h.name ?? '');
-                          }}
-                          className="hover:bg-rose-200 rounded p-1"
-                          aria-label="Edit description"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            update('holidays', config.holidays.filter((x) => x.date !== h.date))
-                          }
-                          className="hover:bg-rose-200 rounded p-1"
-                          aria-label="Remove"
+                          onClick={() => removeBreak(b.id)}
+                          className="hover:bg-amber-200 rounded p-1"
+                          aria-label="Remove break"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
+      {/* Holidays */}
+      <Card className="border-slate-200/70 shadow-sm lg:col-span-2">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-blue-600" /> Holidays &amp; non-teaching days
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Institute-wide holidays apply automatically. Skip individual ones or add program-only dates below.
+              </p>
+            </div>
+            <Link
+              to="/institute/programs/holidays"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+            >
+              Manage shared holidays <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
 
+          {/* Institute-inherited list */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-slate-500">
+              Institute-wide ({instituteHolidays.length})
+            </Label>
+            {instituteHolidays.length === 0 ? (
+              <p className="text-sm text-slate-400 italic mt-2">None set yet.</p>
+            ) : (
+              <div className="flex flex-col gap-1.5 mt-2">
+                {instituteHolidays.map((h) => {
+                  const skipped = removedSet.has(h.date);
+                  return (
+                    <div
+                      key={h.date}
+                      className={cn(
+                        'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm',
+                        skipped
+                          ? 'border-slate-200 bg-slate-50 text-slate-400'
+                          : 'border-rose-200 bg-rose-50 text-rose-700',
+                      )}
+                    >
+                      <span className={cn('font-medium min-w-[10rem]', skipped && 'line-through')}>
+                        {formatPretty(h.date)}
+                      </span>
+                      <span className={cn('flex-1 truncate', !h.name && 'italic opacity-60')}>
+                        {h.name || 'No description'}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant={skipped ? 'default' : 'outline'}
+                        className="h-7 text-xs"
+                        onClick={() => toggleInstituteSkip(h.date)}
+                      >
+                        {skipped ? 'Restore' : 'Skip for this program'}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Program-only adds */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-slate-500">
+              Program-only dates ({overrides.added.length})
+            </Label>
+            <div className="flex flex-col sm:flex-row gap-2 mt-2">
+              <Popover open={progPickerOpen} onOpenChange={setProgPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="bg-white sm:w-56 justify-start font-normal">
+                    <CalendarDays className="h-4 w-4 mr-2 text-slate-500" />
+                    {progHolDates.length === 0
+                      ? 'Pick dates'
+                      : progHolDates.length === 1
+                        ? formatPretty(toISO(progHolDates[0]))
+                        : `${progHolDates.length} dates selected`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="multiple"
+                    selected={progHolDates}
+                    onSelect={(d) => setProgHolDates(d ?? [])}
+                    initialFocus
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                value={progHolName}
+                onChange={(e) => setProgHolName(e.target.value)}
+                placeholder="Description (optional)"
+                className="bg-white flex-1"
+              />
+              <Button onClick={addProgramOnly} disabled={progHolDates.length === 0} className="gap-1">
+                <Plus className="h-4 w-4" /> Add
+              </Button>
+            </div>
+
+            {overrides.added.length > 0 && (
+              <div className="flex flex-col gap-1.5 mt-2">
+                {overrides.added.map((h) => {
+                  const isEditing = editingDate === h.date;
+                  return (
+                    <div
+                      key={h.date}
+                      className="flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm text-violet-700"
+                    >
+                      <span className="font-medium min-w-[10rem]">{formatPretty(h.date)}</span>
+                      {isEditing ? (
+                        <>
+                          <Input
+                            autoFocus
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="bg-white h-7 text-sm flex-1"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setOverrides({
+                                  ...overrides,
+                                  added: overrides.added.map((x) =>
+                                    x.date === h.date ? { ...x, name: editingName.trim() || undefined } : x,
+                                  ),
+                                });
+                                setEditingDate(null);
+                              } else if (e.key === 'Escape') setEditingDate(null);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOverrides({
+                                ...overrides,
+                                added: overrides.added.map((x) =>
+                                  x.date === h.date ? { ...x, name: editingName.trim() || undefined } : x,
+                                ),
+                              });
+                              setEditingDate(null);
+                            }}
+                            className="hover:bg-violet-200 rounded p-1"
+                            aria-label="Save"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingDate(null)}
+                            className="hover:bg-violet-200 rounded p-1"
+                            aria-label="Cancel"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className={cn('flex-1 truncate', !h.name && 'italic opacity-60')}>
+                            {h.name || 'No description'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingDate(h.date);
+                              setEditingName(h.name ?? '');
+                            }}
+                            className="hover:bg-violet-200 rounded p-1"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeProgramOnly(h.date)}
+                            className="hover:bg-violet-200 rounded p-1"
+                            aria-label="Remove"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="lg:col-span-2 flex justify-end">
         <Button onClick={onNext} className="gap-2">
