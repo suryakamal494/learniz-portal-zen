@@ -553,7 +553,46 @@ const SetupStep: React.FC<{
                 onChange={(e) => update('periodsPerDay', Math.max(1, Number(e.target.value) || 1))}
                 className="bg-white mt-1"
               />
+          </div>
+
+          {issues.length > 0 && (
+            <div
+              className={cn(
+                'rounded-xl border p-3 space-y-1.5',
+                hasErrors ? 'border-rose-200 bg-rose-50/70' : 'border-amber-200 bg-amber-50/70',
+              )}
+              role="alert"
+              aria-live="polite"
+            >
+              <div
+                className={cn(
+                  'flex items-center gap-2 text-xs font-semibold uppercase tracking-wider',
+                  hasErrors ? 'text-rose-700' : 'text-amber-800',
+                )}
+              >
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {hasErrors
+                  ? `${issues.filter((i) => i.level === 'error').length} issue${issues.filter((i) => i.level === 'error').length === 1 ? '' : 's'} to fix`
+                  : `${issues.length} thing${issues.length === 1 ? '' : 's'} to review`}
+              </div>
+              <ul className="text-sm space-y-1">
+                {issues.map((iss, idx) => (
+                  <li
+                    key={idx}
+                    className={cn(
+                      'flex items-start gap-2',
+                      iss.level === 'error' ? 'text-rose-700' : 'text-amber-900',
+                    )}
+                  >
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 bg-current opacity-70" />
+                    <span>{iss.msg}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
+          )}
+
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
