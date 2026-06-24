@@ -37,15 +37,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   addFaculty,
+  configWithEffectiveHolidays,
   setGeneratedSlots,
   setSchedule,
   updateProgram,
   useFaculty,
+  useInstituteHolidays,
   useInstituteProgram,
 } from '@/hooks/useInstitutePrograms';
 import {
   addDays,
   capacityCheck,
+  computeDayLayout,
   formatPretty,
   generateSchedule,
   parseISO,
