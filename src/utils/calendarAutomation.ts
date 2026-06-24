@@ -226,6 +226,7 @@ export function generateSchedule(
   const endIso = config.endDate ?? addDays(config.startDate, 730);
   const holidaySet = new Set(config.holidays.map((h) => h.date));
   const workingDays = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
+  const periodTimes = computePeriodTimes(config);
 
   // Index locked slots by date+periodIndex.
   const lockedMap = new Map<string, ScheduleSlot>();
@@ -263,18 +264,20 @@ export function generateSchedule(
       if (!pickedSubject) break;
 
       const need = queues[pickedSubject][0];
-      const t = periodTime(p, periodMins);
+      const t = periodTimes[p] ?? periodTime(p, periodMins);
       slots.push({
         id: `slot-${date}-${p}`,
         date,
         periodIndex: p,
-        startTime: t.start,
-        endTime: t.end,
+        startTime: t.startTime ?? (t as { start: string }).start,
+        endTime: t.endTime ?? (t as { end: string }).end,
         subjectId: need.subjectId,
         chapterId: need.chapterId,
         topicId: need.topicId,
         facultyId: config.defaultFaculty[need.subjectId] ?? '',
-        classUrl: config.classUrlTemplate.replace('{date}', date).replace('{period}', String(p + 1)),
+        ...(config.classUrlTemplate
+          ? { classUrl: config.classUrlTemplate.replace('{date}', date).replace('{period}', String(p + 1)) }
+          : {}),
       });
       need.remaining -= 1;
       consumed += 1;
