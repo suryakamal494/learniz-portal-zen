@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, UserRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { subjectPalette } from '@/lib/subjectColors';
 import {
@@ -10,6 +12,7 @@ import {
   toISO,
 } from '@/utils/calendarAutomation';
 import {
+  InstituteFaculty,
   InstituteProgram,
   ScheduleConfig,
   ScheduleSlot,
@@ -21,6 +24,11 @@ type Granularity = 'day' | 'week' | 'month';
 interface Props {
   program: InstituteProgram;
   schedule: ScheduleConfig;
+  /** When provided, the calendar uses these slots instead of regenerating in place. */
+  storedSlots?: ScheduleSlot[];
+  /** When provided, enables inline faculty editing for future-dated slots. */
+  onChangeFaculty?: (slotId: string, facultyId: string, allSlots: ScheduleSlot[]) => void;
+  faculty?: InstituteFaculty[];
 }
 
 function shortName(full: string): string {
@@ -29,6 +37,7 @@ function shortName(full: string): string {
   if (parts.length === 1) return parts[0];
   return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
 }
+
 
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -56,14 +65,18 @@ function fmtHeader(iso: string, g: Granularity): string {
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
-const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
+const CurriculumCalendarView: React.FC<Props> = ({ program, schedule, storedSlots, onChangeFaculty, faculty }) => {
   const [granularity, setGranularity] = useState<Granularity>('week');
   const [cursor, setCursor] = useState<string>(() => schedule.startDate);
 
+  const facultyList = faculty ?? MOCK_FACULTY;
+
   const { slots, slotsByDate, subjectById, chapterById, topicById, facultyById, facultyBySubject, planEnd } = useMemo(() => {
-    const res = generateSchedule(program, schedule, []);
+    const generated = storedSlots && storedSlots.length > 0
+      ? { slots: storedSlots, endDate: storedSlots[storedSlots.length - 1]?.date ?? schedule.startDate }
+      : generateSchedule(program, schedule, []);
     const byDate: Record<string, ScheduleSlot[]> = {};
-    res.slots.forEach((s) => {
+    generated.slots.forEach((s) => {
       (byDate[s.date] ||= []).push(s);
     });
     Object.values(byDate).forEach((arr) => arr.sort((a, b) => a.periodIndex - b.periodIndex));
@@ -79,25 +92,38 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
     });
     const fMap: Record<string, string> = {};
     const fBySubj: Record<string, string> = {};
-    MOCK_FACULTY.forEach((f) => {
+    facultyList.forEach((f) => {
       fMap[f.id] = f.name;
       if (f.subjectId && !fBySubj[f.subjectId]) fBySubj[f.subjectId] = f.name;
     });
     return {
-      slots: res.slots,
+      slots: generated.slots,
       slotsByDate: byDate,
       subjectById: sMap,
       chapterById: cMap,
       topicById: tMap,
       facultyById: fMap,
       facultyBySubject: fBySubj,
-      planEnd: res.endDate,
+      planEnd: generated.endDate,
     };
-  }, [program, schedule]);
+  }, [program, schedule, storedSlots, facultyList]);
 
   const facultyFor = (slot: ScheduleSlot): string => {
     if (slot.facultyId && facultyById[slot.facultyId]) return facultyById[slot.facultyId];
     return facultyBySubject[slot.subjectId] ?? 'Unassigned';
+  };
+
+  const todayIso = toISO(new Date());
+  const isPast = (iso: string) => iso < todayIso;
+
+  const handleFacultyChange = (slot: ScheduleSlot, newFacultyId: string) => {
+    if (!onChangeFaculty) return;
+    const next = slots.map((s) => (s.id === slot.id ? { ...s, facultyId: newFacultyId } : s));
+    onChangeFaculty(slot.id, newFacultyId, next);
+  };
+
+  const editable = !!onChangeFaculty;
+
   };
 
 
