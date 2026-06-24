@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { MOCK_FACULTY, MOCK_INSTITUTE_PROGRAMS } from '@/data/mockInstitutePrograms';
 import {
+  Holiday,
   InstituteFaculty,
   InstituteProgram,
   ScheduleConfig,
@@ -11,6 +12,12 @@ import {
 
 let programs: InstituteProgram[] = JSON.parse(JSON.stringify(MOCK_INSTITUTE_PROGRAMS));
 let faculty: InstituteFaculty[] = [...MOCK_FACULTY];
+let instituteHolidays: Holiday[] = [
+  { date: '2025-08-15', name: 'Independence Day' },
+  { date: '2025-10-02', name: 'Gandhi Jayanti' },
+  { date: '2025-10-20', name: 'Diwali' },
+  { date: '2025-12-25', name: 'Christmas' },
+];
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -24,6 +31,7 @@ const store = {
   },
   getPrograms: () => programs,
   getFaculty: () => faculty,
+  getInstituteHolidays: () => instituteHolidays,
 };
 
 export function useInstitutePrograms() {
@@ -33,6 +41,42 @@ export function useInstitutePrograms() {
 
 export function useFaculty() {
   return useSyncExternalStore(store.subscribe, store.getFaculty, store.getFaculty);
+}
+
+export function useInstituteHolidays(): Holiday[] {
+  return useSyncExternalStore(store.subscribe, store.getInstituteHolidays, store.getInstituteHolidays);
+}
+
+export function setInstituteHolidays(list: Holiday[]) {
+  instituteHolidays = [...list].sort((a, b) => a.date.localeCompare(b.date));
+  emit();
+}
+
+export function getInstituteHolidaysSnapshot(): Holiday[] {
+  return instituteHolidays;
+}
+
+/** Merge institute-wide holidays with per-program overrides. */
+export function effectiveHolidays(
+  schedule: ScheduleConfig | undefined,
+  institute: Holiday[] = instituteHolidays,
+): Holiday[] {
+  const map = new Map<string, Holiday>();
+  institute.forEach((h) => map.set(h.date, h));
+  const ov = schedule?.holidayOverrides ?? { removed: [], added: [] };
+  ov.added.forEach((h) => map.set(h.date, h));
+  // legacy per-program holidays
+  (schedule?.holidays ?? []).forEach((h) => map.set(h.date, h));
+  ov.removed.forEach((d) => map.delete(d));
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** Returns a ScheduleConfig with `holidays` set to the effective list (for generator input). */
+export function configWithEffectiveHolidays(
+  schedule: ScheduleConfig,
+  institute: Holiday[] = instituteHolidays,
+): ScheduleConfig {
+  return { ...schedule, holidays: effectiveHolidays(schedule, institute) };
 }
 
 export function useInstituteProgram(id: string | undefined): InstituteProgram | undefined {

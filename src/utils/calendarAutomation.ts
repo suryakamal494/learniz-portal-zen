@@ -106,20 +106,87 @@ export function buildWorkingDays(
 }
 
 export function periodTime(periodIndex: number, periodMins: number, startHour = 9): { start: string; end: string } {
-  // 5-minute break between periods, lunch (30 min) after period 3.
+  // Legacy helper (kept for callers that don't have a full ScheduleConfig).
   const breakMins = 5;
   const lunchAfter = 3;
   let offset = periodIndex * (periodMins + breakMins);
-  if (periodIndex > lunchAfter) offset += 25; // extra lunch padding
+  if (periodIndex > lunchAfter) offset += 25;
   const startTotal = startHour * 60 + offset;
   const endTotal = startTotal + periodMins;
   return { start: fmtTime(startTotal), end: fmtTime(endTotal) };
+}
+
+function timeToMins(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
 }
 
 function fmtTime(totalMins: number): string {
   const h = Math.floor(totalMins / 60) % 24;
   const m = totalMins % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export interface PeriodTimeRow {
+  index: number;          // 0-based period index
+  startTime: string;      // HH:mm
+  endTime: string;        // HH:mm
+}
+
+export interface DayLayoutRow {
+  kind: 'period' | 'break';
+  index?: number;         // period index when kind=period
+  label: string;
+  startTime: string;
+  endTime: string;
+  durationMins: number;
+}
+
+/** Computes per-period start/end times honouring `dayStartTime` + `breaks`. */
+export function computePeriodTimes(config: ScheduleConfig): PeriodTimeRow[] {
+  const startStr = (config as { dayStartTime?: string }).dayStartTime ?? '09:00';
+  const breaks = (config as { breaks?: { afterPeriod: number; durationMins: number }[] }).breaks ?? [];
+  const breakAfter = new Map<number, number>();
+  breaks.forEach((b) => breakAfter.set(b.afterPeriod, (breakAfter.get(b.afterPeriod) ?? 0) + (b.durationMins || 0)));
+  const out: PeriodTimeRow[] = [];
+  let cursor = timeToMins(startStr);
+  for (let i = 0; i < config.periodsPerDay; i++) {
+    const s = cursor;
+    const e = cursor + config.periodLengthMins;
+    out.push({ index: i, startTime: fmtTime(s), endTime: fmtTime(e) });
+    cursor = e;
+    const brk = breakAfter.get(i + 1);
+    if (brk) cursor += brk;
+  }
+  return out;
+}
+
+/** Full day layout including break rows (for display in Setup). */
+export function computeDayLayout(config: ScheduleConfig): DayLayoutRow[] {
+  const startStr = (config as { dayStartTime?: string }).dayStartTime ?? '09:00';
+  const breaks = (config as { breaks?: { id: string; afterPeriod: number; name: string; durationMins: number }[] }).breaks ?? [];
+  const breakAfter = new Map<number, { name: string; durationMins: number }[]>();
+  breaks.forEach((b) => {
+    const arr = breakAfter.get(b.afterPeriod) ?? [];
+    arr.push({ name: b.name, durationMins: b.durationMins });
+    breakAfter.set(b.afterPeriod, arr);
+  });
+  const out: DayLayoutRow[] = [];
+  let cursor = timeToMins(startStr);
+  for (let i = 0; i < config.periodsPerDay; i++) {
+    const s = cursor;
+    const e = cursor + config.periodLengthMins;
+    out.push({ kind: 'period', index: i, label: `P${i + 1}`, startTime: fmtTime(s), endTime: fmtTime(e), durationMins: config.periodLengthMins });
+    cursor = e;
+    const brks = breakAfter.get(i + 1) ?? [];
+    brks.forEach((b) => {
+      const bs = cursor;
+      const be = cursor + b.durationMins;
+      out.push({ kind: 'break', label: b.name, startTime: fmtTime(bs), endTime: fmtTime(be), durationMins: b.durationMins });
+      cursor = be;
+    });
+  }
+  return out;
 }
 
 interface GenerateResult {
@@ -159,6 +226,7 @@ export function generateSchedule(
   const endIso = config.endDate ?? addDays(config.startDate, 730);
   const holidaySet = new Set(config.holidays.map((h) => h.date));
   const workingDays = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
+  const periodTimes = computePeriodTimes(config);
 
   // Index locked slots by date+periodIndex.
   const lockedMap = new Map<string, ScheduleSlot>();
@@ -196,18 +264,21 @@ export function generateSchedule(
       if (!pickedSubject) break;
 
       const need = queues[pickedSubject][0];
-      const t = periodTime(p, periodMins);
+      const t = periodTimes[p];
+      const fallback = periodTime(p, periodMins);
       slots.push({
         id: `slot-${date}-${p}`,
         date,
         periodIndex: p,
-        startTime: t.start,
-        endTime: t.end,
+        startTime: t?.startTime ?? fallback.start,
+        endTime: t?.endTime ?? fallback.end,
         subjectId: need.subjectId,
         chapterId: need.chapterId,
         topicId: need.topicId,
         facultyId: config.defaultFaculty[need.subjectId] ?? '',
-        classUrl: config.classUrlTemplate.replace('{date}', date).replace('{period}', String(p + 1)),
+        ...(config.classUrlTemplate
+          ? { classUrl: config.classUrlTemplate.replace('{date}', date).replace('{period}', String(p + 1)) }
+          : {}),
       });
       need.remaining -= 1;
       consumed += 1;

@@ -15,7 +15,13 @@ import CurriculumCalendarView from '@/components/institute/programs/CurriculumCa
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useInstituteProgram } from '@/hooks/useInstitutePrograms';
+import {
+  configWithEffectiveHolidays,
+  setGeneratedSlots,
+  useFaculty,
+  useInstituteHolidays,
+  useInstituteProgram,
+} from '@/hooks/useInstitutePrograms';
 import {
   chapterHours,
   daysBetween,
@@ -35,9 +41,10 @@ const DEFAULT_SCHEDULE = {
   workingDays: [1, 2, 3, 4, 5, 6] as (0 | 1 | 2 | 3 | 4 | 5 | 6)[],
   periodsPerDay: 6,
   periodLengthMins: 40,
+  dayStartTime: '08:30',
+  breaks: [],
   holidays: [],
   defaultFaculty: {},
-  classUrlTemplate: 'https://meet.example.com/{date}-p{period}',
 };
 
 const PRINT_CSS = `
@@ -53,6 +60,8 @@ const PRINT_CSS = `
 const ProgramPreviewPage: React.FC = () => {
   const { programId } = useParams<{ programId: string }>();
   const program = useInstituteProgram(programId);
+  const faculty = useFaculty();
+  const instituteHolidays = useInstituteHolidays();
 
   const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>({});
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
@@ -62,7 +71,8 @@ const ProgramPreviewPage: React.FC = () => {
 
 
   const periodMins = program?.schedule?.periodLengthMins ?? 40;
-  const schedule = program?.schedule ?? DEFAULT_SCHEDULE;
+  const baseSchedule = program?.schedule ?? DEFAULT_SCHEDULE;
+  const schedule = configWithEffectiveHolidays(baseSchedule as never, instituteHolidays);
 
   const roll = useMemo(() => (program ? rollupProgram(program, periodMins) : null), [program, periodMins]);
   const plan = useMemo(() => (program ? planDates(program, schedule) : null), [program, schedule]);
@@ -185,7 +195,15 @@ const ProgramPreviewPage: React.FC = () => {
 
 
         {viewMode === 'calendar' && (
-          <CurriculumCalendarView program={program} schedule={schedule} />
+          <CurriculumCalendarView
+            program={program}
+            schedule={schedule}
+            storedSlots={program.generatedSlots}
+            faculty={faculty}
+            onChangeFaculty={(_slotId, _facultyId, allSlots) =>
+              setGeneratedSlots(program.id, allSlots)
+            }
+          />
         )}
 
         {viewMode === 'list' && (<>

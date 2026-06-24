@@ -93,6 +93,7 @@ import ProgramsListPage from './pages/institute/programs/ProgramsListPage';
 import ProgramHoursPage from './pages/institute/programs/ProgramHoursPage';
 import ProgramPreviewPage from './pages/institute/programs/ProgramPreviewPage';
 import ProgramSchedulePage from './pages/institute/programs/ProgramSchedulePage';
+import InstituteHolidaysPage from './pages/institute/programs/InstituteHolidaysPage';
 
 
 function TeacherLayoutWrapper() {
@@ -206,9 +207,11 @@ function App() {
 
           {/* Programs module */}
           <Route path="programs" element={<ProgramsListPage />} />
+          <Route path="programs/holidays" element={<InstituteHolidaysPage />} />
           <Route path="programs/:programId/hours" element={<ProgramHoursPage />} />
           <Route path="programs/:programId/preview" element={<ProgramPreviewPage />} />
           <Route path="programs/:programId/schedule" element={<ProgramSchedulePage />} />
+
 
           {/* Legacy timetable → programs */}
           <Route path="timetable" element={<Navigate to="/institute/programs" replace />} />

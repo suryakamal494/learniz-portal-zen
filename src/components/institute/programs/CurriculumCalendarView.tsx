@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, UserRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { subjectPalette } from '@/lib/subjectColors';
 import {
@@ -10,6 +12,7 @@ import {
   toISO,
 } from '@/utils/calendarAutomation';
 import {
+  InstituteFaculty,
   InstituteProgram,
   ScheduleConfig,
   ScheduleSlot,
@@ -21,6 +24,11 @@ type Granularity = 'day' | 'week' | 'month';
 interface Props {
   program: InstituteProgram;
   schedule: ScheduleConfig;
+  /** When provided, the calendar uses these slots instead of regenerating in place. */
+  storedSlots?: ScheduleSlot[];
+  /** When provided, enables inline faculty editing for future-dated slots. */
+  onChangeFaculty?: (slotId: string, facultyId: string, allSlots: ScheduleSlot[]) => void;
+  faculty?: InstituteFaculty[];
 }
 
 function shortName(full: string): string {
@@ -29,6 +37,7 @@ function shortName(full: string): string {
   if (parts.length === 1) return parts[0];
   return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
 }
+
 
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -56,14 +65,18 @@ function fmtHeader(iso: string, g: Granularity): string {
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
-const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
+const CurriculumCalendarView: React.FC<Props> = ({ program, schedule, storedSlots, onChangeFaculty, faculty }) => {
   const [granularity, setGranularity] = useState<Granularity>('week');
   const [cursor, setCursor] = useState<string>(() => schedule.startDate);
 
+  const facultyList = faculty ?? MOCK_FACULTY;
+
   const { slots, slotsByDate, subjectById, chapterById, topicById, facultyById, facultyBySubject, planEnd } = useMemo(() => {
-    const res = generateSchedule(program, schedule, []);
+    const generated = storedSlots && storedSlots.length > 0
+      ? { slots: storedSlots, endDate: storedSlots[storedSlots.length - 1]?.date ?? schedule.startDate }
+      : generateSchedule(program, schedule, []);
     const byDate: Record<string, ScheduleSlot[]> = {};
-    res.slots.forEach((s) => {
+    generated.slots.forEach((s) => {
       (byDate[s.date] ||= []).push(s);
     });
     Object.values(byDate).forEach((arr) => arr.sort((a, b) => a.periodIndex - b.periodIndex));
@@ -79,26 +92,43 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
     });
     const fMap: Record<string, string> = {};
     const fBySubj: Record<string, string> = {};
-    MOCK_FACULTY.forEach((f) => {
+    facultyList.forEach((f) => {
       fMap[f.id] = f.name;
       if (f.subjectId && !fBySubj[f.subjectId]) fBySubj[f.subjectId] = f.name;
     });
     return {
-      slots: res.slots,
+      slots: generated.slots,
       slotsByDate: byDate,
       subjectById: sMap,
       chapterById: cMap,
       topicById: tMap,
       facultyById: fMap,
       facultyBySubject: fBySubj,
-      planEnd: res.endDate,
+      planEnd: generated.endDate,
     };
-  }, [program, schedule]);
+  }, [program, schedule, storedSlots, facultyList]);
 
   const facultyFor = (slot: ScheduleSlot): string => {
     if (slot.facultyId && facultyById[slot.facultyId]) return facultyById[slot.facultyId];
     return facultyBySubject[slot.subjectId] ?? 'Unassigned';
   };
+
+  const todayIso = toISO(new Date());
+  const isPast = (iso: string) => iso < todayIso;
+
+  const handleFacultyChange = (slot: ScheduleSlot, newFacultyId: string) => {
+    if (!onChangeFaculty) return;
+    const next = slots.map((s) => (s.id === slot.id ? { ...s, facultyId: newFacultyId } : s));
+    onChangeFaculty(slot.id, newFacultyId, next);
+  };
+
+  const editable = !!onChangeFaculty;
+
+  const facultyOptionsFor = (slot: ScheduleSlot): InstituteFaculty[] => {
+    return facultyList.filter((f) => !f.subjectId || f.subjectId === slot.subjectId);
+  };
+
+
 
 
   const periodsPerDay = schedule.periodsPerDay;
@@ -199,6 +229,10 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           chapterById={chapterById}
           topicById={topicById}
           facultyFor={facultyFor}
+          facultyOptionsFor={facultyOptionsFor}
+          editable={editable}
+          isPast={isPast}
+          onChangeFaculty={handleFacultyChange}
         />
       )}
 
@@ -211,6 +245,10 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
           subjectById={subjectById}
           topicById={topicById}
           facultyFor={facultyFor}
+          facultyOptionsFor={facultyOptionsFor}
+          editable={editable}
+          isPast={isPast}
+          onChangeFaculty={handleFacultyChange}
         />
       )}
 
@@ -242,6 +280,61 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule }) => {
   );
 };
 
+/* ── Faculty editor (inline popover, future-only) ─────────────── */
+const FacultyEditor: React.FC<{
+  slot: ScheduleSlot;
+  currentName: string;
+  options: InstituteFaculty[];
+  editable: boolean;
+  past: boolean;
+  onChange: (slot: ScheduleSlot, newFacultyId: string) => void;
+  compact?: boolean;
+}> = ({ slot, currentName, options, editable, past, onChange, compact }) => {
+  const labelText = compact ? shortName(currentName) : currentName;
+  const baseClass = compact
+    ? 'inline-flex items-center gap-0.5 text-[10px] text-slate-500 truncate'
+    : 'inline-flex items-center gap-1 text-xs text-slate-600';
+
+  if (!editable || past) {
+    return (
+      <span className={baseClass} title={past ? 'Past class — faculty fixed' : currentName}>
+        {past ? <Lock className="h-2.5 w-2.5 shrink-0 opacity-60" /> : <UserRound className={cn(compact ? 'h-2.5 w-2.5' : 'h-3 w-3', 'shrink-0 text-slate-400')} />}
+        <span className={cn('truncate', !compact && 'font-medium')}>{labelText}</span>
+      </span>
+    );
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          className={cn(baseClass, 'hover:bg-slate-100 rounded px-1 py-0.5 transition-colors')}
+          title={`Click to change · ${currentName}`}
+        >
+          <UserRound className={cn(compact ? 'h-2.5 w-2.5' : 'h-3 w-3', 'shrink-0 text-blue-500')} />
+          <span className={cn('truncate', !compact && 'font-medium')}>{labelText}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="start" onClick={(e) => e.stopPropagation()}>
+        <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Assign faculty</div>
+        <Select value={slot.facultyId || ''} onValueChange={(v) => onChange(slot, v)}>
+          <SelectTrigger className="bg-white h-8 text-xs">
+            <SelectValue placeholder="Select faculty" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((f) => (
+              <SelectItem key={f.id} value={f.id} className="text-xs">
+                {f.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 /* ── Day view ──────────────────────────────────────────────────── */
 const DayView: React.FC<{
   dateIso: string;
@@ -251,8 +344,13 @@ const DayView: React.FC<{
   chapterById: Record<string, string>;
   topicById: Record<string, string>;
   facultyFor: (slot: ScheduleSlot) => string;
-}> = ({ dateIso, periodsPerDay, slots, subjectById, chapterById, topicById, facultyFor }) => {
+  facultyOptionsFor: (slot: ScheduleSlot) => InstituteFaculty[];
+  editable: boolean;
+  isPast: (iso: string) => boolean;
+  onChangeFaculty: (slot: ScheduleSlot, newFacultyId: string) => void;
+}> = ({ dateIso, periodsPerDay, slots, subjectById, chapterById, topicById, facultyFor, facultyOptionsFor, editable, isPast, onChangeFaculty }) => {
   const slotMap = new Map(slots.map((s) => [s.periodIndex, s]));
+  const past = isPast(dateIso);
   return (
     <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
       {Array.from({ length: periodsPerDay }, (_, i) => i).map((i) => {
@@ -280,16 +378,23 @@ const DayView: React.FC<{
               <span className="font-medium">{topicById[sl.topicId]}</span>
               <span className="text-slate-400"> · {chapterById[sl.chapterId]}</span>
             </div>
-            <span className="hidden sm:inline-flex items-center gap-1 text-xs text-slate-600 shrink-0">
-              <UserRound className="h-3 w-3 text-slate-400" />
-              <span className="font-medium">{fac}</span>
-            </span>
+            <div className="hidden sm:flex shrink-0">
+              <FacultyEditor
+                slot={sl}
+                currentName={fac}
+                options={facultyOptionsFor(sl)}
+                editable={editable}
+                past={past}
+                onChange={onChangeFaculty}
+              />
+            </div>
           </div>
         );
       })}
     </div>
   );
 };
+
 
 
 /* ── Week view ─────────────────────────────────────────────────── */
@@ -301,7 +406,11 @@ const WeekView: React.FC<{
   subjectById: Record<string, { name: string; color: string }>;
   topicById: Record<string, string>;
   facultyFor: (slot: ScheduleSlot) => string;
-}> = ({ weekStart, periodsPerDay, workingDays, slotsByDate, subjectById, topicById, facultyFor }) => {
+  facultyOptionsFor: (slot: ScheduleSlot) => InstituteFaculty[];
+  editable: boolean;
+  isPast: (iso: string) => boolean;
+  onChangeFaculty: (slot: ScheduleSlot, newFacultyId: string) => void;
+}> = ({ weekStart, periodsPerDay, workingDays, slotsByDate, subjectById, topicById, facultyFor, facultyOptionsFor, editable, isPast, onChangeFaculty }) => {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const today = toISO(new Date());
   return (
@@ -342,6 +451,7 @@ const WeekView: React.FC<{
                 const sub = subjectById[sl.subjectId];
                 const pal = subjectPalette(sub?.color ?? 'blue');
                 const fac = facultyFor(sl);
+                const past = isPast(iso);
                 return (
                   <div
                     key={iso + p}
@@ -354,9 +464,16 @@ const WeekView: React.FC<{
                     <div className="text-[11px] text-slate-700 leading-tight line-clamp-2">
                       {topicById[sl.topicId]}
                     </div>
-                    <div className="text-[10px] text-slate-500 leading-tight truncate mt-0.5 inline-flex items-center gap-0.5">
-                      <UserRound className="h-2.5 w-2.5 shrink-0" />
-                      <span className="truncate">{shortName(fac)}</span>
+                    <div className="mt-0.5">
+                      <FacultyEditor
+                        slot={sl}
+                        currentName={fac}
+                        options={facultyOptionsFor(sl)}
+                        editable={editable}
+                        past={past}
+                        onChange={onChangeFaculty}
+                        compact
+                      />
                     </div>
                   </div>
                 );
@@ -369,6 +486,7 @@ const WeekView: React.FC<{
     </div>
   );
 };
+
 
 /* ── Month view ────────────────────────────────────────────────── */
 const MonthView: React.FC<{

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  CalendarOff,
   CalendarRange,
   Clock,
   GraduationCap,
@@ -69,9 +70,18 @@ const ProgramsListPage: React.FC = () => {
               schedule.
             </p>
           </div>
-          <Button className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700" disabled title="Coming soon">
-            <Plus className="h-4 w-4" /> New Program
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate('/institute/programs/holidays')}
+            >
+              <CalendarOff className="h-4 w-4" /> Holiday setup
+            </Button>
+            <Button className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700" disabled title="Coming soon">
+              <Plus className="h-4 w-4" /> New Program
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
