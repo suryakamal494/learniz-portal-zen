@@ -264,13 +264,14 @@ export function generateSchedule(
       if (!pickedSubject) break;
 
       const need = queues[pickedSubject][0];
-      const t = periodTimes[p] ?? periodTime(p, periodMins);
+      const t = periodTimes[p];
+      const fallback = periodTime(p, periodMins);
       slots.push({
         id: `slot-${date}-${p}`,
         date,
         periodIndex: p,
-        startTime: t.startTime ?? (t as { start: string }).start,
-        endTime: t.endTime ?? (t as { end: string }).end,
+        startTime: t?.startTime ?? fallback.start,
+        endTime: t?.endTime ?? fallback.end,
         subjectId: need.subjectId,
         chapterId: need.chapterId,
         topicId: need.topicId,
