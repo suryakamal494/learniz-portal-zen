@@ -15,7 +15,13 @@ import CurriculumCalendarView from '@/components/institute/programs/CurriculumCa
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useInstituteProgram } from '@/hooks/useInstitutePrograms';
+import {
+  configWithEffectiveHolidays,
+  setGeneratedSlots,
+  useFaculty,
+  useInstituteHolidays,
+  useInstituteProgram,
+} from '@/hooks/useInstitutePrograms';
 import {
   chapterHours,
   daysBetween,
