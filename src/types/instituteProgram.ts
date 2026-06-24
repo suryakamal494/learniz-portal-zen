@@ -37,16 +37,38 @@ export interface Holiday {
   name?: string;
 }
 
+export interface PeriodBreak {
+  id: string;
+  /** Insert this break after period number N (1-based). */
+  afterPeriod: number;
+  name: string;
+  durationMins: number;
+}
+
+export interface HolidayOverrides {
+  /** Dates to skip from institute-level holidays for this program. */
+  removed: string[];
+  /** Program-only additional holidays. */
+  added: Holiday[];
+}
+
 export interface ScheduleConfig {
   startDate: string;        // YYYY-MM-DD
   endDate?: string;         // YYYY-MM-DD (optional — auto-computed)
   workingDays: WeekDay[];   // e.g. [1,2,3,4,5,6]
   periodsPerDay: number;
   periodLengthMins: number;
+  /** When the first period of the day begins, "HH:mm". */
+  dayStartTime: string;
+  /** Breaks between periods (short break, lunch, …). */
+  breaks: PeriodBreak[];
+  /** Legacy program-only holiday list (still honoured as program-only adds). */
   holidays: Holiday[];
+  /** Per-program overrides on top of the institute-wide holiday list. */
+  holidayOverrides?: HolidayOverrides;
   /** Default faculty per subjectId. */
   defaultFaculty: Record<string, string>;
-  classUrlTemplate: string;
+  classUrlTemplate?: string;
 }
 
 export interface ScheduleSlot {
@@ -59,7 +81,7 @@ export interface ScheduleSlot {
   chapterId: string;
   topicId: string;
   facultyId: string;
-  classUrl: string;
+  classUrl?: string;
   /** True when user dragged/edited this slot — preserved across regenerate. */
   locked?: boolean;
   /** Manually added extra class beyond the auto plan. */
