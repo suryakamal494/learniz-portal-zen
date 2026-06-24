@@ -332,6 +332,91 @@ const SetupStep: React.FC<{
   };
   const removeBreak = (id: string) => update('breaks', breaks.filter((b) => b.id !== id));
 
+  // ---- Validation: surface overlaps & mismatches between periods, breaks and working days ----
+  const issues = useMemo(() => {
+    const list: { level: 'error' | 'warning'; msg: string }[] = [];
+    const periods = config.periodsPerDay;
+    const plen = config.periodLengthMins;
+
+    if (!config.workingDays || config.workingDays.length === 0) {
+      list.push({ level: 'error', msg: 'No working days selected — pick at least one weekday.' });
+    }
+    if (periods < 1) list.push({ level: 'error', msg: 'Number of periods must be at least 1.' });
+    if (plen < 15) list.push({ level: 'warning', msg: 'Period length under 15 min is unusually short.' });
+
+    // Day start time sanity
+    const [h, m] = (config.dayStartTime || '08:30').split(':').map(Number);
+    const startMins = (Number.isFinite(h) ? h : 8) * 60 + (Number.isFinite(m) ? m : 30);
+    if (Number.isNaN(startMins)) list.push({ level: 'error', msg: 'Day start time is invalid.' });
+
+    // Breaks: out of range, after last period, duplicates
+    const byAfter = new Map<number, number>();
+    breaks.forEach((b) => {
+      if (b.afterPeriod < 1 || b.afterPeriod > periods) {
+        list.push({
+          level: 'error',
+          msg: `Break “${b.name}” is scheduled after period ${b.afterPeriod} but you only have ${periods} period${periods === 1 ? '' : 's'}.`,
+        });
+      }
+      if (b.afterPeriod === periods) {
+        list.push({
+          level: 'warning',
+          msg: `Break “${b.name}” is after the last period — it extends the day but isn't between classes.`,
+        });
+      }
+      if (b.durationMins < 5) {
+        list.push({ level: 'warning', msg: `Break “${b.name}” is under 5 min — consider increasing it.` });
+      }
+      if (b.durationMins >= plen) {
+        list.push({
+          level: 'warning',
+          msg: `Break “${b.name}” (${b.durationMins} min) is as long as a class period (${plen} min).`,
+        });
+      }
+      byAfter.set(b.afterPeriod, (byAfter.get(b.afterPeriod) ?? 0) + 1);
+    });
+    byAfter.forEach((count, after) => {
+      if (count > 1 && after >= 1 && after <= periods) {
+        list.push({
+          level: 'warning',
+          msg: `${count} breaks are stacked after period ${after} — they'll run back-to-back.`,
+        });
+      }
+    });
+
+    // Total day length sanity (start + periods*plen + breaks)
+    const breakMinsTotal = breaks
+      .filter((b) => b.afterPeriod >= 1 && b.afterPeriod <= periods)
+      .reduce((s, b) => s + b.durationMins, 0);
+    const totalDayMins = periods * plen + breakMinsTotal;
+    const endMins = startMins + totalDayMins;
+    if (endMins > 24 * 60) {
+      list.push({
+        level: 'error',
+        msg: `Computed day ends past midnight (${Math.floor(endMins / 60)}:${String(endMins % 60).padStart(2, '0')}). Reduce periods, breaks or start earlier.`,
+      });
+    } else if (totalDayMins > 10 * 60) {
+      list.push({
+        level: 'warning',
+        msg: `School day is ${Math.floor(totalDayMins / 60)}h ${totalDayMins % 60}m long — that's over 10 hours.`,
+      });
+    }
+
+    // Cross-check computed layout has the expected number of period rows
+    const periodRows = layout.filter((r) => r.kind === 'period').length;
+    if (periodRows !== periods) {
+      list.push({
+        level: 'error',
+        msg: `Computed timeline shows ${periodRows} periods but you configured ${periods}. Check breaks and period length.`,
+      });
+    }
+
+    return list;
+  }, [config.workingDays, config.periodsPerDay, config.periodLengthMins, config.dayStartTime, breaks, layout]);
+
+  const hasErrors = issues.some((i) => i.level === 'error');
+
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Window */}
