@@ -206,12 +206,12 @@ const ProgramSchedulePage: React.FC = () => {
         {step === 'workload' && (
           <WorkloadStep
             program={program}
-            config={config}
+            config={effectiveConfig}
             onChange={persistConfig}
             onBack={() => setStep('setup')}
             onGenerate={() => {
               const lockedOnly = slots.filter((s) => s.locked);
-              const out = generateSchedule(program, config, lockedOnly);
+              const out = generateSchedule(program, effectiveConfig, lockedOnly);
               setGeneratedSlots(program.id, out.slots);
               toast({ title: 'Schedule generated', description: `${out.slots.length} slots created.` });
               setStep('preview');
@@ -223,11 +223,11 @@ const ProgramSchedulePage: React.FC = () => {
             program={program}
             slots={slots}
             faculty={faculty}
-            config={config}
+            config={effectiveConfig}
             onChangeSlots={(s) => setGeneratedSlots(program.id, s)}
             onRegenerate={() => {
               const lockedOnly = slots.filter((s) => s.locked);
-              const out = generateSchedule(program, config, lockedOnly);
+              const out = generateSchedule(program, effectiveConfig, lockedOnly);
               setGeneratedSlots(program.id, out.slots);
               toast({ title: 'Schedule regenerated', description: `${out.slots.length} slots.` });
             }}
