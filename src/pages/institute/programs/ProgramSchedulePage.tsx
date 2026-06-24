@@ -790,8 +790,15 @@ const CalendarStep: React.FC<{
         <CardContent className="p-10 text-center space-y-4">
           <CalendarDays className="h-10 w-10 text-slate-300 mx-auto" />
           <h3 className="text-lg font-semibold text-slate-900">No schedule yet</h3>
-          <p className="text-sm text-slate-600">Generate a schedule first to see the calendar.</p>
-          <Button onClick={onBack}>Back to Generate</Button>
+          <p className="text-sm text-slate-600">
+            Generate a schedule to see the preview.
+          </p>
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={onBack}>Back</Button>
+            <Button onClick={onRegenerate} className="gap-2">
+              <Wand2 className="h-4 w-4" /> Generate now
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -806,20 +813,25 @@ const CalendarStep: React.FC<{
             <Stat label="Slots allocated" value={allocated} />
             <Stat label="Subjects" value={program.subjects.length} />
           </div>
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-            {(['month', 'week', 'list'] as ViewMode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize',
-                  mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900',
-                )}
-              >
-                {m}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+              {(['month', 'week', 'list'] as ViewMode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={cn(
+                    'px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize',
+                    mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900',
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={onRegenerate} className="gap-1.5">
+              <Wand2 className="h-3.5 w-3.5" /> Regenerate
+            </Button>
           </div>
         </CardContent>
       </Card>
