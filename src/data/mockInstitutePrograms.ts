@@ -108,9 +108,14 @@ function defaultSchedule(startDate = ACADEMIC_START) {
     workingDays: [1, 2, 3, 4, 5, 6] as (0 | 1 | 2 | 3 | 4 | 5 | 6)[],
     periodsPerDay: 6,
     periodLengthMins: 40,
-    holidays: [],
-    defaultFaculty: {},
-    classUrlTemplate: 'https://meet.example.com/{date}-p{period}',
+    dayStartTime: '08:30',
+    breaks: [
+      { id: 'brk-short', afterPeriod: 2, name: 'Short break', durationMins: 15 },
+      { id: 'brk-lunch', afterPeriod: 4, name: 'Lunch', durationMins: 30 },
+    ],
+    holidays: [] as { date: string; name?: string }[],
+    holidayOverrides: { removed: [] as string[], added: [] as { date: string; name?: string }[] },
+    defaultFaculty: {} as Record<string, string>,
   };
 }
 
