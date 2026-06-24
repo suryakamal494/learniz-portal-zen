@@ -195,7 +195,15 @@ const ProgramPreviewPage: React.FC = () => {
 
 
         {viewMode === 'calendar' && (
-          <CurriculumCalendarView program={program} schedule={schedule} />
+          <CurriculumCalendarView
+            program={program}
+            schedule={schedule}
+            storedSlots={program.generatedSlots}
+            faculty={faculty}
+            onChangeFaculty={(_slotId, _facultyId, allSlots) =>
+              setGeneratedSlots(program.id, allSlots)
+            }
+          />
         )}
 
         {viewMode === 'list' && (<>
