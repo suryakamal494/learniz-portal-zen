@@ -124,7 +124,11 @@ const CurriculumCalendarView: React.FC<Props> = ({ program, schedule, storedSlot
 
   const editable = !!onChangeFaculty;
 
+  const facultyOptionsFor = (slot: ScheduleSlot): InstituteFaculty[] => {
+    return facultyList.filter((f) => !f.subjectId || f.subjectId === slot.subjectId);
   };
+
+
 
 
   const periodsPerDay = schedule.periodsPerDay;
