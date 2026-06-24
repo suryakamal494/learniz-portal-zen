@@ -84,6 +84,7 @@ const ProgramSchedulePage: React.FC = () => {
   const { programId } = useParams<{ programId: string }>();
   const program = useInstituteProgram(programId);
   const faculty = useFaculty();
+  const instituteHolidays = useInstituteHolidays();
   const [step, setStep] = useState<Step>('setup');
   const [config, setConfig] = useState<ScheduleConfig>(() => program?.schedule ?? DEFAULT_CONFIG);
 
@@ -92,6 +93,8 @@ const ProgramSchedulePage: React.FC = () => {
   }, [program?.id]);
 
   const slots = program?.generatedSlots ?? [];
+  const effectiveConfig = configWithEffectiveHolidays(config, instituteHolidays);
+
 
   if (!program) {
     return (
