@@ -553,6 +553,7 @@ const SetupStep: React.FC<{
                 onChange={(e) => update('periodsPerDay', Math.max(1, Number(e.target.value) || 1))}
                 className="bg-white mt-1"
               />
+            </div>
           </div>
 
           {issues.length > 0 && (
@@ -592,8 +593,6 @@ const SetupStep: React.FC<{
             </div>
           )}
 
-
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Day layout preview */}
