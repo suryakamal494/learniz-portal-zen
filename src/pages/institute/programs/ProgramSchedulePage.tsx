@@ -241,6 +241,14 @@ const ProgramSchedulePage: React.FC = () => {
 
 /* ──────────────── STEP 1 SETUP ──────────────── */
 
+function shortFacultyName(full: string): string {
+  const parts = full.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '').split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+}
+
+
+
 const DOW_LABELS: { d: WeekDay; label: string }[] = [
   { d: 1, label: 'Mon' }, { d: 2, label: 'Tue' }, { d: 3, label: 'Wed' },
   { d: 4, label: 'Thu' }, { d: 5, label: 'Fri' }, { d: 6, label: 'Sat' }, { d: 0, label: 'Sun' },
@@ -1305,8 +1313,10 @@ const ListView: React.FC<{
   slots: ScheduleSlot[];
   subjectMap: Map<string, { name: string; color: string }>;
   topicMap: Map<string, { name: string; chapterName: string }>;
+  faculty: ReturnType<typeof useFaculty>;
   onSelectSlot: (s: ScheduleSlot) => void;
-}> = ({ slots, subjectMap, topicMap, onSelectSlot }) => {
+}> = ({ slots, subjectMap, topicMap, faculty, onSelectSlot }) => {
+  const facMap = useMemo(() => new Map(faculty.map((f) => [f.id, f.name])), [faculty]);
   return (
     <Card className="border-slate-200/70 shadow-sm">
       <CardContent className="p-0">
@@ -1318,6 +1328,7 @@ const ListView: React.FC<{
                 <th className="font-medium p-3">Time</th>
                 <th className="font-medium p-3">Subject</th>
                 <th className="font-medium p-3">Chapter · Topic</th>
+                <th className="font-medium p-3">Faculty</th>
                 <th className="font-medium p-3 w-8" />
               </tr>
             </thead>
@@ -1326,6 +1337,7 @@ const ListView: React.FC<{
                 const sub = subjectMap.get(sl.subjectId);
                 const topic = topicMap.get(sl.topicId);
                 const pal = subjectPalette(sub?.color ?? 'blue');
+                const fac = facMap.get(sl.facultyId) ?? 'Unassigned';
                 return (
                   <tr key={sl.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => onSelectSlot(sl)}>
                     <td className="p-3 text-slate-700 whitespace-nowrap">{formatPretty(sl.date)}</td>
@@ -1341,6 +1353,7 @@ const ListView: React.FC<{
                       <div className="text-xs text-slate-500">{topic?.chapterName}</div>
                       <div>{topic?.name}</div>
                     </td>
+                    <td className="p-3 text-slate-700 whitespace-nowrap text-xs">{fac}</td>
                     <td className="p-3">
                       {sl.locked && <Lock className="h-3.5 w-3.5 text-slate-400" />}
                     </td>
