@@ -1,16 +1,10 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Bell, Settings, Calendar, BarChart3 } from "lucide-react"
+import { Bell, Settings, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TeacherProfileDropdown } from "./TeacherProfileDropdown"
 import { Link } from "react-router-dom"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 export function TeacherDashboardHeader() {
   return (
