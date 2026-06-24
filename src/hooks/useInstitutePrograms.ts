@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { MOCK_FACULTY, MOCK_INSTITUTE_PROGRAMS } from '@/data/mockInstitutePrograms';
 import {
+  Holiday,
   InstituteFaculty,
   InstituteProgram,
   ScheduleConfig,
@@ -11,6 +12,12 @@ import {
 
 let programs: InstituteProgram[] = JSON.parse(JSON.stringify(MOCK_INSTITUTE_PROGRAMS));
 let faculty: InstituteFaculty[] = [...MOCK_FACULTY];
+let instituteHolidays: Holiday[] = [
+  { date: '2025-08-15', name: 'Independence Day' },
+  { date: '2025-10-02', name: 'Gandhi Jayanti' },
+  { date: '2025-10-20', name: 'Diwali' },
+  { date: '2025-12-25', name: 'Christmas' },
+];
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -24,6 +31,7 @@ const store = {
   },
   getPrograms: () => programs,
   getFaculty: () => faculty,
+  getInstituteHolidays: () => instituteHolidays,
 };
 
 export function useInstitutePrograms() {
