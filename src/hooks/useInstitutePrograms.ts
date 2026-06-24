@@ -43,6 +43,42 @@ export function useFaculty() {
   return useSyncExternalStore(store.subscribe, store.getFaculty, store.getFaculty);
 }
 
+export function useInstituteHolidays(): Holiday[] {
+  return useSyncExternalStore(store.subscribe, store.getInstituteHolidays, store.getInstituteHolidays);
+}
+
+export function setInstituteHolidays(list: Holiday[]) {
+  instituteHolidays = [...list].sort((a, b) => a.date.localeCompare(b.date));
+  emit();
+}
+
+export function getInstituteHolidaysSnapshot(): Holiday[] {
+  return instituteHolidays;
+}
+
+/** Merge institute-wide holidays with per-program overrides. */
+export function effectiveHolidays(
+  schedule: ScheduleConfig | undefined,
+  institute: Holiday[] = instituteHolidays,
+): Holiday[] {
+  const map = new Map<string, Holiday>();
+  institute.forEach((h) => map.set(h.date, h));
+  const ov = schedule?.holidayOverrides ?? { removed: [], added: [] };
+  ov.added.forEach((h) => map.set(h.date, h));
+  // legacy per-program holidays
+  (schedule?.holidays ?? []).forEach((h) => map.set(h.date, h));
+  ov.removed.forEach((d) => map.delete(d));
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** Returns a ScheduleConfig with `holidays` set to the effective list (for generator input). */
+export function configWithEffectiveHolidays(
+  schedule: ScheduleConfig,
+  institute: Holiday[] = instituteHolidays,
+): ScheduleConfig {
+  return { ...schedule, holidays: effectiveHolidays(schedule, institute) };
+}
+
 export function useInstituteProgram(id: string | undefined): InstituteProgram | undefined {
   const list = useInstitutePrograms();
   return list.find((p) => p.id === id);
