@@ -130,8 +130,7 @@ const ProgramSchedulePage: React.FC = () => {
   const steps: { id: Step; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'setup', label: 'Setup', icon: CalendarDays },
     { id: 'workload', label: 'Workload', icon: Layers },
-    { id: 'generate', label: 'Generate', icon: Wand2 },
-    { id: 'calendar', label: 'Preview', icon: Sparkles },
+    { id: 'preview', label: 'Preview', icon: Sparkles },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
 
@@ -204,28 +203,29 @@ const ProgramSchedulePage: React.FC = () => {
             config={config}
             onChange={persistConfig}
             onBack={() => setStep('setup')}
-            onNext={() => setStep('generate')}
-          />
-        )}
-        {step === 'generate' && (
-          <GenerateStep
-            program={program}
-            config={config}
-            existing={slots}
-            onGenerated={(newSlots) => {
-              setGeneratedSlots(program.id, newSlots);
-              setStep('calendar');
+            onGenerate={() => {
+              const lockedOnly = slots.filter((s) => s.locked);
+              const out = generateSchedule(program, config, lockedOnly);
+              setGeneratedSlots(program.id, out.slots);
+              toast({ title: 'Schedule generated', description: `${out.slots.length} slots created.` });
+              setStep('preview');
             }}
-            onBack={() => setStep('workload')}
           />
         )}
-        {step === 'calendar' && (
+        {step === 'preview' && (
           <CalendarStep
             program={program}
             slots={slots}
             faculty={faculty}
+            config={config}
             onChangeSlots={(s) => setGeneratedSlots(program.id, s)}
-            onBack={() => setStep('generate')}
+            onRegenerate={() => {
+              const lockedOnly = slots.filter((s) => s.locked);
+              const out = generateSchedule(program, config, lockedOnly);
+              setGeneratedSlots(program.id, out.slots);
+              toast({ title: 'Schedule regenerated', description: `${out.slots.length} slots.` });
+            }}
+            onBack={() => setStep('workload')}
           />
         )}
       </div>
