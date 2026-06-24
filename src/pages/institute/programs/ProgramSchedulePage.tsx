@@ -59,7 +59,7 @@ import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-type Step = 'setup' | 'workload' | 'generate' | 'calendar';
+type Step = 'setup' | 'workload' | 'preview';
 
 const DEFAULT_CONFIG: ScheduleConfig = {
   startDate: new Date().toISOString().slice(0, 10),
@@ -67,9 +67,14 @@ const DEFAULT_CONFIG: ScheduleConfig = {
   workingDays: [1, 2, 3, 4, 5, 6],
   periodsPerDay: 6,
   periodLengthMins: 40,
+  dayStartTime: '08:30',
+  breaks: [
+    { id: 'brk-short', afterPeriod: 2, name: 'Short break', durationMins: 15 },
+    { id: 'brk-lunch', afterPeriod: 4, name: 'Lunch', durationMins: 30 },
+  ],
   holidays: [],
+  holidayOverrides: { removed: [], added: [] },
   defaultFaculty: {},
-  classUrlTemplate: 'https://meet.example.com/{date}-p{period}',
 };
 
 const ProgramSchedulePage: React.FC = () => {

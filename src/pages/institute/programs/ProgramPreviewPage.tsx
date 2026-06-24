@@ -35,9 +35,10 @@ const DEFAULT_SCHEDULE = {
   workingDays: [1, 2, 3, 4, 5, 6] as (0 | 1 | 2 | 3 | 4 | 5 | 6)[],
   periodsPerDay: 6,
   periodLengthMins: 40,
+  dayStartTime: '08:30',
+  breaks: [],
   holidays: [],
   defaultFaculty: {},
-  classUrlTemplate: 'https://meet.example.com/{date}-p{period}',
 };
 
 const PRINT_CSS = `
