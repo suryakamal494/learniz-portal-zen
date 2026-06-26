@@ -217,6 +217,8 @@ const PCM_DEFAULT_FACULTY: Record<string, string> = {
   'subj-soc-12': 'fac-13',
 };
 
+const PCM_END_DATE = '2026-03-28'; // ~ 1 academic year
+
 export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
   {
     id: 'prog-1',
@@ -236,6 +238,7 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
     ],
     schedule: {
       ...defaultSchedule(),
+      endDate: PCM_END_DATE,
       defaultFaculty: PCM_DEFAULT_FACULTY,
       weeklyTimetable: PCM_WEEKLY_TIMETABLE,
     },
