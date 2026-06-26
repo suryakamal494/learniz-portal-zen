@@ -139,10 +139,32 @@ const ProgramSchedulePage: React.FC = () => {
 
   const steps: { id: Step; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'setup', label: 'Setup', icon: CalendarDays },
-    { id: 'workload', label: 'Workload', icon: Layers },
+    { id: 'timetable', label: 'Weekly timetable', icon: Layers },
     { id: 'preview', label: 'Preview', icon: Sparkles },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
+
+  // ---- Mandatory-field gating ----
+  const setupBlockers = useMemo(() => {
+    const list: string[] = [];
+    if (!config.startDate) list.push('Start date');
+    if (!config.workingDays || config.workingDays.length === 0) list.push('At least one working day');
+    if (!config.dayStartTime) list.push('Day start time');
+    if (!config.periodsPerDay || config.periodsPerDay < 1) list.push('Number of periods');
+    program.subjects.forEach((s) => {
+      if (!config.defaultFaculty[s.id]) list.push(`Default faculty for ${s.name}`);
+    });
+    return list;
+  }, [config, program.subjects]);
+
+  const timetableBlockers = useMemo(() => {
+    const list: string[] = [];
+    const cells = config.weeklyTimetable?.cells ?? [];
+    if (cells.filter((c) => c.subjectId).length === 0) {
+      list.push('Fill at least one period in the weekly timetable');
+    }
+    return list;
+  }, [config.weeklyTimetable]);
 
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
@@ -203,21 +225,44 @@ const ProgramSchedulePage: React.FC = () => {
             program={program}
             config={config}
             faculty={faculty}
+            blockers={setupBlockers}
             onChange={persistConfig}
-            onNext={() => setStep('workload')}
+            onNext={() => {
+              if (setupBlockers.length > 0) {
+                toast({
+                  title: 'Missing required info',
+                  description: setupBlockers.slice(0, 3).join(' · '),
+                  variant: 'destructive',
+                });
+                return;
+              }
+              setStep('timetable');
+            }}
           />
         )}
-        {step === 'workload' && (
-          <WorkloadStep
+        {step === 'timetable' && (
+          <TimetableStep
             program={program}
-            config={effectiveConfig}
+            config={config}
+            blockers={timetableBlockers}
             onChange={persistConfig}
             onBack={() => setStep('setup')}
             onGenerate={() => {
+              if (timetableBlockers.length > 0) {
+                toast({
+                  title: 'Timetable incomplete',
+                  description: timetableBlockers[0],
+                  variant: 'destructive',
+                });
+                return;
+              }
               const lockedOnly = slots.filter((s) => s.locked);
-              const out = generateSchedule(program, effectiveConfig, lockedOnly);
+              const out = generateFromTimetable(program, effectiveConfig, lockedOnly);
               setGeneratedSlots(program.id, out.slots);
-              toast({ title: 'Schedule generated', description: `${out.slots.length} slots created.` });
+              toast({
+                title: 'Schedule generated',
+                description: `${out.slots.length} classes planned${out.unscheduledTopics.length ? ` · ${out.unscheduledTopics.length} topics did not fit` : ''}.`,
+              });
               setStep('preview');
             }}
           />
@@ -231,17 +276,18 @@ const ProgramSchedulePage: React.FC = () => {
             onChangeSlots={(s) => setGeneratedSlots(program.id, s)}
             onRegenerate={() => {
               const lockedOnly = slots.filter((s) => s.locked);
-              const out = generateSchedule(program, effectiveConfig, lockedOnly);
+              const out = generateFromTimetable(program, effectiveConfig, lockedOnly);
               setGeneratedSlots(program.id, out.slots);
-              toast({ title: 'Schedule regenerated', description: `${out.slots.length} slots.` });
+              toast({ title: 'Schedule regenerated', description: `${out.slots.length} classes.` });
             }}
-            onBack={() => setStep('workload')}
+            onBack={() => setStep('timetable')}
           />
         )}
       </div>
     </div>
   );
 };
+
 
 /* ──────────────── STEP 1 SETUP ──────────────── */
 
