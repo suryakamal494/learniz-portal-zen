@@ -1758,7 +1758,7 @@ const Step3TimetableView: React.FC<{
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+            <div className="flex flex-nowrap gap-1.5 flex-1 min-w-0 overflow-x-auto pb-1 [scrollbar-width:thin]">
               {weekStarts.map((ws, i) => {
                 const isActive = i === weekIdx;
                 const end = addDays(ws, 6);
@@ -1769,7 +1769,7 @@ const Step3TimetableView: React.FC<{
                     onClick={() => setWeekIdx(i)}
                     title={`${formatPretty(ws)} – ${formatPretty(end)}`}
                     className={cn(
-                      'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap',
+                      'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap shrink-0',
                       isActive
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700',
@@ -1780,6 +1780,7 @@ const Step3TimetableView: React.FC<{
                 );
               })}
             </div>
+
             <Button
               size="sm"
               variant="outline"
