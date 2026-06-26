@@ -142,7 +142,14 @@ export interface DayLayoutRow {
   durationMins: number;
 }
 
-/** Computes per-period start/end times honouring `dayStartTime` + `breaks`. */
+function periodMinsFor(config: ScheduleConfig, periodNumber1Based: number): number {
+  const overrides = (config as { periodOverrides?: Record<number, number> }).periodOverrides;
+  const v = overrides?.[periodNumber1Based];
+  return v && v > 0 ? v : config.periodLengthMins;
+}
+
+/** Computes per-period start/end times honouring `dayStartTime`, per-period
+ *  duration overrides and `breaks`. */
 export function computePeriodTimes(config: ScheduleConfig): PeriodTimeRow[] {
   const startStr = (config as { dayStartTime?: string }).dayStartTime ?? '09:00';
   const breaks = (config as { breaks?: { afterPeriod: number; durationMins: number }[] }).breaks ?? [];
@@ -151,8 +158,9 @@ export function computePeriodTimes(config: ScheduleConfig): PeriodTimeRow[] {
   const out: PeriodTimeRow[] = [];
   let cursor = timeToMins(startStr);
   for (let i = 0; i < config.periodsPerDay; i++) {
+    const len = periodMinsFor(config, i + 1);
     const s = cursor;
-    const e = cursor + config.periodLengthMins;
+    const e = cursor + len;
     out.push({ index: i, startTime: fmtTime(s), endTime: fmtTime(e) });
     cursor = e;
     const brk = breakAfter.get(i + 1);
@@ -174,9 +182,10 @@ export function computeDayLayout(config: ScheduleConfig): DayLayoutRow[] {
   const out: DayLayoutRow[] = [];
   let cursor = timeToMins(startStr);
   for (let i = 0; i < config.periodsPerDay; i++) {
+    const len = periodMinsFor(config, i + 1);
     const s = cursor;
-    const e = cursor + config.periodLengthMins;
-    out.push({ kind: 'period', index: i, label: `P${i + 1}`, startTime: fmtTime(s), endTime: fmtTime(e), durationMins: config.periodLengthMins });
+    const e = cursor + len;
+    out.push({ kind: 'period', index: i, label: `P${i + 1}`, startTime: fmtTime(s), endTime: fmtTime(e), durationMins: len });
     cursor = e;
     const brks = breakAfter.get(i + 1) ?? [];
     brks.forEach((b) => {
@@ -188,6 +197,15 @@ export function computeDayLayout(config: ScheduleConfig): DayLayoutRow[] {
   }
   return out;
 }
+
+/** Monday-of-week for any ISO date (returns ISO). Weeks start on Monday. */
+export function isoWeekStart(iso: string): string {
+  const d = parseISO(iso);
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  const delta = dow === 0 ? -6 : 1 - dow;
+  return addDays(iso, delta);
+}
+
 
 interface GenerateResult {
   slots: ScheduleSlot[];
