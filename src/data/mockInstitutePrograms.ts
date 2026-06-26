@@ -100,7 +100,7 @@ const SOC_12: { chapter: string; topics: string[] }[] = [
   { chapter: 'Indian Economic Development', topics: ['Pre-independence Economy', 'Planning & Five-Year Plans', 'Liberalisation & Reforms', 'Poverty & Employment'] },
 ];
 
-
+/* ---------- Hour seeding strategy ----------
    We want hours to vary so totals look real. We use a small deterministic
    pattern keyed on chapter index + topic index so reloading is stable.
 */
