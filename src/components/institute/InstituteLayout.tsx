@@ -11,7 +11,7 @@ export const InstituteLayout: React.FC = () => {
       <InstituteSidebar />
       <SidebarInset>
         {/* Top header bar with sidebar trigger */}
-        <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4">
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 shadow-sm">
           <SidebarTrigger className="-ml-1" />
           <div className="flex-1" />
           <Button variant="outline" size="sm" asChild>
@@ -23,7 +23,7 @@ export const InstituteLayout: React.FC = () => {
         </header>
         
         {/* Main content */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0 w-full bg-background">
           <Outlet />
         </div>
       </SidebarInset>
