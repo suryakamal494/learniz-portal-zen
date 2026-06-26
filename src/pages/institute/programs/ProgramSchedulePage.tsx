@@ -168,8 +168,8 @@ const ProgramSchedulePage: React.FC = () => {
   }, [config.weeklyTimetable]);
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
-      <div className="max-w-7xl mx-auto p-6 space-y-5">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30 min-w-0 w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto p-6 space-y-5 min-w-0 w-full">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
