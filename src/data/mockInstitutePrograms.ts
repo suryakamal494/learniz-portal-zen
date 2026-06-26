@@ -11,6 +11,8 @@ const SUBJECT_COLORS = {
   maths: 'violet',
   biology: 'rose',
   english: 'amber',
+  hindi: 'orange',
+  social: 'cyan',
 } as const;
 
 /* ---------- Class 12 PCM canonical chapter \u2192 topics ---------- */
@@ -58,6 +60,44 @@ const MATH_12: { chapter: string; topics: string[] }[] = [
   { chapter: 'Vector Algebra', topics: ['Types of Vectors', 'Addition & Subtraction', 'Dot Product', 'Cross Product', 'Scalar Triple Product'] },
   { chapter: 'Three Dimensional Geometry', topics: ['Direction Cosines', 'Equation of a Line', 'Equation of a Plane', 'Angle between Lines / Planes', 'Distance Formulas'] },
   { chapter: 'Linear Programming & Probability', topics: ['LPP Formulation', 'Graphical Method', 'Conditional Probability', "Bayes' Theorem", 'Random Variables'] },
+];
+
+const BIO_12: { chapter: string; topics: string[] }[] = [
+  { chapter: 'Reproduction in Organisms', topics: ['Asexual Reproduction', 'Sexual Reproduction', 'Pre-fertilisation Events', 'Post-fertilisation Events'] },
+  { chapter: 'Sexual Reproduction in Plants', topics: ['Flower Structure', 'Pollination', 'Double Fertilisation', 'Seed & Fruit Development'] },
+  { chapter: 'Human Reproduction', topics: ['Reproductive System', 'Gametogenesis', 'Menstrual Cycle', 'Pregnancy & Lactation'] },
+  { chapter: 'Principles of Inheritance', topics: ['Mendel\u2019s Laws', 'Chromosomal Theory', 'Sex Determination', 'Mutations & Disorders'] },
+  { chapter: 'Molecular Basis of Inheritance', topics: ['DNA Structure', 'Replication', 'Transcription', 'Translation & Gene Regulation'] },
+  { chapter: 'Evolution', topics: ['Origin of Life', 'Theories of Evolution', 'Hardy\u2013Weinberg', 'Human Evolution'] },
+  { chapter: 'Human Health & Disease', topics: ['Common Diseases', 'Immunity', 'AIDS & Cancer', 'Drugs & Alcohol Abuse'] },
+  { chapter: 'Biotechnology', topics: ['Principles & Tools', 'Recombinant DNA', 'Applications in Medicine', 'Applications in Agriculture'] },
+];
+
+const ENG_12: { chapter: string; topics: string[] }[] = [
+  { chapter: 'Flamingo \u2014 Prose', topics: ['The Last Lesson', 'Lost Spring', 'Deep Water', 'The Rattrap'] },
+  { chapter: 'Flamingo \u2014 Poetry', topics: ['My Mother at Sixty-six', 'An Elementary Classroom', 'Keeping Quiet', 'A Thing of Beauty'] },
+  { chapter: 'Vistas \u2014 Supplementary', topics: ['The Third Level', 'The Tiger King', 'Journey to the End of the Earth', 'The Enemy'] },
+  { chapter: 'Reading Skills', topics: ['Note-making', 'Summary Writing', 'Comprehension', 'Inference Questions'] },
+  { chapter: 'Writing Skills', topics: ['Notice & Advertisement', 'Letter Writing', 'Article Writing', 'Report Writing'] },
+  { chapter: 'Grammar & Practice', topics: ['Tenses Revision', 'Reported Speech', 'Modals', 'Editing & Omission'] },
+];
+
+const HIN_12: { chapter: string; topics: string[] }[] = [
+  { chapter: '\u0906\u0930\u094B\u0939 \u2014 \u0915\u093E\u0935\u094D\u092F', topics: ['\u0939\u0930\u093F\u0935\u0902\u0936\u0930\u093E\u092F \u092C\u091A\u094D\u091A\u0928', '\u0906\u0932\u094B\u0915 \u0927\u0928\u094D\u0935\u093E', '\u0915\u0941\u0902\u0935\u0930 \u0928\u093E\u0930\u093E\u092F\u0923', '\u0930\u0918\u0941\u0935\u0940\u0930 \u0938\u0939\u093E\u092F'] },
+  { chapter: '\u0906\u0930\u094B\u0939 \u2014 \u0917\u0926\u094D\u092F', topics: ['\u092D\u0915\u094D\u0924\u093F\u0928', '\u092C\u093E\u091C\u093E\u0930 \u0926\u0930\u094D\u0936\u0928', '\u0915\u093E\u0932\u0947 \u092E\u0947\u0918\u093E \u092A\u093E\u0928\u0940 \u0926\u0947', '\u092A\u0939\u0932\u0935\u093E\u0928 \u0915\u0940 \u0922\u094B\u0932\u0915'] },
+  { chapter: '\u0935\u093F\u0924\u093E\u0928 \u2014 \u092A\u0942\u0930\u0915 \u092A\u093E\u0920', topics: ['\u0938\u093F\u0932\u094D\u0935\u0930 \u0935\u0948\u0921\u093F\u0902\u0917', '\u091C\u0942\u091D', '\u0905\u0924\u0940\u0924 \u092E\u0947\u0902 \u0926\u092C\u0947 \u092A\u093E\u0901\u0935', '\u0921\u093E\u092F\u0930\u0940 \u0915\u0947 \u092A\u0928\u094D\u0928\u0947'] },
+  { chapter: '\u0905\u092A\u0920\u093F\u0924 \u092C\u094B\u0927', topics: ['\u0917\u0926\u094D\u092F\u093E\u0902\u0936', '\u092A\u0926\u094D\u092F\u093E\u0902\u0936', '\u0936\u092C\u094D\u0926 \u0905\u0930\u094D\u0925', '\u0936\u0940\u0930\u094D\u0937\u0915'] },
+  { chapter: '\u0930\u091A\u0928\u093E\u0924\u094D\u092E\u0915 \u0932\u0947\u0916\u0928', topics: ['\u0928\u093F\u092C\u0902\u0927', '\u092A\u0924\u094D\u0930 \u0932\u0947\u0916\u0928', '\u0935\u093F\u091C\u094D\u091E\u093E\u092A\u0928', '\u0938\u0941\u091A\u0928\u093E'] },
+  { chapter: '\u0935\u094D\u092F\u093E\u0915\u0930\u0923', topics: ['\u0930\u0938 \u0935 \u0905\u0932\u0902\u0915\u093E\u0930', '\u092E\u0941\u0939\u093E\u0935\u0930\u0947', '\u0935\u093E\u0915\u094D\u092F \u0930\u091A\u0928\u093E', '\u0935\u093E\u091A\u094D\u092F'] },
+];
+
+const SOC_12: { chapter: string; topics: string[] }[] = [
+  { chapter: 'Politics in India since Independence', topics: ['Challenges of Nation Building', 'Era of One-Party Dominance', 'Politics of Planned Development', 'India\u2019s External Relations'] },
+  { chapter: 'Contemporary World Politics', topics: ['Cold War Era', 'End of Bipolarity', 'US Hegemony', 'Alternative Centres of Power'] },
+  { chapter: 'Indian Society', topics: ['Demographic Structure', 'Social Institutions', 'Cultural Diversity', 'Patterns of Change'] },
+  { chapter: 'Themes in Indian History', topics: ['Bricks, Beads & Bones', 'Kings, Farmers & Towns', 'Bhakti\u2013Sufi Traditions', 'Colonialism & Countryside'] },
+  { chapter: 'Macroeconomics', topics: ['National Income', 'Money & Banking', 'Government Budget', 'Balance of Payments'] },
+  { chapter: 'Indian Economic Development', topics: ['Pre-independence Economy', 'Planning & Five-Year Plans', 'Liberalisation & Reforms', 'Poverty & Employment'] },
 ];
 
 /* ---------- Hour seeding strategy ----------
@@ -128,7 +168,50 @@ export const MOCK_FACULTY: InstituteFaculty[] = [
   { id: 'fac-4', name: 'Dr. Kavita Nair', subjectId: 'subj-chem-12' },
   { id: 'fac-5', name: 'Mr. Arjun Kapoor', subjectId: 'subj-math-12' },
   { id: 'fac-6', name: 'Ms. Neha Gupta', subjectId: 'subj-math-12' },
+  { id: 'fac-7', name: 'Dr. Meera Iyer', subjectId: 'subj-bio-12' },
+  { id: 'fac-8', name: 'Mr. Rohit Das', subjectId: 'subj-bio-12' },
+  { id: 'fac-9', name: 'Ms. Sneha Pillai', subjectId: 'subj-eng-12' },
+  { id: 'fac-10', name: 'Mr. James Thomas', subjectId: 'subj-eng-12' },
+  { id: 'fac-11', name: 'Mrs. Kavya Joshi', subjectId: 'subj-hin-12' },
+  { id: 'fac-12', name: 'Mr. Suresh Yadav', subjectId: 'subj-hin-12' },
+  { id: 'fac-13', name: 'Ms. Riya Khanna', subjectId: 'subj-soc-12' },
+  { id: 'fac-14', name: 'Mr. Aakash Verma', subjectId: 'subj-soc-12' },
 ];
+
+/* ---------- Seeded weekly timetable for Class 12 PCM (W1) ----------
+   Layout (P1..P6 × Mon..Sat) — mixes all 7 subjects realistically.
+*/
+const PCM_W1_START = '2025-04-14'; // Monday
+const PCM_TT_PATTERN: Record<number, string[]> = {
+  // periodIndex -> [Mon, Tue, Wed, Thu, Fri, Sat]
+  0: ['subj-phy-12',  'subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-chem-12', 'subj-math-12'],
+  1: ['subj-math-12', 'subj-phy-12',  'subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-chem-12'],
+  2: ['subj-bio-12',  'subj-eng-12',  'subj-hin-12',  'subj-soc-12',  'subj-bio-12',  'subj-eng-12'],
+  3: ['subj-hin-12',  'subj-soc-12',  'subj-bio-12',  'subj-eng-12',  'subj-hin-12',  'subj-soc-12'],
+  4: ['subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-bio-12',  'subj-math-12', 'subj-phy-12'],
+  5: ['subj-eng-12',  'subj-bio-12',  'subj-soc-12',  'subj-hin-12',  'subj-soc-12',  'subj-bio-12'],
+};
+const PCM_WEEKDAYS: (1 | 2 | 3 | 4 | 5 | 6)[] = [1, 2, 3, 4, 5, 6];
+const PCM_WEEKLY_TIMETABLE = {
+  cells: Object.entries(PCM_TT_PATTERN).flatMap(([pIdxStr, row]) =>
+    PCM_WEEKDAYS.map((wd, dayCol) => ({
+      weekStartDate: PCM_W1_START,
+      weekday: wd as 0 | 1 | 2 | 3 | 4 | 5 | 6,
+      periodIndex: Number(pIdxStr),
+      subjectId: row[dayCol],
+    })),
+  ),
+};
+
+const PCM_DEFAULT_FACULTY: Record<string, string> = {
+  'subj-phy-12': 'fac-1',
+  'subj-chem-12': 'fac-3',
+  'subj-math-12': 'fac-5',
+  'subj-bio-12': 'fac-7',
+  'subj-eng-12': 'fac-9',
+  'subj-hin-12': 'fac-11',
+  'subj-soc-12': 'fac-13',
+};
 
 export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
   {
@@ -142,8 +225,16 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
       buildSubject('subj-phy-12', 'Physics', SUBJECT_COLORS.physics, PHYSICS_12, true),
       buildSubject('subj-chem-12', 'Chemistry', SUBJECT_COLORS.chemistry, CHEM_12, true),
       buildSubject('subj-math-12', 'Mathematics', SUBJECT_COLORS.maths, MATH_12, true),
+      buildSubject('subj-bio-12', 'Biology', SUBJECT_COLORS.biology, BIO_12, true),
+      buildSubject('subj-eng-12', 'English', SUBJECT_COLORS.english, ENG_12, true),
+      buildSubject('subj-hin-12', 'Hindi', SUBJECT_COLORS.hindi, HIN_12, true),
+      buildSubject('subj-soc-12', 'Social Studies', SUBJECT_COLORS.social, SOC_12, true),
     ],
-    schedule: defaultSchedule(),
+    schedule: {
+      ...defaultSchedule(),
+      defaultFaculty: PCM_DEFAULT_FACULTY,
+      weeklyTimetable: PCM_WEEKLY_TIMETABLE,
+    },
   },
   {
     id: 'prog-2',

@@ -1,80 +1,91 @@
-## Weekly Timetable UX Fixes
+## Step 3 (Preview) — Carry forward Step 2 timetable + auto-fill chapter & topic
 
-Three problems to fix in `WeeklyTimetableBuilder.tsx`. No backend/type changes — frontend UX only.
-
----
-
-### 1. Confusing button labels & missing undo
-
-**Today:**
-- "Copy this week to…" → Next / Next 4 / All remaining
-- "Apply as repeating pattern" → silently overwrites every week, no undo
-
-**Change to:**
-- **Rename** "Apply as repeating pattern" → **"Copy to all weeks"** (same icon).
-- **Merge** both copy actions under one clear "Copy this week to…" dropdown:
-  - Next week only
-  - Next 4 weeks
-  - All remaining weeks
-  - All weeks (including past weeks in window)
-- **Before any bulk copy**, show a confirm dialog: *"This will replace the timetable for N week(s). Continue?"* — and snapshot the previous `cells` array.
-- **Add an Undo toast** (sonner) after every bulk operation (Copy-to-N, Clear week, Fill row, Fill column): *"Pattern applied to 12 weeks. [Undo]"* — Undo restores the snapshot via `onChange`. Snapshot kept in a `useRef` (last action only — single-level undo, like Gmail).
-- **Per-week deletion**: each week chip (W1…W13) gets a tiny ✕ on hover that clears just that week's cells. Also add a clearer **"Clear this week"** button (already exists, keep) and a new **"Clear all weeks"** option in a small "More" menu next to it.
+Step 2 already builds the weekly timetable (subjects per period × day). Step 3 should display **that same timetable**, week by week, with the chapter and topic **auto-populated from teaching hours** and the faculty resolved from defaults. No new timetable structure; we just carry Step 2 forward and layer the syllabus on top.
 
 ---
 
-### 2. Column "Fill this day" is wrong mental model
+### Concept
 
-**Problem:** Filling a whole column with one subject (Chemistry every period Monday) is unrealistic. A subject is usually taught once per day.
-
-**Replace the column ✨ menu with a "Plan this day" popover** that lets the teacher pick **multiple subjects in order**, one per period:
-
-```
-┌─ Plan Monday ──────────────────┐
-│ Pick subjects to drop into     │
-│ Monday's empty periods (top    │
-│ down). Already-filled periods  │
-│ are skipped.                   │
-│                                │
-│ 1. [Chemistry  ▼]  [✕]         │
-│ 2. [Physics    ▼]  [✕]         │
-│ 3. [Math       ▼]  [✕]         │
-│ + Add subject                  │
-│                                │
-│ ☐ Overwrite filled periods     │
-│ ☐ Repeat list if periods left  │
-│                                │
-│ [Cancel]      [Apply to Monday]│
-└────────────────────────────────┘
+```text
+Step 1  →  Period slots (P1=08:30–09:10, P2…, breaks)
+Step 2  →  Weekly timetable template     (Mon P1 = Physics, Mon P2 = Chemistry …)
+Step 3  →  Same grid, week-by-week, with chapter + topic + teacher auto-filled
+           by walking each subject's topic queue and consuming hours topic-by-topic
+           across the periods Step 2 reserved for that subject.
 ```
 
-Behavior on Apply:
-- Walk Monday's periods top-to-bottom.
-- For each empty period (or all, if Overwrite is on), assign the next subject from the ordered list.
-- If list shorter than periods: stop (or wrap, if "Repeat" is on).
-- Triggers undo snapshot + toast.
+So Step 3's job is:
+1. Render the **same Periods × Days grid** the Step 2 builder used (same look, same period rows, same break bands).
+2. Add a **week selector** on top (W1, W2, W3 …) — defaults to W1, navigates through the academic window.
+3. For every Step-2 cell that has a subject, fill in **chapter → topic** by consuming hours from that subject's syllabus queue, and assign the **default faculty** for that subject.
+4. Let the user edit chapter / topic / teacher per cell. Time and subject are **read-only** in Step 3 (they belong to Step 1 and Step 2 respectively — to change them, go back).
 
-Keep the existing row ✨ ("Fill row across week") — that one is correct: same subject for P1 across Mon–Sat is realistic.
+### How auto-fill works (uses existing generator)
 
----
+`generateFromTimetable(program, config, locked)` already does exactly this:
+- Walks the academic window day by day.
+- For each day, replays Step 2's weekly template.
+- Pulls the next available topic from each subject's hour queue (`computeCoverageCursor`).
+- Allocates `hoursToPeriods(topic.hours, periodLengthMins)` consecutive periods to that topic, advancing the cursor.
+- Returns `ScheduleSlot[]` with `subjectId`, `chapterId`, `topicId`, `facultyId`, `startTime`, `endTime`.
 
-### 3. Small clarity tweaks
+Step 3 already calls this on entry (`generateFromTimetable` in `onGenerate`). We just need a view that **renders those slots back into the Step 2 grid shape**, grouped per selected week.
 
-- Rename column-header icon tooltip "Fill this day" → **"Plan this day"**.
-- Rename row-icon tooltip "Fill this row" → **"Use this subject across the week"**.
-- Update helper text under "Weekly timetable" to: *"Pick a subject for each period. Use the row tool to repeat across the week, the column tool to plan a day, then copy the week to others."*
-- Week chip ✕-on-hover with tooltip "Clear this week".
+### UI changes — `CalendarStep` in `ProgramSchedulePage.tsx`
 
----
+- Replace today's default landing view with a new **Timetable** view that visually mirrors `WeeklyTimetableBuilder`.
+- Keep Month / Week / List as secondary views in the existing switcher; add `'timetable'` as the new default.
 
-### Technical notes
+New subcomponent `Step3TimetableView`:
 
-- File touched: only `src/components/institute/programs/WeeklyTimetableBuilder.tsx`.
-- New small subcomponent `PlanDayPopover` inside the same file (uses existing `Popover`, `Select`, `Button`, `Checkbox` from shadcn).
-- Snapshot/undo via `useRef<WeeklyTimetableCell[] | null>` + `toast(... , { action: { label: 'Undo', onClick } })` from `sonner` (already in project).
-- No changes to `ScheduleConfig` types, generator, or other steps.
+1. **Week selector bar** (same chip strip pattern as Step 2):
+   - Chips `W1 … Wn` for every week between `config.startDate` and the last generated slot's date.
+   - Each chip tooltip: `Apr 14 – Apr 19`. Active chip highlighted in blue.
+   - Prev / Next arrows + "Jump to today" if today is inside the window.
+
+2. **Grid** (identical layout to Step 2 builder):
+   - Rows = `computeDayLayout(config)` (period rows + break bands).
+   - Columns = `config.workingDays` with the **real date** of that weekday in the selected week shown in the header (`Mon 14`, `Tue 15`, …).
+   - Header row also shows period time on the left (`P1 · 08:30–09:10`).
+
+3. **Cell rendering** (for each Step 2 cell that has a subject, find the matching generated slot for that date+periodIndex):
+   - **Subject pill** (colored, read-only — same visual as Step 2).
+   - **Topic line** (bold) + **chapter sub-line** (small, muted) — both editable via a single click → opens a Popover with chapter ▼ then topic ▼ (chapters limited to the cell's subject; topics limited to the chosen chapter).
+   - **Faculty chip** with pencil — opens Select filtered by subject (reuses `facultyOptionsFor` pattern from `CurriculumCalendarView`).
+   - **Time** rendered plain (`08:30 – 09:10`), not editable.
+   - If Step 2 cell is empty (no subject) → grid cell shows a muted "—" (no auto-fill, since Step 2 didn't reserve that period).
+   - If Step 2 has a subject but the generator ran out of topics for it → show subject pill + italic "Syllabus complete" placeholder.
+
+4. **Edit semantics**:
+   - Editing chapter resets topic to the chapter's first topic.
+   - Editing topic / chapter / teacher patches that single `ScheduleSlot` via the existing `onChangeSlots` flow and marks `locked: true` so a re-generate won't overwrite it.
+   - Subject and time are never editable from Step 3 — small inline note: *"Subject comes from Step 2 · Time comes from Step 1. Edit chapter, topic or teacher per class here."*
+
+5. **Regenerate button** (already exists) is kept; it warns that locked cells are preserved.
+
+### Mock data — Class 12 PCM expansion
+
+To make the Step 3 grid feel realistic, expand `prog-1` in `src/data/mockInstitutePrograms.ts`:
+
+- Add 4 subjects: **Biology** (`rose`), **English** (`amber`), **Hindi** (`orange`), **Social Studies** (`cyan`) — each with 6–8 chapters × 4 topics, seeded hours.
+- Add 2 faculty per new subject to `MOCK_FACULTY` (Bio: Meera Iyer / Rohit Das; English: Sneha Pillai / James Thomas; Hindi: Kavya Joshi / Suresh Yadav; Social: Riya Khanna / Aakash Verma).
+- Pre-fill `prog-1.schedule.defaultFaculty` so every subject has an assigned teacher.
+- Seed `prog-1.schedule.weeklyTimetable` with a realistic Step 2 template (6 periods × Mon–Sat, mixing all 7 subjects), so Step 3 has data to render without forcing the user to redo Step 2.
+
+`prog-2` and `prog-3` are untouched.
+
+### Files touched
+
+- `src/data/mockInstitutePrograms.ts` — add subjects, faculty, default-faculty wiring, seeded weekly template for `prog-1`.
+- `src/pages/institute/programs/ProgramSchedulePage.tsx`:
+  - Extend `ViewMode` with `'timetable'` and default to it in Step 3.
+  - Add `Step3TimetableView` subcomponent (week selector + Periods × Days grid + edit popovers). Reuses `computeDayLayout`, `subjectPalette`, existing slot-edit plumbing.
+
+No changes to types, `calendarAutomation.ts`, the Step 2 builder, or the Step 1 setup.
 
 ### Out of scope
-- Multi-level undo history
-- Drag-to-paint cells
-- Conflict detection across subjects/teachers
+
+- Editing subject or time from Step 3 (must go back to Step 2 / Step 1).
+- Bulk-apply edits across weeks.
+- Drag-to-move slots.
+- Touching `prog-2` / `prog-3` seeds.

@@ -53,6 +53,7 @@ import {
   formatPretty,
   generateFromTimetable,
   generateSchedule,
+  isoWeekStart,
   parseISO,
   rollupProgram,
   toISO,
@@ -1182,7 +1183,7 @@ const Stat: React.FC<{ label: string; value: number; sub?: string; negative?: bo
 
 /* ──────────────── STEP 4 CALENDAR ──────────────── */
 
-type ViewMode = 'month' | 'week' | 'list';
+type ViewMode = 'timetable' | 'month' | 'week' | 'list';
 
 const CalendarStep: React.FC<{
   program: any;
@@ -1193,7 +1194,7 @@ const CalendarStep: React.FC<{
   onRegenerate: () => void;
   onBack: () => void;
 }> = ({ program, slots, faculty, config, onChangeSlots, onRegenerate, onBack }) => {
-  const [mode, setMode] = useState<ViewMode>('month');
+  const [mode, setMode] = useState<ViewMode>('timetable');
   const [cursor, setCursor] = useState<string>(slots[0]?.date ?? new Date().toISOString().slice(0, 10));
   const [selectedSlot, setSelectedSlot] = useState<ScheduleSlot | null>(null);
 
@@ -1268,7 +1269,7 @@ const CalendarStep: React.FC<{
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-              {(['month', 'week', 'list'] as ViewMode[]).map((m) => (
+              {(['timetable', 'month', 'week', 'list'] as ViewMode[]).map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -1302,6 +1303,16 @@ const CalendarStep: React.FC<{
         })}
       </div>
 
+      {mode === 'timetable' && (
+        <Step3TimetableView
+          program={program}
+          slots={slots}
+          config={config}
+          faculty={faculty}
+          subjectMap={subjectMap}
+          onChangeSlots={onChangeSlots}
+        />
+      )}
       {mode === 'month' && (
         <MonthView
           cursor={cursor}
@@ -1673,5 +1684,323 @@ const SlotEditor: React.FC<{
     </div>
   );
 };
+
+/* ──────────────── Step 3 Timetable View ──────────────── */
+
+const DOW_TT: { d: WeekDay; short: string }[] = [
+  { d: 1, short: 'Mon' }, { d: 2, short: 'Tue' }, { d: 3, short: 'Wed' },
+  { d: 4, short: 'Thu' }, { d: 5, short: 'Fri' }, { d: 6, short: 'Sat' }, { d: 0, short: 'Sun' },
+];
+
+const Step3TimetableView: React.FC<{
+  program: any;
+  slots: ScheduleSlot[];
+  config: ScheduleConfig;
+  faculty: ReturnType<typeof useFaculty>;
+  subjectMap: Map<string, { name: string; color: string }>;
+  onChangeSlots: (s: ScheduleSlot[]) => void;
+}> = ({ program, slots, config, faculty, subjectMap, onChangeSlots }) => {
+  const layout = useMemo(() => computeDayLayout(config), [config]);
+  const workingDows = useMemo(
+    () => DOW_TT.filter((d) => config.workingDays.includes(d.d)),
+    [config.workingDays],
+  );
+
+  // Build list of week starts spanning all generated slots
+  const weekStarts = useMemo(() => {
+    if (slots.length === 0) return [isoWeekStart(config.startDate)];
+    const sorted = [...slots].sort((a, b) => a.date.localeCompare(b.date));
+    const first = isoWeekStart(sorted[0].date);
+    const last = isoWeekStart(sorted[sorted.length - 1].date);
+    const out: string[] = [];
+    let cur = first;
+    let safety = 0;
+    while (cur <= last && safety < 260) {
+      out.push(cur);
+      cur = addDays(cur, 7);
+      safety++;
+    }
+    return out;
+  }, [slots, config.startDate]);
+
+  const [weekIdx, setWeekIdx] = useState(0);
+  const activeWeek = weekStarts[Math.min(weekIdx, weekStarts.length - 1)] ?? weekStarts[0];
+
+  // Slot lookup by date + periodIndex
+  const slotByKey = useMemo(() => {
+    const m = new Map<string, ScheduleSlot>();
+    slots.forEach((s) => m.set(`${s.date}#${s.periodIndex}`, s));
+    return m;
+  }, [slots]);
+
+  const dateForWeekday = (wd: WeekDay): string => {
+    // Monday-anchored week; offset from Mon (which is dow 1)
+    const offset = wd === 0 ? 6 : wd - 1;
+    return addDays(activeWeek, offset);
+  };
+
+  const updateSlot = (id: string, patch: Partial<ScheduleSlot>) => {
+    onChangeSlots(slots.map((s) => (s.id === id ? { ...s, ...patch, locked: true } : s)));
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Week chips */}
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={weekIdx === 0}
+              onClick={() => setWeekIdx(Math.max(0, weekIdx - 1))}
+              className="h-7 w-7 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+              {weekStarts.map((ws, i) => {
+                const isActive = i === weekIdx;
+                const end = addDays(ws, 6);
+                return (
+                  <button
+                    key={ws}
+                    type="button"
+                    onClick={() => setWeekIdx(i)}
+                    title={`${formatPretty(ws)} – ${formatPretty(end)}`}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap',
+                      isActive
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700',
+                    )}
+                  >
+                    W{i + 1}
+                  </button>
+                );
+              })}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={weekIdx >= weekStarts.length - 1}
+              onClick={() => setWeekIdx(Math.min(weekStarts.length - 1, weekIdx + 1))}
+              className="h-7 w-7 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <CalendarDays className="h-3 w-3" />
+            Week {weekIdx + 1} · {formatPretty(activeWeek)} – {formatPretty(addDays(activeWeek, 6))}
+            <span className="text-slate-300 mx-1">·</span>
+            <span className="italic">Subject comes from Step 2 · Time comes from Setup. Edit chapter, topic or teacher per class.</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Grid */}
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-sm border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-32 border-b">
+                  Period
+                </th>
+                {workingDows.map((d) => {
+                  const date = parseISO(dateForWeekday(d.d));
+                  return (
+                    <th
+                      key={d.d}
+                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l"
+                    >
+                      <div className="font-semibold text-slate-700">{d.short}</div>
+                      <div className="text-[10px] text-slate-400 normal-case font-normal">
+                        {date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {layout.map((row, i) => {
+                if (row.kind === 'break') {
+                  return (
+                    <tr key={`brk-${i}`} className="bg-amber-50/60">
+                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic">
+                        {row.label}
+                        <span className="text-amber-500 ml-1">· {row.durationMins}m</span>
+                      </td>
+                      <td
+                        colSpan={workingDows.length}
+                        className="px-3 py-1.5 text-[11px] text-amber-700 italic border-l"
+                      >
+                        {row.startTime} – {row.endTime}
+                      </td>
+                    </tr>
+                  );
+                }
+                const pIdx = row.index ?? 0;
+                return (
+                  <tr key={`p-${pIdx}`} className="border-b border-slate-100">
+                    <td className="px-3 py-2 align-top bg-slate-50/50">
+                      <div className="text-sm font-semibold text-slate-800">P{pIdx + 1}</div>
+                      <div className="text-[10px] text-slate-500 tabular-nums">
+                        {row.startTime}–{row.endTime}
+                      </div>
+                    </td>
+                    {workingDows.map((d) => {
+                      const dateIso = dateForWeekday(d.d);
+                      const slot = slotByKey.get(`${dateIso}#${pIdx}`);
+                      return (
+                        <td key={d.d} className="px-1.5 py-1.5 align-top border-l border-slate-100">
+                          {slot ? (
+                            <Step3Cell
+                              slot={slot}
+                              program={program}
+                              subjectMap={subjectMap}
+                              faculty={faculty}
+                              onUpdate={(patch) => updateSlot(slot.id, patch)}
+                            />
+                          ) : (
+                            <div className="text-[11px] text-slate-300 italic text-center py-3">—</div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const Step3Cell: React.FC<{
+  slot: ScheduleSlot;
+  program: any;
+  subjectMap: Map<string, { name: string; color: string }>;
+  faculty: ReturnType<typeof useFaculty>;
+  onUpdate: (patch: Partial<ScheduleSlot>) => void;
+}> = ({ slot, program, subjectMap, faculty, onUpdate }) => {
+  const sub = subjectMap.get(slot.subjectId);
+  const pal = subjectPalette(sub?.color ?? 'blue');
+
+  const subject = program.subjects.find((s: any) => s.id === slot.subjectId);
+  const chapters = subject?.chapters ?? [];
+  const currentChapter = chapters.find((c: any) => c.id === slot.chapterId);
+  const topics = currentChapter?.topics ?? [];
+  const currentTopic = topics.find((t: any) => t.id === slot.topicId);
+
+  const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === slot.subjectId);
+  const currentFaculty = faculty.find((f) => f.id === slot.facultyId);
+
+  const handleChapter = (chapterId: string) => {
+    const newCh = chapters.find((c: any) => c.id === chapterId);
+    const firstTopic = newCh?.topics?.[0]?.id ?? '';
+    onUpdate({ chapterId, topicId: firstTopic });
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            'w-full text-left rounded-md border px-2 py-1.5 transition-all hover:shadow-sm hover:ring-1',
+            pal.slot,
+            pal.ring,
+            slot.locked && 'ring-1 ring-slate-400',
+          )}
+        >
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide')}>
+              {sub?.name}
+            </span>
+            {slot.locked && <Lock className="h-2.5 w-2.5 opacity-60 shrink-0" />}
+          </div>
+          <div className="text-[11px] font-semibold text-slate-800 truncate leading-tight">
+            {currentTopic?.name ?? <span className="italic text-slate-400">No topic</span>}
+          </div>
+          <div className="text-[10px] text-slate-600 truncate leading-tight mt-0.5">
+            {currentChapter?.name ?? '—'}
+          </div>
+          <div className="text-[10px] text-slate-700 truncate mt-1 flex items-center gap-1">
+            <UserRoundIcon />
+            {currentFaculty ? shortFacultyName(currentFaculty.name) : 'Unassigned'}
+          </div>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-3" align="start">
+        <div className="space-y-1">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+            {sub?.name} · {slot.startTime}–{slot.endTime}
+          </div>
+          <div className="text-[10px] text-slate-400 italic">Subject & time are fixed in Step 1 / 2</div>
+        </div>
+
+        <div>
+          <Label className="text-[11px] uppercase tracking-wider text-slate-500">Chapter</Label>
+          <Select value={slot.chapterId} onValueChange={handleChapter}>
+            <SelectTrigger className="bg-white h-8 text-xs mt-1">
+              <SelectValue placeholder="Pick chapter" />
+            </SelectTrigger>
+            <SelectContent>
+              {chapters.map((c: any) => (
+                <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-[11px] uppercase tracking-wider text-slate-500">Topic</Label>
+          <Select value={slot.topicId} onValueChange={(v) => onUpdate({ topicId: v })}>
+            <SelectTrigger className="bg-white h-8 text-xs mt-1">
+              <SelectValue placeholder="Pick topic" />
+            </SelectTrigger>
+            <SelectContent>
+              {topics.map((t: any) => (
+                <SelectItem key={t.id} value={t.id} className="text-xs">{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-[11px] uppercase tracking-wider text-slate-500">Faculty</Label>
+          <Select value={slot.facultyId || ''} onValueChange={(v) => onUpdate({ facultyId: v })}>
+            <SelectTrigger className="bg-white h-8 text-xs mt-1">
+              <SelectValue placeholder="Assign faculty" />
+            </SelectTrigger>
+            <SelectContent>
+              {facultyOptions.map((f) => (
+                <SelectItem key={f.id} value={f.id} className="text-xs">{f.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {slot.locked && (
+          <div className="text-[10px] text-slate-500 flex items-center gap-1 pt-1 border-t">
+            <Lock className="h-3 w-3" /> This class is locked — preserved when you regenerate.
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const UserRoundIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M20 21a8 8 0 0 0-16 0" />
+  </svg>
+);
 
 export default ProgramSchedulePage;
