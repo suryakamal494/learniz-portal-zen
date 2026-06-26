@@ -1673,4 +1673,192 @@ const UserRoundIcon = () => (
   </svg>
 );
 
+/* ──────────────── Step 3 Month Timetable View ──────────────── */
+
+const Step3TimetableMonthView: React.FC<{
+  program: any;
+  slots: ScheduleSlot[];
+  config: ScheduleConfig;
+  faculty: ReturnType<typeof useFaculty>;
+  subjectMap: Map<string, { name: string; color: string }>;
+  onChangeSlots: (s: ScheduleSlot[]) => void;
+}> = ({ program, slots, config, faculty, subjectMap, onChangeSlots }) => {
+  const initial = slots[0]?.date ?? config.startDate ?? new Date().toISOString().slice(0, 10);
+  const [cursor, setCursor] = useState<string>(initial);
+  const [openDay, setOpenDay] = useState<string | null>(null);
+
+  const slotsByDate = useMemo(() => {
+    const m = new Map<string, ScheduleSlot[]>();
+    slots.forEach((s) => {
+      const arr = m.get(s.date) ?? [];
+      arr.push(s);
+      m.set(s.date, arr);
+    });
+    m.forEach((arr) => arr.sort((a, b) => a.periodIndex - b.periodIndex));
+    return m;
+  }, [slots]);
+
+  const d = parseISO(cursor);
+  const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+  const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const firstDow = monthStart.getDay();
+  const days: (string | null)[] = [];
+  for (let i = 0; i < firstDow; i++) days.push(null);
+  for (let i = 1; i <= monthEnd.getDate(); i++) {
+    days.push(toISO(new Date(d.getFullYear(), d.getMonth(), i)));
+  }
+  while (days.length % 7 !== 0) days.push(null);
+  const monthLabel = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const dayList = openDay ? slotsByDate.get(openDay) ?? [] : [];
+
+  const updateSlot = (id: string, patch: Partial<ScheduleSlot>) => {
+    onChangeSlots(slots.map((s) => (s.id === id ? { ...s, ...patch, locked: true } : s)));
+  };
+
+  return (
+    <>
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardContent className="p-3 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-slate-900 text-sm">{monthLabel}</h3>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCursor(toISO(new Date(d.getFullYear(), d.getMonth() - 1, 1)))}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCursor(new Date().toISOString().slice(0, 10))}
+                className="h-7 text-xs"
+              >
+                Today
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCursor(toISO(new Date(d.getFullYear(), d.getMonth() + 1, 1)))}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden min-w-[720px]">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <div
+                  key={d}
+                  className="bg-slate-50 text-center py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
+                >
+                  {d}
+                </div>
+              ))}
+              {days.map((iso, i) => {
+                const list = iso ? slotsByDate.get(iso) ?? [] : [];
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={!iso}
+                    onClick={() => iso && setOpenDay(iso)}
+                    className={cn(
+                      'bg-white min-h-[110px] p-1.5 flex flex-col gap-1 text-left transition-colors',
+                      iso ? 'hover:bg-blue-50/40' : 'bg-slate-50/40 cursor-default',
+                      iso === todayIso && 'ring-2 ring-blue-400 ring-inset',
+                    )}
+                  >
+                    {iso && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-slate-600">
+                            {Number(iso.slice(-2))}
+                          </span>
+                          {list.length > 0 && (
+                            <span className="text-[9px] text-slate-400 tabular-nums">
+                              {list.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {list.slice(0, 4).map((sl) => {
+                            const sub = subjectMap.get(sl.subjectId);
+                            const pal = subjectPalette(sub?.color ?? 'blue');
+                            return (
+                              <span
+                                key={sl.id}
+                                className={cn(
+                                  'text-[10px] px-1.5 py-0.5 rounded border truncate font-medium',
+                                  pal.slot,
+                                )}
+                                title={`P${sl.periodIndex + 1} · ${sub?.name ?? ''}`}
+                              >
+                                P{sl.periodIndex + 1} · {sub?.name}
+                              </span>
+                            );
+                          })}
+                          {list.length > 4 && (
+                            <span className="text-[10px] text-slate-500 px-1">
+                              +{list.length - 4} more
+                            </span>
+                          )}
+                          {iso && list.length === 0 && (
+                            <span className="text-[10px] text-slate-300 italic px-1">No class</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-500 italic">
+            Click any day to view and edit its periods (chapter, topic, teacher).
+          </p>
+        </CardContent>
+      </Card>
+
+      <Sheet open={!!openDay} onOpenChange={(o) => !o && setOpenDay(null)}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{openDay ? formatPretty(openDay) : ''}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 mt-4">
+            {dayList.length === 0 ? (
+              <div className="text-sm text-slate-400 italic text-center py-8">
+                No classes scheduled.
+              </div>
+            ) : (
+              dayList.map((sl) => (
+                <div key={sl.id} className="rounded-lg border border-slate-200 p-2">
+                  <div className="text-[11px] text-slate-500 mb-1.5 flex items-center gap-2">
+                    <span className="font-semibold text-slate-700">P{sl.periodIndex + 1}</span>
+                    <span className="tabular-nums">{sl.startTime}–{sl.endTime}</span>
+                  </div>
+                  <Step3Cell
+                    slot={sl}
+                    program={program}
+                    subjectMap={subjectMap}
+                    faculty={faculty}
+                    onUpdate={(patch) => updateSlot(sl.id, patch)}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+};
+
 export default ProgramSchedulePage;
+
