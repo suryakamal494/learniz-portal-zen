@@ -1,9 +1,7 @@
 import { InstituteFaculty, InstituteProgram, InstituteSubject } from '@/types/instituteProgram';
 import {
   addDays,
-  configWithEffectiveHolidays,
   generateFromTimetable,
-  isoWeekStart,
 } from '@/utils/calendarAutomation';
 
 /** Seed data for the institute Programs module.
