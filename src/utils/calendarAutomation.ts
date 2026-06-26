@@ -511,3 +511,202 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / MS_PER_DAY) + 1;
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+ * Coverage cursor — "where each subject left off in prior windows".
+ * Derived from previously-generated slots that fall BEFORE the new
+ * window's start date. Used by the timetable-driven generator so a
+ * July plan resumes the syllabus from where June ended.
+ * ───────────────────────────────────────────────────────────────────── */
+
+export interface CoverageEntry {
+  /** Last topic ID that was scheduled before the new window. */
+  lastTopicId: string;
+  lastChapterId: string;
+  lastDate: string;
+}
+
+export function computeCoverageCursor(
+  program: InstituteProgram,
+  windowStartIso: string,
+): Record<string, CoverageEntry> {
+  const out: Record<string, CoverageEntry> = {};
+  const prior = (program.generatedSlots ?? []).filter((s) => s.date < windowStartIso);
+  prior.forEach((s) => {
+    const cur = out[s.subjectId];
+    if (!cur || s.date > cur.lastDate) {
+      out[s.subjectId] = { lastTopicId: s.topicId, lastChapterId: s.chapterId, lastDate: s.date };
+    }
+  });
+  return out;
+}
+
+/** Returns the next-topic index in a subject's flat topic order, given the
+ *  last covered topic. -1 means "subject not started yet". */
+function indexAfterTopic(subject: InstituteSubject, lastTopicId: string | undefined): number {
+  if (!lastTopicId) return 0;
+  let i = 0;
+  for (const c of subject.chapters) {
+    for (const t of c.topics) {
+      if (t.id === lastTopicId) return i + 1;
+      i += 1;
+    }
+  }
+  return 0;
+}
+
+interface FlatTopic {
+  subjectId: string;
+  chapterId: string;
+  topicId: string;
+  periods: number;
+}
+
+function flattenSubjectQueue(subject: InstituteSubject, periodMins: number, startIndex: number): FlatTopic[] {
+  const out: FlatTopic[] = [];
+  let i = 0;
+  for (const c of subject.chapters) {
+    for (const t of c.topics) {
+      if (i >= startIndex) {
+        const p = hoursToPeriods(t.hours, periodMins);
+        if (p > 0) out.push({ subjectId: subject.id, chapterId: c.id, topicId: t.id, periods: p });
+      }
+      i += 1;
+    }
+  }
+  return out;
+}
+
+/**
+ * Generates slots driven by the **weekly timetable template**, resuming each
+ * subject's syllabus from the coverage cursor (so window-by-window planning
+ * preserves continuity). Falls back to the round-robin generator when no
+ * timetable is configured.
+ */
+export function generateFromTimetable(
+  program: InstituteProgram,
+  config: ScheduleConfig,
+  preservedLocked: ScheduleSlot[] = [],
+): GenerateResult {
+  const tt = config.weeklyTimetable;
+  if (!tt || tt.cells.length === 0) {
+    return generateSchedule(program, config, preservedLocked);
+  }
+
+  // Build per-week cell lookup: weekStart -> weekday -> periodIndex -> subjectId.
+  const byWeek = new Map<string, Map<number, Map<number, string | null>>>();
+  tt.cells.forEach((c) => {
+    let week = byWeek.get(c.weekStartDate);
+    if (!week) {
+      week = new Map();
+      byWeek.set(c.weekStartDate, week);
+    }
+    let day = week.get(c.weekday);
+    if (!day) {
+      day = new Map();
+      week.set(c.weekday, day);
+    }
+    day.set(c.periodIndex, c.subjectId);
+  });
+
+  // For any week not explicitly authored, fall back to the *latest* authored
+  // week ≤ that date (so "copy week → all" semantics works).
+  const authoredWeekStarts = [...byWeek.keys()].sort();
+  const lookupWeek = (weekStart: string) => {
+    if (byWeek.has(weekStart)) return byWeek.get(weekStart)!;
+    let fallback: string | undefined;
+    for (const w of authoredWeekStarts) {
+      if (w <= weekStart) fallback = w;
+      else break;
+    }
+    return fallback ? byWeek.get(fallback)! : undefined;
+  };
+
+  // Resume each subject from its cursor.
+  const cursor = computeCoverageCursor(program, config.startDate);
+  const queues: Record<string, FlatTopic[]> = {};
+  program.subjects.forEach((s) => {
+    const startIdx = indexAfterTopic(s, cursor[s.id]?.lastTopicId);
+    queues[s.id] = flattenSubjectQueue(s, config.periodLengthMins, startIdx);
+  });
+
+  const endIso = config.endDate ?? addDays(config.startDate, 730);
+  const holidaySet = new Set(config.holidays.map((h) => h.date));
+  const workingDays = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
+  const periodTimes = computePeriodTimes(config);
+
+  const lockedMap = new Map<string, ScheduleSlot>();
+  preservedLocked.forEach((sl) => lockedMap.set(`${sl.date}#${sl.periodIndex}`, sl));
+
+  const slots: ScheduleSlot[] = [];
+  let consumed = 0;
+  let lastUsedDate = config.startDate;
+  // Track remaining counter per topic for unscheduled report.
+  const remainingByTopic = new Map<string, FlatTopic>();
+  Object.values(queues).flat().forEach((t) => remainingByTopic.set(t.topicId, { ...t }));
+
+  for (const date of workingDays) {
+    const weekStart = isoWeekStart(date);
+    const week = lookupWeek(weekStart);
+    if (!week) continue;
+    const weekday = parseISO(date).getDay() as WeekDay;
+    const dayCells = week.get(weekday);
+    if (!dayCells) continue;
+
+    for (let p = 0; p < config.periodsPerDay; p++) {
+      const locked = lockedMap.get(`${date}#${p}`);
+      if (locked) {
+        slots.push({ ...locked, date, periodIndex: p });
+        consumed += 1;
+        lastUsedDate = date;
+        continue;
+      }
+      const subjectId = dayCells.get(p);
+      if (!subjectId) continue; // free period
+      const q = queues[subjectId];
+      if (!q || q.length === 0) continue;
+      const need = q[0];
+      const t = periodTimes[p];
+      slots.push({
+        id: `slot-${date}-${p}`,
+        date,
+        periodIndex: p,
+        startTime: t?.startTime ?? '09:00',
+        endTime: t?.endTime ?? '09:40',
+        subjectId: need.subjectId,
+        chapterId: need.chapterId,
+        topicId: need.topicId,
+        facultyId: config.defaultFaculty[need.subjectId] ?? '',
+      });
+      need.periods -= 1;
+      consumed += 1;
+      lastUsedDate = date;
+      const trk = remainingByTopic.get(need.topicId);
+      if (trk) trk.periods = Math.max(0, trk.periods - 1);
+      if (need.periods <= 0) q.shift();
+    }
+  }
+
+  const unscheduledTopics: GenerateResult['unscheduledTopics'] = [];
+  remainingByTopic.forEach((t) => {
+    if (t.periods > 0) {
+      unscheduledTopics.push({
+        subjectId: t.subjectId,
+        chapterId: t.chapterId,
+        topicId: t.topicId,
+        periodsShort: t.periods,
+      });
+    }
+  });
+
+  const usedDays = workingDays.filter((d) => d <= lastUsedDate);
+  const capacity = usedDays.length * config.periodsPerDay;
+  return {
+    slots,
+    unscheduledTopics,
+    endDate: lastUsedDate,
+    totalSlotsConsumed: consumed,
+    freeSlots: Math.max(0, capacity - consumed),
+  };
+}
+
+
