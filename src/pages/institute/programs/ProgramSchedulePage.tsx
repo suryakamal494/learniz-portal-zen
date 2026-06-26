@@ -653,27 +653,70 @@ const SetupStep: React.FC<{
                 Your school day
               </div>
               <div className="divide-y divide-slate-100">
-                {layout.map((row, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-1.5 text-sm',
-                      row.kind === 'break' && 'bg-amber-50/60 text-amber-800',
-                    )}
-                  >
-                    <span className="w-12 text-xs font-semibold text-slate-600">
-                      {row.kind === 'period' ? row.label : '—'}
-                    </span>
-                    <span className="tabular-nums text-slate-700 text-xs w-28">
-                      {row.startTime} – {row.endTime}
-                    </span>
-                    <span className={cn('flex-1 truncate', row.kind === 'break' ? 'italic font-medium' : 'text-slate-700')}>
-                      {row.kind === 'period' ? `Period ${(row.index ?? 0) + 1}` : `${row.label} (${row.durationMins} min)`}
-                    </span>
-                  </div>
-                ))}
+                {layout.map((row, i) => {
+                  const periodNum = row.kind === 'period' ? (row.index ?? 0) + 1 : null;
+                  const overrideVal = periodNum != null ? config.periodOverrides?.[periodNum] : undefined;
+                  const isOverridden = overrideVal != null && overrideVal !== config.periodLengthMins;
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-1.5 text-sm',
+                        row.kind === 'break' && 'bg-amber-50/60 text-amber-800',
+                      )}
+                    >
+                      <span className="w-12 text-xs font-semibold text-slate-600">
+                        {row.kind === 'period' ? row.label : '—'}
+                      </span>
+                      <span className="tabular-nums text-slate-700 text-xs w-28">
+                        {row.startTime} – {row.endTime}
+                      </span>
+                      <span className={cn('flex-1 truncate', row.kind === 'break' ? 'italic font-medium' : 'text-slate-700')}>
+                        {row.kind === 'period' ? `Period ${(row.index ?? 0) + 1}` : `${row.label} (${row.durationMins} min)`}
+                      </span>
+                      {row.kind === 'period' && periodNum != null && (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min={10}
+                            max={240}
+                            value={overrideVal ?? config.periodLengthMins}
+                            onChange={(e) => {
+                              const v = Math.max(10, Number(e.target.value) || config.periodLengthMins);
+                              const next = { ...(config.periodOverrides ?? {}) };
+                              if (v === config.periodLengthMins) delete next[periodNum];
+                              else next[periodNum] = v;
+                              update('periodOverrides', next);
+                            }}
+                            className={cn(
+                              'h-7 w-16 text-xs tabular-nums bg-white',
+                              isOverridden && 'border-blue-400 ring-1 ring-blue-200',
+                            )}
+                            title="Period duration (min). Default applies if equal to the period length."
+                          />
+                          <span className="text-[10px] text-slate-400">min</span>
+                          {isOverridden && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = { ...(config.periodOverrides ?? {}) };
+                                delete next[periodNum];
+                                update('periodOverrides', next);
+                              }}
+                              className="text-[10px] text-blue-600 hover:underline"
+                              title="Reset to default"
+                            >
+                              reset
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
+
 
             {/* Break editor */}
             <div className="space-y-3">
