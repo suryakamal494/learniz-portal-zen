@@ -975,14 +975,47 @@ const SetupStep: React.FC<{
         </CardContent>
       </Card>
 
-      <div className="lg:col-span-2 flex justify-end">
-        <Button onClick={onNext} className="gap-2">
-          Next: Review Workload <ArrowRight className="h-4 w-4" />
-        </Button>
+      {/* Coverage cursor — "previously covered up to" per subject */}
+      <Card className="border-slate-200/70 shadow-sm lg:col-span-2">
+        <CardContent className="p-5 space-y-3">
+          <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-blue-600" /> Previously covered up to
+          </h3>
+          <p className="text-xs text-slate-500 -mt-1">
+            Pulled from earlier windows you've already generated. The next plan resumes from here.
+          </p>
+          <CoverageList program={program} windowStart={config.startDate} />
+        </CardContent>
+      </Card>
+
+      <div className="lg:col-span-2 space-y-3">
+        {blockers.length > 0 && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3 text-sm text-rose-700">
+            <div className="font-semibold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" /> Required before continuing
+            </div>
+            <ul className="list-disc list-inside space-y-0.5">
+              {blockers.slice(0, 6).map((b) => (
+                <li key={b}>{b}</li>
+              ))}
+              {blockers.length > 6 && <li>+ {blockers.length - 6} more…</li>}
+            </ul>
+          </div>
+        )}
+        <div className="flex justify-end">
+          <Button
+            onClick={onNext}
+            className="gap-2"
+            disabled={blockers.length > 0}
+          >
+            Next: Weekly Timetable <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
+
 
 const FacultyCombobox: React.FC<{
   value?: string;
