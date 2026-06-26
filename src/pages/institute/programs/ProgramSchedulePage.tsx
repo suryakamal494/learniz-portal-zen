@@ -308,9 +308,11 @@ const SetupStep: React.FC<{
   program: ReturnType<typeof useInstituteProgram> extends infer T ? Exclude<T, undefined> : never;
   config: ScheduleConfig;
   faculty: ReturnType<typeof useFaculty>;
+  blockers: string[];
   onChange: (c: ScheduleConfig) => void;
   onNext: () => void;
-}> = ({ program, config, faculty, onChange, onNext }) => {
+}> = ({ program, config, faculty, blockers, onChange, onNext }) => {
+
   const update = <K extends keyof ScheduleConfig>(k: K, v: ScheduleConfig[K]) => onChange({ ...config, [k]: v });
   const instituteHolidays = useInstituteHolidays();
 
