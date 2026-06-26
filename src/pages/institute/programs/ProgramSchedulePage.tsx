@@ -1074,118 +1074,96 @@ const FacultyCombobox: React.FC<{
   );
 };
 
-/* ──────────────── STEP 2 WORKLOAD ──────────────── */
+/* ──────────────── Coverage cursor display ──────────────── */
 
-const WorkloadStep: React.FC<{
-  program: any;
+const CoverageList: React.FC<{
+  program: ReturnType<typeof useInstituteProgram> extends infer T ? Exclude<T, undefined> : never;
+  windowStart: string;
+}> = ({ program, windowStart }) => {
+  const cursor = useMemo(() => computeCoverageCursor(program, windowStart), [program, windowStart]);
+  const topicMap = useMemo(() => {
+    const m = new Map<string, { topic: string; chapter: string }>();
+    program.subjects.forEach((s) =>
+      s.chapters.forEach((c) => c.topics.forEach((t) => m.set(t.id, { topic: t.name, chapter: c.name }))),
+    );
+    return m;
+  }, [program]);
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {program.subjects.map((s) => {
+        const pal = subjectPalette(s.color);
+        const entry = cursor[s.id];
+        const t = entry ? topicMap.get(entry.lastTopicId) : undefined;
+        return (
+          <div
+            key={s.id}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex items-center gap-2 text-sm"
+          >
+            <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-slate-800 truncate">{s.name}</div>
+              {entry && t ? (
+                <div className="text-xs text-slate-500 truncate">
+                  Up to <span className="text-slate-700 font-medium">{t.chapter} → {t.topic}</span>
+                  <span className="text-slate-400"> · {entry.lastDate}</span>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 italic">Not started yet</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ──────────────── STEP 2 WEEKLY TIMETABLE ──────────────── */
+
+const TimetableStep: React.FC<{
+  program: ReturnType<typeof useInstituteProgram> extends infer T ? Exclude<T, undefined> : never;
   config: ScheduleConfig;
+  blockers: string[];
   onChange: (c: ScheduleConfig) => void;
   onBack: () => void;
   onGenerate: () => void;
-}> = ({ program, config, onChange, onBack, onGenerate }) => {
-  const roll = rollupProgram(program, config.periodLengthMins);
-  const check = capacityCheck(program, config);
-  const ok = check.surplus >= 0;
+}> = ({ program, config, blockers, onChange, onBack, onGenerate }) => {
+  const subjects = program.subjects.map((s) => ({ id: s.id, name: s.name, color: s.color }));
 
   return (
     <div className="space-y-5">
-      <Card className="border-slate-200/70 shadow-sm">
-        <CardContent className="p-6 space-y-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg">
-                <Layers className="h-5 w-5 text-blue-600" /> Workload vs. capacity
-              </h3>
-              <p className="text-sm text-slate-600 mt-1">
-                We compare total teaching periods needed against the working slots available in your window.
-              </p>
-            </div>
-            <Badge
-              className={cn(
-                'text-sm px-3 py-1',
-                ok ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-rose-100 text-rose-700 border-rose-200',
-              )}
-              variant="outline"
-            >
-              {ok ? `${check.surplus} slots free` : `${-check.surplus} slots short`}
-            </Badge>
+      <WeeklyTimetableBuilder
+        config={config}
+        subjects={subjects}
+        onChange={(tt: WeeklyTimetable) => onChange({ ...config, weeklyTimetable: tt })}
+      />
+
+      {blockers.length > 0 && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3 text-sm text-rose-700">
+          <div className="font-semibold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" /> Required before generating
           </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <Stat label="Periods needed" value={check.needed} sub={`${formatHoursShort(roll.hours)} teaching`} />
-            <Stat label="Slots available" value={check.available} sub={`${config.periodsPerDay}/day`} />
-            <Stat label="Surplus" value={check.surplus} sub={ok ? 'comfortable' : 'extend window'} negative={!ok} />
-          </div>
-
-          {!ok && check.suggestedEndDate && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-              <div className="flex-1 text-sm text-amber-900">
-                Window is too short. Suggested end date:{' '}
-                <strong>{formatPretty(check.suggestedEndDate)}</strong> to fit the workload comfortably.
-              </div>
-              <Button size="sm" onClick={() => onChange({ ...config, endDate: check.suggestedEndDate })}>
-                Auto-fit end date
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-slate-200/70 shadow-sm">
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50">
-              <tr className="text-[11px] uppercase tracking-wider text-slate-500 text-left">
-                <th className="font-medium p-3">Subject</th>
-                <th className="font-medium p-3 text-right">Topics</th>
-                <th className="font-medium p-3 text-right">Hours</th>
-                <th className="font-medium p-3 text-right">Periods</th>
-                <th className="font-medium p-3 text-right">% of plan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {roll.subjects.map((s) => {
-                const pal = subjectPalette(s.color);
-                const pct = roll.periods === 0 ? 0 : (s.periods / roll.periods) * 100;
-                return (
-                  <tr key={s.subjectId}>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', pal.dot)} />
-                        <span className="font-medium text-slate-800">{s.subjectName}</span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-right tabular-nums text-slate-700">{s.topics}</td>
-                    <td className="p-3 text-right tabular-nums text-slate-700">{formatHoursShort(s.hours)}</td>
-                    <td className="p-3 text-right tabular-nums text-slate-700">{s.periods}</td>
-                    <td className="p-3 text-right">
-                      <div className="flex items-center gap-2 justify-end">
-                        <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
-                          <div className={cn('h-full', pal.bg)} style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="text-xs text-slate-500 w-10 text-right tabular-nums">{Math.round(pct)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+          <ul className="list-disc list-inside space-y-0.5">
+            {blockers.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack} className="gap-2">
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
-        <Button onClick={onGenerate} className="gap-2" disabled={!ok}>
+        <Button onClick={onGenerate} className="gap-2" disabled={blockers.length > 0}>
           Generate &amp; Preview <Wand2 className="h-4 w-4" />
         </Button>
       </div>
     </div>
   );
 };
+
 
 const Stat: React.FC<{ label: string; value: number; sub?: string; negative?: boolean }> = ({
   label,
