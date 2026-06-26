@@ -9,7 +9,7 @@ export const InstituteLayout: React.FC = () => {
   return (
     <SidebarProvider defaultOpen={true}>
       <InstituteSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-x-hidden">
         {/* Top header bar with sidebar trigger */}
         <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 shadow-sm">
           <SidebarTrigger className="-ml-1" />
