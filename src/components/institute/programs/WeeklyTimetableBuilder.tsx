@@ -1,17 +1,38 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   Copy,
   Eraser,
+  LayoutList,
+  MoreHorizontal,
+  Plus,
   Repeat,
-  Sparkles,
+  Trash2,
   Wand2,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,8 +59,6 @@ import {
   addDays,
   computeDayLayout,
   isoWeekStart,
-  parseISO,
-  toISO,
 } from '@/utils/calendarAutomation';
 
 const DOW_FULL: { d: WeekDay; short: string; long: string }[] = [
@@ -64,7 +83,6 @@ interface Props {
   onChange: (tt: WeeklyTimetable) => void;
 }
 
-/** Compute the list of week-start ISOs (Mondays) covered by the academic window. */
 function weeksInWindow(startIso: string, endIso: string): string[] {
   const start = isoWeekStart(startIso);
   const out: string[] = [];
@@ -77,6 +95,8 @@ function weeksInWindow(startIso: string, endIso: string): string[] {
   }
   return out;
 }
+
+type CopyMode = 'next' | 'next4' | 'remaining' | 'all';
 
 export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onChange }) => {
   const layout = useMemo(() => computeDayLayout(config), [config]);
@@ -97,28 +117,54 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
   const [activeIdx, setActiveIdx] = useState(0);
   const activeWeek = weekStarts[activeIdx] ?? weekStarts[0];
 
-  // Build cell lookup for the active week.
+  // Single-level undo snapshot (Gmail-style).
+  const snapshotRef = useRef<WeeklyTimetableCell[] | null>(null);
+
+  // Confirm dialog state for bulk copy.
+  const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; count: number } | null>(null);
+
   const cellMap = useMemo(() => {
-    const m = new Map<string, string | null>(); // key = `${weekday}#${periodIndex}`
+    const m = new Map<string, string | null>();
     tt.cells
       .filter((c) => c.weekStartDate === activeWeek)
       .forEach((c) => m.set(`${c.weekday}#${c.periodIndex}`, c.subjectId));
     return m;
   }, [tt.cells, activeWeek]);
 
-  // Track which weeks have at least one authored cell.
   const authoredWeeks = useMemo(() => {
     const s = new Set<string>();
-    tt.cells.forEach((c) => s.add(c.weekStartDate));
+    tt.cells.forEach((c) => {
+      if (c.subjectId) s.add(c.weekStartDate);
+    });
     return s;
   }, [tt.cells]);
 
-  const writeCells = (mutator: (cells: WeeklyTimetableCell[]) => WeeklyTimetableCell[]) => {
+  const snapshotAndWrite = (
+    nextCells: WeeklyTimetableCell[],
+    undoMessage: string,
+  ) => {
+    snapshotRef.current = tt.cells;
+    onChange({ cells: nextCells });
+    toast(undoMessage, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          if (snapshotRef.current) {
+            onChange({ cells: snapshotRef.current });
+            snapshotRef.current = null;
+            toast.success('Reverted');
+          }
+        },
+      },
+    });
+  };
+
+  const writeNoSnapshot = (mutator: (cells: WeeklyTimetableCell[]) => WeeklyTimetableCell[]) => {
     onChange({ cells: mutator(tt.cells) });
   };
 
   const setCell = (weekStart: string, weekday: WeekDay, periodIndex: number, subjectId: string | null) => {
-    writeCells((cells) => {
+    writeNoSnapshot((cells) => {
       const others = cells.filter(
         (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
       );
@@ -127,80 +173,126 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
   };
 
   const fillRow = (periodIndex: number, subjectId: string | null) => {
-    writeCells((cells) => {
-      const others = cells.filter(
-        (c) => !(c.weekStartDate === activeWeek && c.periodIndex === periodIndex),
-      );
-      const added: WeeklyTimetableCell[] = workingDows.map((d) => ({
-        weekStartDate: activeWeek,
-        weekday: d.d,
-        periodIndex,
-        subjectId,
-      }));
-      return [...others, ...added];
-    });
+    const others = tt.cells.filter(
+      (c) => !(c.weekStartDate === activeWeek && c.periodIndex === periodIndex),
+    );
+    const added: WeeklyTimetableCell[] = workingDows.map((d) => ({
+      weekStartDate: activeWeek,
+      weekday: d.d,
+      periodIndex,
+      subjectId,
+    }));
+    const sub = subjects.find((s) => s.id === subjectId);
+    snapshotAndWrite(
+      [...others, ...added],
+      subjectId
+        ? `${sub?.name ?? 'Subject'} set for P${periodIndex + 1} across the week`
+        : `P${periodIndex + 1} cleared across the week`,
+    );
   };
 
-  const fillColumn = (weekday: WeekDay, subjectId: string | null) => {
-    writeCells((cells) => {
-      const others = cells.filter(
-        (c) => !(c.weekStartDate === activeWeek && c.weekday === weekday),
-      );
-      const added: WeeklyTimetableCell[] = periodRows.map((_, i) => ({
-        weekStartDate: activeWeek,
-        weekday,
-        periodIndex: i,
-        subjectId,
-      }));
-      return [...others, ...added];
-    });
-  };
+  // "Plan this day": ordered subject list -> drops into the day's periods top-down.
+  const planDay = (
+    weekday: WeekDay,
+    orderedSubjectIds: string[],
+    opts: { overwrite: boolean; repeat: boolean },
+  ) => {
+    if (orderedSubjectIds.length === 0) return;
+    const existing = new Map<number, string | null>();
+    tt.cells
+      .filter((c) => c.weekStartDate === activeWeek && c.weekday === weekday)
+      .forEach((c) => existing.set(c.periodIndex, c.subjectId));
 
-  const clearWeek = () => {
-    writeCells((cells) => cells.filter((c) => c.weekStartDate !== activeWeek));
-  };
-
-  const copyWeekTo = (mode: 'next' | 'next4' | 'all') => {
-    const source = tt.cells.filter((c) => c.weekStartDate === activeWeek);
-    if (source.length === 0) return;
-    const targets: string[] = [];
-    if (mode === 'next' && weekStarts[activeIdx + 1]) targets.push(weekStarts[activeIdx + 1]);
-    if (mode === 'next4') {
-      for (let i = 1; i <= 4 && weekStarts[activeIdx + i]; i++) {
-        targets.push(weekStarts[activeIdx + i]);
+    let cursor = 0;
+    const assignments = new Map<number, string>();
+    for (let pIdx = 0; pIdx < periodRows.length; pIdx++) {
+      const filled = existing.get(pIdx);
+      if (filled && !opts.overwrite) continue;
+      if (cursor >= orderedSubjectIds.length) {
+        if (opts.repeat) cursor = 0;
+        else break;
       }
+      assignments.set(pIdx, orderedSubjectIds[cursor]);
+      cursor += 1;
     }
-    if (mode === 'all') {
-      for (let i = activeIdx + 1; i < weekStarts.length; i++) targets.push(weekStarts[i]);
+    if (assignments.size === 0) {
+      toast.info('No empty periods to fill. Enable "Overwrite filled periods" to replace.');
+      return;
     }
-    writeCells((cells) => {
-      const others = cells.filter((c) => !targets.includes(c.weekStartDate));
-      const cloned: WeeklyTimetableCell[] = [];
-      targets.forEach((ws) => {
-        source.forEach((c) => cloned.push({ ...c, weekStartDate: ws }));
-      });
-      return [...others, ...cloned];
-    });
+    const others = tt.cells.filter(
+      (c) =>
+        !(c.weekStartDate === activeWeek && c.weekday === weekday && assignments.has(c.periodIndex)),
+    );
+    const added: WeeklyTimetableCell[] = Array.from(assignments.entries()).map(([pIdx, sid]) => ({
+      weekStartDate: activeWeek,
+      weekday,
+      periodIndex: pIdx,
+      subjectId: sid,
+    }));
+    const dayName = DOW_FULL.find((d) => d.d === weekday)?.long ?? '';
+    snapshotAndWrite([...others, ...added], `Planned ${assignments.size} period(s) for ${dayName}`);
   };
 
-  const applyToAllWeeks = () => {
+  const clearWeek = (weekStart: string, label: string) => {
+    const next = tt.cells.filter((c) => c.weekStartDate !== weekStart);
+    snapshotAndWrite(next, `Cleared ${label}`);
+  };
+
+  const clearAllWeeks = () => {
+    snapshotAndWrite([], 'Cleared all weeks');
+  };
+
+  const targetsFor = (mode: CopyMode): string[] => {
+    if (mode === 'next') return weekStarts[activeIdx + 1] ? [weekStarts[activeIdx + 1]] : [];
+    if (mode === 'next4') {
+      const out: string[] = [];
+      for (let i = 1; i <= 4 && weekStarts[activeIdx + i]; i++) out.push(weekStarts[activeIdx + i]);
+      return out;
+    }
+    if (mode === 'remaining') return weekStarts.slice(activeIdx + 1);
+    if (mode === 'all') return weekStarts.filter((_, i) => i !== activeIdx);
+    return [];
+  };
+
+  const requestCopy = (mode: CopyMode) => {
     const source = tt.cells.filter((c) => c.weekStartDate === activeWeek);
-    if (source.length === 0) return;
-    writeCells(() => {
-      const result: WeeklyTimetableCell[] = [];
-      weekStarts.forEach((ws) => {
-        source.forEach((c) => result.push({ ...c, weekStartDate: ws }));
-      });
-      return result;
+    if (source.length === 0) {
+      toast.error('This week is empty — nothing to copy.');
+      return;
+    }
+    const targets = targetsFor(mode);
+    if (targets.length === 0) {
+      toast.info('No target weeks available.');
+      return;
+    }
+    setConfirmCopy({ mode, count: targets.length });
+  };
+
+  const performCopy = () => {
+    if (!confirmCopy) return;
+    const source = tt.cells.filter((c) => c.weekStartDate === activeWeek);
+    const targets = targetsFor(confirmCopy.mode);
+    const others = tt.cells.filter((c) => !targets.includes(c.weekStartDate));
+    const cloned: WeeklyTimetableCell[] = [];
+    targets.forEach((ws) => {
+      source.forEach((c) => cloned.push({ ...c, weekStartDate: ws }));
     });
+    snapshotAndWrite([...others, ...cloned], `Copied this week to ${targets.length} week(s)`);
+    setConfirmCopy(null);
   };
 
   const activeFilled = tt.cells.filter((c) => c.weekStartDate === activeWeek && c.subjectId).length;
   const totalCells = workingDows.length * periodRows.length;
 
+  const copyLabel: Record<CopyMode, string> = {
+    next: 'Next week',
+    next4: 'Next 4 weeks',
+    remaining: 'All remaining weeks',
+    all: 'All weeks in window',
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header & week navigator */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -209,8 +301,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 <CalendarIcon className="h-4 w-4 text-blue-600" /> Weekly timetable
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Pick a subject for each period · day. Use the row/column tools to fill quickly, then copy to other
-                weeks.
+                Pick a subject for each period. Use the row tool to repeat across the week, the column tool
+                to plan a day, then copy the week to others.
               </p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -237,27 +329,48 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
             </div>
           </div>
 
-          {/* Week chips */}
+          {/* Week chips with hover-delete */}
           <div className="flex flex-wrap gap-1.5">
             {weekStarts.map((ws, i) => {
               const filled = authoredWeeks.has(ws);
+              const isActive = i === activeIdx;
               return (
-                <button
-                  key={ws}
-                  type="button"
-                  onClick={() => setActiveIdx(i)}
-                  className={cn(
-                    'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all',
-                    i === activeIdx
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : filled
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300',
+                <div key={ws} className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx(i)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all',
+                      isActive
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : filled
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300',
+                      filled && 'pr-5',
+                    )}
+                  >
+                    W{i + 1}
+                    {filled && !isActive && ' ✓'}
+                  </button>
+                  {filled && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearWeek(ws, `W${i + 1}`);
+                      }}
+                      title="Clear this week"
+                      className={cn(
+                        'absolute top-1/2 -translate-y-1/2 right-0.5 h-4 w-4 rounded grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity',
+                        isActive
+                          ? 'text-white/80 hover:bg-white/20'
+                          : 'text-emerald-700 hover:bg-emerald-200',
+                      )}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   )}
-                >
-                  W{i + 1}
-                  {filled && i !== activeIdx && ' ✓'}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -275,22 +388,40 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => copyWeekTo('next')}>Next week</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => copyWeekTo('next4')}>Next 4 weeks</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => copyWeekTo('all')}>All remaining weeks</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => requestCopy('next')}>Next week only</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => requestCopy('next4')}>Next 4 weeks</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => requestCopy('remaining')}>
+                  All remaining weeks
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => requestCopy('all')}>
+                  <Repeat className="h-3.5 w-3.5 mr-1.5" /> All weeks in window
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={applyToAllWeeks}>
-              <Repeat className="h-3.5 w-3.5" /> Apply as repeating pattern
-            </Button>
             <Button
               size="sm"
               variant="outline"
               className="gap-1.5 text-rose-600 hover:text-rose-700"
-              onClick={clearWeek}
+              onClick={() => clearWeek(activeWeek, `W${activeIdx + 1}`)}
             >
-              <Eraser className="h-3.5 w-3.5" /> Clear week
+              <Eraser className="h-3.5 w-3.5" /> Clear this week
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="px-2">
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={clearAllWeeks}
+                  className="text-rose-600 focus:text-rose-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Clear all weeks
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardContent>
       </Card>
@@ -311,9 +442,11 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span>{d.short}</span>
-                      <ColumnFillMenu
+                      <PlanDayPopover
+                        dayName={d.long}
                         subjects={subjects}
-                        onFill={(sid) => fillColumn(d.d, sid)}
+                        periodCount={periodRows.length}
+                        onApply={(ids, opts) => planDay(d.d, ids, opts)}
                       />
                     </div>
                   </th>
@@ -394,6 +527,24 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
           </table>
         </CardContent>
       </Card>
+
+      {/* Confirm bulk copy dialog */}
+      <AlertDialog open={!!confirmCopy} onOpenChange={(o) => !o && setConfirmCopy(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Copy week to {confirmCopy && copyLabel[confirmCopy.mode]}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will replace the timetable for <b>{confirmCopy?.count}</b> week
+              {confirmCopy && confirmCopy.count !== 1 ? 's' : ''} with the contents of W{activeIdx + 1}.
+              You can undo this immediately after.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performCopy}>Replace {confirmCopy?.count} week(s)</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -407,14 +558,14 @@ const RowFillMenu: React.FC<{ subjects: Subject[]; onFill: (id: string | null) =
       <button
         type="button"
         className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
-        title="Fill this row"
+        title="Use one subject across the week"
       >
         <Wand2 className="h-3 w-3" />
       </button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start">
       <div className="px-2 py-1 text-[10px] uppercase text-slate-500 font-semibold">
-        Fill row across week
+        Use this subject across the week
       </div>
       {subjects.map((s) => (
         <DropdownMenuItem key={s.id} onClick={() => onFill(s.id)}>
@@ -429,33 +580,154 @@ const RowFillMenu: React.FC<{ subjects: Subject[]; onFill: (id: string | null) =
   </DropdownMenu>
 );
 
-const ColumnFillMenu: React.FC<{ subjects: Subject[]; onFill: (id: string | null) => void }> = ({
-  subjects,
-  onFill,
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button
-        type="button"
-        className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
-        title="Fill this day"
-      >
-        <Sparkles className="h-3 w-3" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <div className="px-2 py-1 text-[10px] uppercase text-slate-500 font-semibold">Fill column</div>
-      {subjects.map((s) => (
-        <DropdownMenuItem key={s.id} onClick={() => onFill(s.id)}>
-          {s.name}
-        </DropdownMenuItem>
-      ))}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => onFill(null)} className="text-slate-500">
-        Clear column
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+interface PlanDayPopoverProps {
+  dayName: string;
+  subjects: Subject[];
+  periodCount: number;
+  onApply: (orderedIds: string[], opts: { overwrite: boolean; repeat: boolean }) => void;
+}
+
+const PlanDayPopover: React.FC<PlanDayPopoverProps> = ({ dayName, subjects, periodCount, onApply }) => {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<string[]>([]);
+  const [overwrite, setOverwrite] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+
+  const reset = () => {
+    setRows([]);
+    setOverwrite(false);
+    setRepeat(false);
+  };
+
+  const addRow = () => {
+    if (rows.length >= periodCount) return;
+    setRows([...rows, subjects[0]?.id ?? '']);
+  };
+
+  const updateRow = (i: number, id: string) => {
+    const next = [...rows];
+    next[i] = id;
+    setRows(next);
+  };
+
+  const removeRow = (i: number) => {
+    setRows(rows.filter((_, idx) => idx !== i));
+  };
+
+  const apply = () => {
+    const cleaned = rows.filter(Boolean);
+    onApply(cleaned, { overwrite, repeat });
+    setOpen(false);
+    reset();
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) reset();
+        if (o && rows.length === 0 && subjects[0]) setRows([subjects[0].id]);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
+          title={`Plan ${dayName}`}
+        >
+          <LayoutList className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 p-3">
+        <div className="space-y-2.5">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Plan {dayName}</div>
+            <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+              Pick subjects in order. They drop into {dayName}'s empty periods top-down. Already-filled
+              periods are skipped unless overwrite is on.
+            </p>
+          </div>
+
+          <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+            {rows.map((sid, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 w-4 text-right tabular-nums">{i + 1}.</span>
+                <Select value={sid} onValueChange={(v) => updateRow(i, v)}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => removeRow(i)}
+                  className="h-6 w-6 rounded grid place-items-center text-slate-400 hover:bg-slate-100 hover:text-rose-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5 h-8 text-xs"
+            onClick={addRow}
+            disabled={rows.length >= periodCount}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add subject
+          </Button>
+
+          <div className="space-y-1.5 pt-1 border-t">
+            <label className="flex items-center gap-2 text-[11px] text-slate-700 cursor-pointer">
+              <Checkbox
+                checked={overwrite}
+                onCheckedChange={(c) => setOverwrite(c === true)}
+              />
+              Overwrite filled periods
+            </label>
+            <label className="flex items-center gap-2 text-[11px] text-slate-700 cursor-pointer">
+              <Checkbox checked={repeat} onCheckedChange={(c) => setRepeat(c === true)} />
+              Repeat list if periods left
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-1.5 pt-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs"
+              onClick={() => {
+                setOpen(false);
+                reset();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 text-xs"
+              disabled={rows.filter(Boolean).length === 0}
+              onClick={apply}
+            >
+              Apply to {dayName}
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export default WeeklyTimetableBuilder;
