@@ -1,91 +1,68 @@
-## Step 3 (Preview) — Carry forward Step 2 timetable + auto-fill chapter & topic
+## Goal
+Fix the UI / responsive bugs visible in the Programs → Schedule flow (Setup, Step 2 Weekly timetable, Step 3 Preview) and seed realistic mock data into the "Previously covered up to" panel so every state is visible to dev/design reviewers.
 
-Step 2 already builds the weekly timetable (subjects per period × day). Step 3 should display **that same timetable**, week by week, with the chapter and topic **auto-populated from teaching hours** and the faculty resolved from defaults. No new timetable structure; we just carry Step 2 forward and layer the syllabus on top.
+## What's broken (from screenshots)
 
----
+**Image 1 — sidebar overlapping content**
+At ~1026 CSS px (zoom / tablet), the shadcn `Sidebar` switches to its mobile/offcanvas mode. The drawer renders **without a solid background and without a backdrop**, so the nav (`Academic Insights · Dashboard · Overview · …`) sits transparently on top of the Step-3 subject cards. This affects every Institute page, not just Schedule.
 
-### Concept
+**Image 2 — Step 2 Weekly timetable**
+- Right‑side action chips (`Copy this week to…`, `Clear this week`) get clipped off the card on narrower viewports — they sit in a `flex` row that doesn't wrap.
+- The week chips strip (W1…W13) doesn't scroll horizontally — relies on `flex-wrap` and starts breaking the card layout.
+- The Period column ("P1 08:30‑09:10") and the Mon/Tue header row aren't sticky, so when the user horizontally scrolls the grid both labels disappear.
+- The whole `Setup → Weekly timetable → Preview` stepper header (top pills) overflows on the right ("3" pill cut off in the screenshot).
 
-```text
-Step 1  →  Period slots (P1=08:30–09:10, P2…, breaks)
-Step 2  →  Weekly timetable template     (Mon P1 = Physics, Mon P2 = Chemistry …)
-Step 3  →  Same grid, week-by-week, with chapter + topic + teacher auto-filled
-           by walking each subject's topic queue and consuming hours topic-by-topic
-           across the periods Step 2 reserved for that subject.
-```
+**Step 3 Preview**
+- Same horizontal‑overflow shape as Step 2 — needs sticky period/day headers when scrolling.
+- Subject pill inside each cell can wrap awkwardly because subject name + lock icon + topic + chapter + faculty are all stacked with no min height.
 
-So Step 3's job is:
-1. Render the **same Periods × Days grid** the Step 2 builder used (same look, same period rows, same break bands).
-2. Add a **week selector** on top (W1, W2, W3 …) — defaults to W1, navigates through the academic window.
-3. For every Step-2 cell that has a subject, fill in **chapter → topic** by consuming hours from that subject's syllabus queue, and assign the **default faculty** for that subject.
-4. Let the user edit chapter / topic / teacher per cell. Time and subject are **read-only** in Step 3 (they belong to Step 1 and Step 2 respectively — to change them, go back).
+**"Previously covered up to" panel**
+Every subject shows *"Not started yet"* — the empty state. Need realistic mock progress so the populated UI is visible.
 
-### How auto-fill works (uses existing generator)
+## Fixes
 
-`generateFromTimetable(program, config, locked)` already does exactly this:
-- Walks the academic window day by day.
-- For each day, replays Step 2's weekly template.
-- Pulls the next available topic from each subject's hour queue (`computeCoverageCursor`).
-- Allocates `hoursToPeriods(topic.hours, periodLengthMins)` consecutive periods to that topic, advancing the cursor.
-- Returns `ScheduleSlot[]` with `subjectId`, `chapterId`, `topicId`, `facultyId`, `startTime`, `endTime`.
+### 1. Sidebar overlap (global)
+- In `src/components/ui/sidebar.tsx` (shadcn primitive), ensure the **mobile Sheet variant** has `bg-sidebar` (solid) and the wrapper sets `z-50` with an overlay/backdrop. Add `data-[state=open]:bg-sidebar` to the Sheet content. Verify Radix overlay is rendered (shadcn ships it but our copy may have been trimmed).
+- If the shadcn primitive is intentionally untouched, wrap `InstituteSidebar` with an explicit `className="bg-sidebar"` and add `<SidebarRail />` so the offcanvas drawer is always opaque.
+- Result: drawer renders on solid white with a dimmed backdrop; content underneath never bleeds through.
 
-Step 3 already calls this on entry (`generateFromTimetable` in `onGenerate`). We just need a view that **renders those slots back into the Step 2 grid shape**, grouped per selected week.
+### 2. Stepper header (`ProgramSchedulePage` top pills)
+- Wrap the 3 step pills in `overflow-x-auto` with `min-w-0` and reduce horizontal padding from `px-6` to `px-3 sm:px-6` so all 3 stay visible at ≥1024 px.
 
-### UI changes — `CalendarStep` in `ProgramSchedulePage.tsx`
+### 3. Step 2 — `WeeklyTimetableBuilder`
+- Toolbar row: change the right‑side actions container to `flex-wrap gap-2 justify-end` so `Copy this week to…` and `Clear this week` wrap below on narrow widths instead of clipping.
+- Week chip strip: wrap W1…Wn in `overflow-x-auto` with `flex-nowrap` + hidden scrollbar; keep ‹ › buttons as the wrap‑safe fallback.
+- Grid scroll container: keep the existing `overflow-x-auto` but make the **Period column sticky** (`sticky left-0 bg-white z-10`) and the **header row sticky** (`sticky top-0 bg-slate-50 z-20`). Add `border-r` on the sticky column so it visually separates while scrolling.
+- Period cell: clamp width to `w-24` with `truncate` on the time string so vertical height doesn't blow up.
 
-- Replace today's default landing view with a new **Timetable** view that visually mirrors `WeeklyTimetableBuilder`.
-- Keep Month / Week / List as secondary views in the existing switcher; add `'timetable'` as the new default.
+### 4. Step 3 — `Step3TimetableView`
+- Same sticky‑header + sticky‑period‑column treatment as Step 2 (share the pattern; both grids already use `computeDayLayout`).
+- Each cell button: enforce `min-h-[78px]` so subject/topic/chapter/faculty have a stable rhythm and short cells don't visually shrink.
+- Week chip strip: identical `overflow-x-auto flex-nowrap` treatment.
 
-New subcomponent `Step3TimetableView`:
+### 5. Mock data — "Previously covered up to"
+In `src/data/mockInstitutePrograms.ts`, attach a `generatedSlots` array to `prog-1` covering **the 3 weeks before** `2025‑04‑14` (i.e. 2025‑03‑24 → 2025‑04‑12). Slots use the same Mon–Sat × 6 periods pattern as the seeded `weeklyTimetable`, with chapter/topic IDs taken from the front of each subject's queue:
 
-1. **Week selector bar** (same chip strip pattern as Step 2):
-   - Chips `W1 … Wn` for every week between `config.startDate` and the last generated slot's date.
-   - Each chip tooltip: `Apr 14 – Apr 19`. Active chip highlighted in blue.
-   - Prev / Next arrows + "Jump to today" if today is inside the window.
+- Physics → covered up to *Electrostatics → Capacitance*  (2025‑04‑11)
+- Chemistry → *The Solid State → Imperfections in Solids*  (2025‑04‑12)
+- Mathematics → *Relations & Functions → Composition & Inverse*  (2025‑04‑10)
+- Biology → *Reproduction in Organisms → Pre‑fertilisation Events*  (2025‑04‑09)
+- English → *Flamingo — Prose → Deep Water*  (2025‑04‑11)
+- Hindi → *आरोह — काव्य → आलोक धन्वा*  (2025‑04‑12)
+- Social Studies → *Politics in India since Independence → Era of One‑Party Dominance*  (2025‑04‑10)
 
-2. **Grid** (identical layout to Step 2 builder):
-   - Rows = `computeDayLayout(config)` (period rows + break bands).
-   - Columns = `config.workingDays` with the **real date** of that weekday in the selected week shown in the header (`Mon 14`, `Tue 15`, …).
-   - Header row also shows period time on the left (`P1 · 08:30–09:10`).
+`computeCoverageCursor` already reads from `program.generatedSlots`, so the `CoverageList` UI will automatically light up. No logic changes needed.
 
-3. **Cell rendering** (for each Step 2 cell that has a subject, find the matching generated slot for that date+periodIndex):
-   - **Subject pill** (colored, read-only — same visual as Step 2).
-   - **Topic line** (bold) + **chapter sub-line** (small, muted) — both editable via a single click → opens a Popover with chapter ▼ then topic ▼ (chapters limited to the cell's subject; topics limited to the chosen chapter).
-   - **Faculty chip** with pencil — opens Select filtered by subject (reuses `facultyOptionsFor` pattern from `CurriculumCalendarView`).
-   - **Time** rendered plain (`08:30 – 09:10`), not editable.
-   - If Step 2 cell is empty (no subject) → grid cell shows a muted "—" (no auto-fill, since Step 2 didn't reserve that period).
-   - If Step 2 has a subject but the generator ran out of topics for it → show subject pill + italic "Syllabus complete" placeholder.
+Leave `prog-2` and `prog-3` with empty `generatedSlots` so the "Not started yet" empty state is still demoable on those programs.
 
-4. **Edit semantics**:
-   - Editing chapter resets topic to the chapter's first topic.
-   - Editing topic / chapter / teacher patches that single `ScheduleSlot` via the existing `onChangeSlots` flow and marks `locked: true` so a re-generate won't overwrite it.
-   - Subject and time are never editable from Step 3 — small inline note: *"Subject comes from Step 2 · Time comes from Step 1. Edit chapter, topic or teacher per class here."*
+## Out of scope
+- No redesign of subject pill colors, week selector UX, or the stepper itself.
+- No changes to `calendarAutomation.ts` business logic, types, or the regeneration engine.
+- `prog-2` / `prog-3` mock data, teacher‑side pages, dashboard cards.
+- Touching auto‑generated shadcn types (only the sidebar primitive's mobile classes if needed).
 
-5. **Regenerate button** (already exists) is kept; it warns that locked cells are preserved.
-
-### Mock data — Class 12 PCM expansion
-
-To make the Step 3 grid feel realistic, expand `prog-1` in `src/data/mockInstitutePrograms.ts`:
-
-- Add 4 subjects: **Biology** (`rose`), **English** (`amber`), **Hindi** (`orange`), **Social Studies** (`cyan`) — each with 6–8 chapters × 4 topics, seeded hours.
-- Add 2 faculty per new subject to `MOCK_FACULTY` (Bio: Meera Iyer / Rohit Das; English: Sneha Pillai / James Thomas; Hindi: Kavya Joshi / Suresh Yadav; Social: Riya Khanna / Aakash Verma).
-- Pre-fill `prog-1.schedule.defaultFaculty` so every subject has an assigned teacher.
-- Seed `prog-1.schedule.weeklyTimetable` with a realistic Step 2 template (6 periods × Mon–Sat, mixing all 7 subjects), so Step 3 has data to render without forcing the user to redo Step 2.
-
-`prog-2` and `prog-3` are untouched.
-
-### Files touched
-
-- `src/data/mockInstitutePrograms.ts` — add subjects, faculty, default-faculty wiring, seeded weekly template for `prog-1`.
-- `src/pages/institute/programs/ProgramSchedulePage.tsx`:
-  - Extend `ViewMode` with `'timetable'` and default to it in Step 3.
-  - Add `Step3TimetableView` subcomponent (week selector + Periods × Days grid + edit popovers). Reuses `computeDayLayout`, `subjectPalette`, existing slot-edit plumbing.
-
-No changes to types, `calendarAutomation.ts`, the Step 2 builder, or the Step 1 setup.
-
-### Out of scope
-
-- Editing subject or time from Step 3 (must go back to Step 2 / Step 1).
-- Bulk-apply edits across weeks.
-- Drag-to-move slots.
-- Touching `prog-2` / `prog-3` seeds.
+## Files to touch
+- `src/components/ui/sidebar.tsx` *(mobile drawer background + backdrop, only if missing)*
+- `src/pages/institute/programs/ProgramSchedulePage.tsx` *(stepper header overflow, Step 3 sticky grid + min cell height + week strip scroll)*
+- `src/components/institute/programs/WeeklyTimetableBuilder.tsx` *(toolbar wrap, week strip scroll, sticky period column + header row)*
+- `src/data/mockInstitutePrograms.ts` *(seed `prog-1.generatedSlots` for the 3 prior weeks)*

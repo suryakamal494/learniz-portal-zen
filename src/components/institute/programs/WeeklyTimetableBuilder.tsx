@@ -330,12 +330,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
           </div>
 
           {/* Week chips with hover-delete */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
+
             {weekStarts.map((ws, i) => {
               const filled = authoredWeeks.has(ws);
               const isActive = i === activeIdx;
               return (
-                <div key={ws} className="relative group">
+                <div key={ws} className="relative group shrink-0">
+
                   <button
                     type="button"
                     onClick={() => setActiveIdx(i)}
@@ -429,16 +431,16 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
       {/* Grid */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full text-sm border-collapse min-w-[760px]">
             <thead>
               <tr className="bg-slate-50">
-                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-32 border-b">
+                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-28 border-b border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
                   Period
                 </th>
                 {workingDows.map((d) => (
                   <th
                     key={d.d}
-                    className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b"
+                    className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b min-w-[120px]"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span>{d.short}</span>
@@ -453,12 +455,13 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 ))}
               </tr>
             </thead>
+
             <tbody>
               {layout.map((row, i) => {
                 if (row.kind === 'break') {
                   return (
                     <tr key={`brk-${i}`} className="bg-amber-50/60">
-                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic">
+                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic sticky left-0 bg-amber-50/80 border-r border-amber-100 z-[1]">
                         {row.label}
                         <span className="text-amber-500 ml-1">· {row.durationMins}m</span>
                       </td>
@@ -474,7 +477,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 const pIdx = row.index ?? 0;
                 return (
                   <tr key={`p-${pIdx}`} className="border-b border-slate-100">
-                    <td className="px-3 py-1.5 align-top">
+                    <td className="px-3 py-1.5 align-top sticky left-0 bg-white border-r border-slate-200 z-[1]">
                       <div className="flex items-center gap-1.5">
                         <div>
                           <div className="text-sm font-semibold text-slate-800">P{pIdx + 1}</div>
@@ -488,6 +491,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                         />
                       </div>
                     </td>
+
                     {workingDows.map((d) => {
                       const value = cellMap.get(`${d.d}#${pIdx}`);
                       const sub = subjects.find((s) => s.id === value);

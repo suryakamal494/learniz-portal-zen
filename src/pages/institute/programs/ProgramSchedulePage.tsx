@@ -1758,7 +1758,7 @@ const Step3TimetableView: React.FC<{
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+            <div className="flex flex-nowrap gap-1.5 flex-1 min-w-0 overflow-x-auto pb-1 [scrollbar-width:thin]">
               {weekStarts.map((ws, i) => {
                 const isActive = i === weekIdx;
                 const end = addDays(ws, 6);
@@ -1769,7 +1769,7 @@ const Step3TimetableView: React.FC<{
                     onClick={() => setWeekIdx(i)}
                     title={`${formatPretty(ws)} – ${formatPretty(end)}`}
                     className={cn(
-                      'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap',
+                      'px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap shrink-0',
                       isActive
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700',
@@ -1780,6 +1780,7 @@ const Step3TimetableView: React.FC<{
                 );
               })}
             </div>
+
             <Button
               size="sm"
               variant="outline"
@@ -1802,10 +1803,10 @@ const Step3TimetableView: React.FC<{
       {/* Grid */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse min-w-[800px]">
+          <table className="w-full text-sm border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50">
-                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-32 border-b">
+                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-28 border-b border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
                   Period
                 </th>
                 {workingDows.map((d) => {
@@ -1813,7 +1814,7 @@ const Step3TimetableView: React.FC<{
                   return (
                     <th
                       key={d.d}
-                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l"
+                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l min-w-[140px]"
                     >
                       <div className="font-semibold text-slate-700">{d.short}</div>
                       <div className="text-[10px] text-slate-400 normal-case font-normal">
@@ -1823,13 +1824,14 @@ const Step3TimetableView: React.FC<{
                   );
                 })}
               </tr>
+
             </thead>
             <tbody>
               {layout.map((row, i) => {
                 if (row.kind === 'break') {
                   return (
                     <tr key={`brk-${i}`} className="bg-amber-50/60">
-                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic">
+                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic sticky left-0 bg-amber-50/80 border-r border-amber-100 z-[1]">
                         {row.label}
                         <span className="text-amber-500 ml-1">· {row.durationMins}m</span>
                       </td>
@@ -1845,12 +1847,13 @@ const Step3TimetableView: React.FC<{
                 const pIdx = row.index ?? 0;
                 return (
                   <tr key={`p-${pIdx}`} className="border-b border-slate-100">
-                    <td className="px-3 py-2 align-top bg-slate-50/50">
+                    <td className="px-3 py-2 align-top bg-slate-50/80 sticky left-0 border-r border-slate-200 z-[1]">
                       <div className="text-sm font-semibold text-slate-800">P{pIdx + 1}</div>
                       <div className="text-[10px] text-slate-500 tabular-nums">
                         {row.startTime}–{row.endTime}
                       </div>
                     </td>
+
                     {workingDows.map((d) => {
                       const dateIso = dateForWeekday(d.d);
                       const slot = slotByKey.get(`${dateIso}#${pIdx}`);
@@ -1912,11 +1915,12 @@ const Step3Cell: React.FC<{
         <button
           type="button"
           className={cn(
-            'w-full text-left rounded-md border px-2 py-1.5 transition-all hover:shadow-sm hover:ring-1',
+            'w-full text-left rounded-md border px-2 py-1.5 min-h-[78px] transition-all hover:shadow-sm hover:ring-1',
             pal.slot,
             pal.ring,
             slot.locked && 'ring-1 ring-slate-400',
           )}
+
         >
           <div className="flex items-center justify-between gap-1 mb-1">
             <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide')}>

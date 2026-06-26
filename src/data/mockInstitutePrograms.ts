@@ -263,3 +263,46 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
     schedule: defaultSchedule('2025-04-21'),
   },
 ];
+
+/* ---------- Seed prior coverage for prog-1 ----------
+   `computeCoverageCursor` reads from `program.generatedSlots` and picks the
+   slot with the latest `date` per subject. We seed one slot per subject
+   so the "Previously covered up to" panel shows a populated state.
+*/
+(() => {
+  const prog = MOCK_INSTITUTE_PROGRAMS[0];
+  const findIds = (subjectId: string, chIdx: number, tIdx: number) => {
+    const subj = prog.subjects.find((s) => s.id === subjectId);
+    const ch = subj?.chapters[chIdx];
+    const tp = ch?.topics[tIdx];
+    return ch && tp ? { chapterId: ch.id, topicId: tp.id } : null;
+  };
+  const coverage: { subjectId: string; chIdx: number; tIdx: number; date: string }[] = [
+    { subjectId: 'subj-phy-12',  chIdx: 0, tIdx: 3, date: '2025-04-11' }, // Capacitance
+    { subjectId: 'subj-chem-12', chIdx: 0, tIdx: 2, date: '2025-04-12' }, // Imperfections in Solids
+    { subjectId: 'subj-math-12', chIdx: 0, tIdx: 2, date: '2025-04-10' }, // Composition & Inverse
+    { subjectId: 'subj-bio-12',  chIdx: 0, tIdx: 2, date: '2025-04-09' }, // Pre-fertilisation Events
+    { subjectId: 'subj-eng-12',  chIdx: 0, tIdx: 2, date: '2025-04-11' }, // Deep Water
+    { subjectId: 'subj-hin-12',  chIdx: 0, tIdx: 1, date: '2025-04-12' }, // आलोक धन्वा
+    { subjectId: 'subj-soc-12',  chIdx: 0, tIdx: 1, date: '2025-04-10' }, // Era of One-Party Dominance
+  ];
+  const slots = coverage
+    .map((c, i) => {
+      const ids = findIds(c.subjectId, c.chIdx, c.tIdx);
+      if (!ids) return null;
+      return {
+        id: `seed-prior-${i}`,
+        date: c.date,
+        periodIndex: 0,
+        startTime: '08:30',
+        endTime: '09:10',
+        subjectId: c.subjectId,
+        chapterId: ids.chapterId,
+        topicId: ids.topicId,
+        facultyId: PCM_DEFAULT_FACULTY[c.subjectId] ?? '',
+      };
+    })
+    .filter(Boolean) as InstituteProgram['generatedSlots'];
+  prog.generatedSlots = slots;
+})();
+
