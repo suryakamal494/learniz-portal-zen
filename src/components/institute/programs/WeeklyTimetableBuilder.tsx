@@ -336,7 +336,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
               const filled = authoredWeeks.has(ws);
               const isActive = i === activeIdx;
               return (
-                <div key={ws} className="relative group">
+                <div key={ws} className="relative group shrink-0">
+
                   <button
                     type="button"
                     onClick={() => setActiveIdx(i)}
