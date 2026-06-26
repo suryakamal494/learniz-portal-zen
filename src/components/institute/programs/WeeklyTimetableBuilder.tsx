@@ -461,7 +461,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 if (row.kind === 'break') {
                   return (
                     <tr key={`brk-${i}`} className="bg-amber-50/60">
-                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic">
+                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic sticky left-0 bg-amber-50/80 border-r border-amber-100 z-[1]">
                         {row.label}
                         <span className="text-amber-500 ml-1">· {row.durationMins}m</span>
                       </td>
@@ -477,7 +477,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 const pIdx = row.index ?? 0;
                 return (
                   <tr key={`p-${pIdx}`} className="border-b border-slate-100">
-                    <td className="px-3 py-1.5 align-top">
+                    <td className="px-3 py-1.5 align-top sticky left-0 bg-white border-r border-slate-200 z-[1]">
                       <div className="flex items-center gap-1.5">
                         <div>
                           <div className="text-sm font-semibold text-slate-800">P{pIdx + 1}</div>
@@ -491,6 +491,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                         />
                       </div>
                     </td>
+
                     {workingDows.map((d) => {
                       const value = cellMap.get(`${d.d}#${pIdx}`);
                       const sub = subjects.find((s) => s.id === value);
