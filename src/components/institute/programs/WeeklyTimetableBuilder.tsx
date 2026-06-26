@@ -429,9 +429,9 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
       </Card>
 
       {/* Grid */}
-      <Card className="border-slate-200/70 shadow-sm">
-        <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse min-w-[760px]">
+      <Card className="border-slate-200/70 shadow-sm min-w-0">
+        <CardContent className="p-0 overflow-x-auto min-w-0">
+          <table className="w-full text-sm border-collapse min-w-[680px]">
             <thead>
               <tr className="bg-slate-50">
                 <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-28 border-b border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
@@ -440,7 +440,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 {workingDows.map((d) => (
                   <th
                     key={d.d}
-                    className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b min-w-[120px]"
+                    className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b min-w-[100px]"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span>{d.short}</span>
