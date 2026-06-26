@@ -1057,9 +1057,9 @@ const FacultyCombobox: React.FC<{
     );
   }
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 w-full min-w-0">
       <Select value={value} onValueChange={(v) => (v === '__add__' ? setAdding(true) : onChange(v))}>
-        <SelectTrigger className="w-56 bg-white h-9">
+        <SelectTrigger className="w-full bg-white h-9">
           <SelectValue placeholder="Select faculty" />
         </SelectTrigger>
         <SelectContent>
