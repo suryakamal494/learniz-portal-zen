@@ -1,4 +1,8 @@
 import { InstituteFaculty, InstituteProgram, InstituteSubject } from '@/types/instituteProgram';
+import {
+  addDays,
+  generateFromTimetable,
+} from '@/utils/calendarAutomation';
 
 /** Seed data for the institute Programs module.
  *  Class 12 PCM has the full 3 subjects \u00d7 12 chapters \u00d7 5 topics shape
@@ -213,6 +217,8 @@ const PCM_DEFAULT_FACULTY: Record<string, string> = {
   'subj-soc-12': 'fac-13',
 };
 
+const PCM_END_DATE = '2026-03-28'; // ~ 1 academic year
+
 export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
   {
     id: 'prog-1',
@@ -232,6 +238,7 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
     ],
     schedule: {
       ...defaultSchedule(),
+      endDate: PCM_END_DATE,
       defaultFaculty: PCM_DEFAULT_FACULTY,
       weeklyTimetable: PCM_WEEKLY_TIMETABLE,
     },
@@ -286,7 +293,7 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
     { subjectId: 'subj-hin-12',  chIdx: 0, tIdx: 1, date: '2025-04-12' }, // आलोक धन्वा
     { subjectId: 'subj-soc-12',  chIdx: 0, tIdx: 1, date: '2025-04-10' }, // Era of One-Party Dominance
   ];
-  const slots = coverage
+  const priorSlots = coverage
     .map((c, i) => {
       const ids = findIds(c.subjectId, c.chIdx, c.tIdx);
       if (!ids) return null;
@@ -302,7 +309,40 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
         facultyId: PCM_DEFAULT_FACULTY[c.subjectId] ?? '',
       };
     })
-    .filter(Boolean) as InstituteProgram['generatedSlots'];
-  prog.generatedSlots = slots;
+    .filter(Boolean) as NonNullable<InstituteProgram['generatedSlots']>;
+
+  // Clone the W1 timetable template across every week in the academic window
+  // so Step 2's week chips all read as "filled" and Step 3 renders a full grid.
+  if (prog.schedule.weeklyTimetable) {
+    const baseCells = prog.schedule.weeklyTimetable.cells.filter(
+      (c) => c.weekStartDate === PCM_W1_START,
+    );
+    const start = PCM_W1_START;
+    const end = prog.schedule.endDate ?? PCM_END_DATE;
+    const weeks: string[] = [];
+    let cur = start;
+    let safety = 0;
+    while (cur <= end && safety < 260) {
+      weeks.push(cur);
+      cur = addDays(cur, 7);
+      safety += 1;
+    }
+    const allCells = weeks.flatMap((ws) =>
+      baseCells.map((c) => ({ ...c, weekStartDate: ws })),
+    );
+    prog.schedule = {
+      ...prog.schedule,
+      weeklyTimetable: { cells: allCells },
+    };
+  }
+
+  // Pre-generate the full schedule so Step 3 opens populated.
+  try {
+    const out = generateFromTimetable(prog, prog.schedule, []);
+    prog.generatedSlots = [...priorSlots, ...out.slots];
+  } catch {
+    prog.generatedSlots = priorSlots;
+  }
 })();
+
 

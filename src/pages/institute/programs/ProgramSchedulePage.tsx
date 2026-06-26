@@ -1082,43 +1082,99 @@ const CoverageList: React.FC<{
   windowStart: string;
 }> = ({ program, windowStart }) => {
   const cursor = useMemo(() => computeCoverageCursor(program, windowStart), [program, windowStart]);
-  const topicMap = useMemo(() => {
-    const m = new Map<string, { topic: string; chapter: string }>();
-    program.subjects.forEach((s) =>
-      s.chapters.forEach((c) => c.topics.forEach((t) => m.set(t.id, { topic: t.name, chapter: c.name }))),
-    );
-    return m;
-  }, [program]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {program.subjects.map((s) => {
         const pal = subjectPalette(s.color);
         const entry = cursor[s.id];
-        const t = entry ? topicMap.get(entry.lastTopicId) : undefined;
+
+        // Locate the active chapter = chapter of last covered topic; fall back to first.
+        let activeChapter = s.chapters[0];
+        let coveredTopicIdx = -1;
+        if (entry) {
+          for (const ch of s.chapters) {
+            const idx = ch.topics.findIndex((t) => t.id === entry.lastTopicId);
+            if (idx !== -1) {
+              activeChapter = ch;
+              coveredTopicIdx = idx;
+              break;
+            }
+          }
+        }
+        const topics = activeChapter?.topics ?? [];
+        const covered = coveredTopicIdx + 1; // 0 if none
+        const pending = topics.length - covered;
+        const pct = topics.length ? Math.round((covered / topics.length) * 100) : 0;
+        const chIdx = s.chapters.findIndex((c) => c.id === activeChapter?.id);
+
         return (
           <div
             key={s.id}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex items-center gap-2 text-sm"
+            className="rounded-xl border border-slate-200 bg-white p-3 space-y-2"
           >
-            <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-slate-800 truncate">{s.name}</div>
-              {entry && t ? (
-                <div className="text-xs text-slate-500 truncate">
-                  Up to <span className="text-slate-700 font-medium">{t.chapter} → {t.topic}</span>
-                  <span className="text-slate-400"> · {entry.lastDate}</span>
-                </div>
+            <div className="flex items-center gap-2">
+              <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', pal.dot)} />
+              <div className="font-semibold text-sm text-slate-900 truncate flex-1">{s.name}</div>
+              {entry ? (
+                <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                  Last class · {formatPretty(entry.lastDate)}
+                </span>
               ) : (
-                <div className="text-xs text-slate-400 italic">Not started yet</div>
+                <span className="text-[10px] italic text-slate-400 shrink-0">Not started</span>
               )}
             </div>
+
+            {activeChapter && (
+              <>
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="font-medium text-slate-700 truncate">
+                    Ch {chIdx + 1} · {activeChapter.name}
+                  </span>
+                  <span className="ml-auto tabular-nums text-slate-500 shrink-0">
+                    {covered} / {topics.length} topics
+                  </span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={cn('h-full rounded-full transition-all', pal.dot)}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {topics.map((t, i) => {
+                    const isCovered = i < covered;
+                    return (
+                      <span
+                        key={t.id}
+                        className={cn(
+                          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border',
+                          isCovered
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-white border-dashed border-slate-300 text-slate-500',
+                        )}
+                        title={isCovered ? 'Covered' : 'Pending'}
+                      >
+                        {isCovered ? <Check className="h-2.5 w-2.5" /> : null}
+                        {t.name}
+                      </span>
+                    );
+                  })}
+                </div>
+                {pending > 0 && covered > 0 && (
+                  <div className="text-[10px] text-slate-500 italic">
+                    {pending} topic{pending === 1 ? '' : 's'} pending in this chapter
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
       })}
     </div>
   );
 };
+
 
 /* ──────────────── STEP 2 WEEKLY TIMETABLE ──────────────── */
 
@@ -1181,9 +1237,9 @@ const Stat: React.FC<{ label: string; value: number; sub?: string; negative?: bo
 
 /* (Generate step removed — Workload → Preview is now a single click.) */
 
-/* ──────────────── STEP 4 CALENDAR ──────────────── */
+/* ──────────────── STEP 3 PREVIEW ──────────────── */
 
-type ViewMode = 'timetable' | 'month' | 'week' | 'list';
+type Layout = 'week' | 'month';
 
 const CalendarStep: React.FC<{
   program: any;
@@ -1194,9 +1250,7 @@ const CalendarStep: React.FC<{
   onRegenerate: () => void;
   onBack: () => void;
 }> = ({ program, slots, faculty, config, onChangeSlots, onRegenerate, onBack }) => {
-  const [mode, setMode] = useState<ViewMode>('timetable');
-  const [cursor, setCursor] = useState<string>(slots[0]?.date ?? new Date().toISOString().slice(0, 10));
-  const [selectedSlot, setSelectedSlot] = useState<ScheduleSlot | null>(null);
+  const [layout, setLayout] = useState<Layout>('week');
 
   const subjectMap = useMemo(() => {
     const m = new Map<string, { name: string; color: string }>();
@@ -1204,49 +1258,13 @@ const CalendarStep: React.FC<{
     return m;
   }, [program]);
 
-  const topicMap = useMemo(() => {
-    const m = new Map<string, { name: string; chapterName: string }>();
-    program.subjects.forEach((s: any) =>
-      s.chapters.forEach((c: any) =>
-        c.topics.forEach((t: any) => m.set(t.id, { name: t.name, chapterName: c.name })),
-      ),
-    );
-    return m;
-  }, [program]);
-
-  const slotsByDate = useMemo(() => {
-    const m = new Map<string, ScheduleSlot[]>();
-    slots.forEach((s) => {
-      const arr = m.get(s.date) ?? [];
-      arr.push(s);
-      m.set(s.date, arr);
-    });
-    m.forEach((arr) => arr.sort((a, b) => a.periodIndex - b.periodIndex));
-    return m;
-  }, [slots]);
-
-  const allocated = slots.length;
-  const free = 0;
-
-  const updateSlot = (id: string, patch: Partial<ScheduleSlot>) => {
-    onChangeSlots(slots.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    setSelectedSlot((cur) => (cur && cur.id === id ? { ...cur, ...patch } : cur));
-  };
-
-  const deleteSlot = (id: string) => {
-    onChangeSlots(slots.filter((s) => s.id !== id));
-    setSelectedSlot(null);
-  };
-
   if (slots.length === 0) {
     return (
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-10 text-center space-y-4">
           <CalendarDays className="h-10 w-10 text-slate-300 mx-auto" />
           <h3 className="text-lg font-semibold text-slate-900">No schedule yet</h3>
-          <p className="text-sm text-slate-600">
-            Generate a schedule to see the preview.
-          </p>
+          <p className="text-sm text-slate-600">Generate a schedule to see the preview.</p>
           <div className="flex justify-center gap-2">
             <Button variant="outline" onClick={onBack}>Back</Button>
             <Button onClick={onRegenerate} className="gap-2">
@@ -1260,33 +1278,34 @@ const CalendarStep: React.FC<{
 
   return (
     <div className="space-y-4">
-      {/* Metrics + view switcher */}
+      {/* Toolbar: layout switcher + regenerate */}
       <Card className="border-slate-200/70 shadow-sm">
-        <CardContent className="p-4 flex flex-col md:flex-row gap-4 md:items-center">
-          <div className="flex gap-3 flex-1">
-            <Stat label="Slots allocated" value={allocated} />
-            <Stat label="Subjects" value={program.subjects.length} />
-          </div>
+        <CardContent className="p-3 flex flex-wrap items-center gap-3 justify-between">
           <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+              Timetable view
+            </span>
             <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-              {(['timetable', 'month', 'week', 'list'] as ViewMode[]).map((m) => (
+              {(['week', 'month'] as Layout[]).map((m) => (
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setMode(m)}
+                  onClick={() => setLayout(m)}
                   className={cn(
-                    'px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize',
-                    mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900',
+                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize',
+                    layout === m
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900',
                   )}
                 >
                   {m}
                 </button>
               ))}
             </div>
-            <Button variant="outline" size="sm" onClick={onRegenerate} className="gap-1.5">
-              <Wand2 className="h-3.5 w-3.5" /> Regenerate
-            </Button>
           </div>
+          <Button variant="outline" size="sm" onClick={onRegenerate} className="gap-1.5">
+            <Wand2 className="h-3.5 w-3.5" /> Regenerate
+          </Button>
         </CardContent>
       </Card>
 
@@ -1303,7 +1322,7 @@ const CalendarStep: React.FC<{
         })}
       </div>
 
-      {mode === 'timetable' && (
+      {layout === 'week' ? (
         <Step3TimetableView
           program={program}
           slots={slots}
@@ -1312,34 +1331,14 @@ const CalendarStep: React.FC<{
           subjectMap={subjectMap}
           onChangeSlots={onChangeSlots}
         />
-      )}
-      {mode === 'month' && (
-        <MonthView
-          cursor={cursor}
-          onCursor={setCursor}
-          slotsByDate={slotsByDate}
-          subjectMap={subjectMap}
-          faculty={faculty}
-          onSelectSlot={setSelectedSlot}
-        />
-      )}
-      {mode === 'week' && (
-        <WeekView
-          cursor={cursor}
-          onCursor={setCursor}
-          slotsByDate={slotsByDate}
-          subjectMap={subjectMap}
-          topicMap={topicMap}
-          onSelectSlot={setSelectedSlot}
-        />
-      )}
-      {mode === 'list' && (
-        <ListView
+      ) : (
+        <Step3TimetableMonthView
+          program={program}
           slots={slots}
-          subjectMap={subjectMap}
-          topicMap={topicMap}
+          config={config}
           faculty={faculty}
-          onSelectSlot={setSelectedSlot}
+          subjectMap={subjectMap}
+          onChangeSlots={onChangeSlots}
         />
       )}
 
@@ -1348,344 +1347,11 @@ const CalendarStep: React.FC<{
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
       </div>
-
-      {/* Slot drawer */}
-      <Sheet open={!!selectedSlot} onOpenChange={(o) => !o && setSelectedSlot(null)}>
-        <SheetContent className="sm:max-w-md">
-          {selectedSlot && (
-            <SlotEditor
-              slot={selectedSlot}
-              subjectMap={subjectMap}
-              topicMap={topicMap}
-              faculty={faculty}
-              onChange={(patch) => updateSlot(selectedSlot.id, patch)}
-              onDelete={() => deleteSlot(selectedSlot.id)}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 };
 
-/* ──────────────── Calendar sub-views ──────────────── */
 
-const MonthView: React.FC<{
-  cursor: string;
-  onCursor: (iso: string) => void;
-  slotsByDate: Map<string, ScheduleSlot[]>;
-  subjectMap: Map<string, { name: string; color: string }>;
-  faculty: ReturnType<typeof useFaculty>;
-  onSelectSlot: (s: ScheduleSlot) => void;
-}> = ({ cursor, onCursor, slotsByDate, subjectMap, faculty, onSelectSlot }) => {
-  const facMap = useMemo(() => new Map(faculty.map((f) => [f.id, f.name])), [faculty]);
-  const d = parseISO(cursor);
-  const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-  const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  const firstDow = monthStart.getDay();
-  const days: (string | null)[] = [];
-  for (let i = 0; i < firstDow; i++) days.push(null);
-  for (let i = 1; i <= monthEnd.getDate(); i++) days.push(toISO(new Date(d.getFullYear(), d.getMonth(), i)));
-  while (days.length % 7 !== 0) days.push(null);
-
-  const monthLabel = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-
-  return (
-    <Card className="border-slate-200/70 shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-slate-900">{monthLabel}</h3>
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onCursor(toISO(new Date(d.getFullYear(), d.getMonth() - 1, 1)))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => onCursor(new Date().toISOString().slice(0, 10))}>
-              Today
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onCursor(toISO(new Date(d.getFullYear(), d.getMonth() + 1, 1)))}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="bg-slate-50 text-center py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {d}
-            </div>
-          ))}
-          {days.map((iso, i) => {
-            const daySlots = iso ? slotsByDate.get(iso) ?? [] : [];
-            const todayIso = new Date().toISOString().slice(0, 10);
-            return (
-              <div
-                key={i}
-                className={cn(
-                  'bg-white min-h-[110px] p-1.5 flex flex-col gap-1',
-                  iso === todayIso && 'ring-2 ring-blue-400 ring-inset',
-                )}
-              >
-                {iso ? (
-                  <>
-                    <div className="text-[11px] font-semibold text-slate-500 px-1">{Number(iso.slice(-2))}</div>
-                    <div className="flex flex-col gap-0.5">
-                      {daySlots.slice(0, 4).map((sl) => {
-                        const sub = subjectMap.get(sl.subjectId);
-                        const pal = subjectPalette(sub?.color ?? 'blue');
-                        const facName = facMap.get(sl.facultyId);
-                        const facInit = facName ? shortFacultyName(facName) : '';
-                        return (
-                          <button
-                            key={sl.id}
-                            type="button"
-                            onClick={() => onSelectSlot(sl)}
-                            className={cn(
-                              'text-left text-[10px] px-1.5 py-0.5 rounded border truncate font-medium hover:opacity-80',
-                              pal.slot,
-                              sl.locked && 'ring-1 ring-slate-400',
-                            )}
-                            title={`${sub?.name ?? ''}${facName ? ' · ' + facName : ''}`}
-                          >
-                            {sl.startTime} {sub?.name}
-                            {facInit && <span className="opacity-70"> · {facInit}</span>}
-                          </button>
-                        );
-                      })}
-                      {daySlots.length > 4 && (
-                        <span className="text-[10px] text-slate-500 px-1">+{daySlots.length - 4} more</span>
-                      )}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const WeekView: React.FC<{
-  cursor: string;
-  onCursor: (iso: string) => void;
-  slotsByDate: Map<string, ScheduleSlot[]>;
-  subjectMap: Map<string, { name: string; color: string }>;
-  topicMap: Map<string, { name: string; chapterName: string }>;
-  onSelectSlot: (s: ScheduleSlot) => void;
-}> = ({ cursor, onCursor, slotsByDate, subjectMap, topicMap, onSelectSlot }) => {
-  const d = parseISO(cursor);
-  const weekStart = addDays(cursor, -d.getDay());
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  return (
-    <Card className="border-slate-200/70 shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-slate-900">
-            Week of {formatPretty(weekStart)}
-          </h3>
-          <div className="flex gap-1">
-            <Button size="sm" variant="outline" onClick={() => onCursor(addDays(cursor, -7))}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => onCursor(new Date().toISOString().slice(0, 10))}>
-              Today
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => onCursor(addDays(cursor, 7))}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((iso) => {
-            const dayName = parseISO(iso).toLocaleDateString(undefined, { weekday: 'short' });
-            const dayNum = Number(iso.slice(-2));
-            const list = slotsByDate.get(iso) ?? [];
-            return (
-              <div key={iso} className="rounded-lg border border-slate-200 bg-slate-50/40 min-h-[260px] flex flex-col">
-                <div className="px-2 py-1.5 border-b border-slate-200 bg-white">
-                  <div className="text-[10px] uppercase tracking-wider text-slate-500">{dayName}</div>
-                  <div className="text-sm font-semibold text-slate-800">{dayNum}</div>
-                </div>
-                <div className="p-1.5 space-y-1 flex-1">
-                  {list.length === 0 ? (
-                    <div className="text-[10px] text-slate-400 italic px-1 py-3 text-center">—</div>
-                  ) : (
-                    list.map((sl) => {
-                      const sub = subjectMap.get(sl.subjectId);
-                      const topic = topicMap.get(sl.topicId);
-                      const pal = subjectPalette(sub?.color ?? 'blue');
-                      return (
-                        <button
-                          key={sl.id}
-                          type="button"
-                          onClick={() => onSelectSlot(sl)}
-                          className={cn(
-                            'w-full text-left p-1.5 rounded border text-[10px] hover:opacity-80 transition-opacity',
-                            pal.slot,
-                          )}
-                        >
-                          <div className="font-semibold">{sl.startTime}–{sl.endTime}</div>
-                          <div className="font-medium truncate">{sub?.name}</div>
-                          <div className="opacity-80 truncate">{topic?.name}</div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const ListView: React.FC<{
-  slots: ScheduleSlot[];
-  subjectMap: Map<string, { name: string; color: string }>;
-  topicMap: Map<string, { name: string; chapterName: string }>;
-  faculty: ReturnType<typeof useFaculty>;
-  onSelectSlot: (s: ScheduleSlot) => void;
-}> = ({ slots, subjectMap, topicMap, faculty, onSelectSlot }) => {
-  const facMap = useMemo(() => new Map(faculty.map((f) => [f.id, f.name])), [faculty]);
-  return (
-    <Card className="border-slate-200/70 shadow-sm">
-      <CardContent className="p-0">
-        <div className="max-h-[600px] overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 sticky top-0">
-              <tr className="text-[11px] uppercase tracking-wider text-slate-500 text-left">
-                <th className="font-medium p-3">Date</th>
-                <th className="font-medium p-3">Time</th>
-                <th className="font-medium p-3">Subject</th>
-                <th className="font-medium p-3">Chapter · Topic</th>
-                <th className="font-medium p-3">Faculty</th>
-                <th className="font-medium p-3 w-8" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {slots.slice(0, 200).map((sl) => {
-                const sub = subjectMap.get(sl.subjectId);
-                const topic = topicMap.get(sl.topicId);
-                const pal = subjectPalette(sub?.color ?? 'blue');
-                const fac = facMap.get(sl.facultyId) ?? 'Unassigned';
-                return (
-                  <tr key={sl.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => onSelectSlot(sl)}>
-                    <td className="p-3 text-slate-700 whitespace-nowrap">{formatPretty(sl.date)}</td>
-                    <td className="p-3 text-slate-600 tabular-nums whitespace-nowrap">
-                      {sl.startTime}–{sl.endTime}
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline" className={cn(pal.slot)}>
-                        {sub?.name}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-slate-700">
-                      <div className="text-xs text-slate-500">{topic?.chapterName}</div>
-                      <div>{topic?.name}</div>
-                    </td>
-                    <td className="p-3 text-slate-700 whitespace-nowrap text-xs">{fac}</td>
-                    <td className="p-3">
-                      {sl.locked && <Lock className="h-3.5 w-3.5 text-slate-400" />}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {slots.length > 200 && (
-            <div className="text-center text-xs text-slate-500 py-3 border-t">
-              Showing first 200 of {slots.length} slots. Use Week / Month views to browse the full schedule.
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-/* ──────────────── Slot editor drawer ──────────────── */
-
-const SlotEditor: React.FC<{
-  slot: ScheduleSlot;
-  subjectMap: Map<string, { name: string; color: string }>;
-  topicMap: Map<string, { name: string; chapterName: string }>;
-  faculty: ReturnType<typeof useFaculty>;
-  onChange: (patch: Partial<ScheduleSlot>) => void;
-  onDelete: () => void;
-}> = ({ slot, subjectMap, topicMap, faculty, onChange, onDelete }) => {
-  const sub = subjectMap.get(slot.subjectId);
-  const topic = topicMap.get(slot.topicId);
-  const pal = subjectPalette(sub?.color ?? 'blue');
-  return (
-    <div className="space-y-5">
-      <SheetHeader>
-        <SheetTitle className="flex items-center gap-2">
-          <Badge variant="outline" className={cn(pal.slot)}>
-            {sub?.name}
-          </Badge>
-          <span className="text-base">{topic?.name}</span>
-        </SheetTitle>
-      </SheetHeader>
-      <div className="space-y-1 text-sm text-slate-600">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-slate-400" />
-          {formatPretty(slot.date)}
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-slate-400" />
-          {slot.startTime} – {slot.endTime} · Period {slot.periodIndex + 1}
-        </div>
-        <div className="text-xs text-slate-500">Chapter: {topic?.chapterName}</div>
-      </div>
-      <Separator />
-      <div className="space-y-3">
-        <div>
-          <Label className="text-xs uppercase tracking-wider text-slate-500">Faculty</Label>
-          <Select value={slot.facultyId} onValueChange={(v) => onChange({ facultyId: v })}>
-            <SelectTrigger className="bg-white mt-1">
-              <SelectValue placeholder="Assign faculty" />
-            </SelectTrigger>
-            <SelectContent>
-              {faculty.map((f) => (
-                <SelectItem key={f.id} value={f.id}>
-                  {f.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex gap-2 pt-2">
-        <Button
-          variant={slot.locked ? 'default' : 'outline'}
-          className="flex-1 gap-2"
-          onClick={() => onChange({ locked: !slot.locked })}
-        >
-          {slot.locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-          {slot.locked ? 'Unlock' : 'Lock slot'}
-        </Button>
-        <Button variant="outline" className="gap-2 text-rose-600 hover:text-rose-700" onClick={onDelete}>
-          <Trash2 className="h-4 w-4" /> Delete
-        </Button>
-      </div>
-      <p className="text-[11px] text-slate-400">
-        Locked slots are preserved if you regenerate the schedule.
-      </p>
-    </div>
-  );
-};
-
-/* ──────────────── Step 3 Timetable View ──────────────── */
 
 const DOW_TT: { d: WeekDay; short: string }[] = [
   { d: 1, short: 'Mon' }, { d: 2, short: 'Tue' }, { d: 3, short: 'Wed' },
@@ -2007,4 +1673,192 @@ const UserRoundIcon = () => (
   </svg>
 );
 
+/* ──────────────── Step 3 Month Timetable View ──────────────── */
+
+const Step3TimetableMonthView: React.FC<{
+  program: any;
+  slots: ScheduleSlot[];
+  config: ScheduleConfig;
+  faculty: ReturnType<typeof useFaculty>;
+  subjectMap: Map<string, { name: string; color: string }>;
+  onChangeSlots: (s: ScheduleSlot[]) => void;
+}> = ({ program, slots, config, faculty, subjectMap, onChangeSlots }) => {
+  const initial = slots[0]?.date ?? config.startDate ?? new Date().toISOString().slice(0, 10);
+  const [cursor, setCursor] = useState<string>(initial);
+  const [openDay, setOpenDay] = useState<string | null>(null);
+
+  const slotsByDate = useMemo(() => {
+    const m = new Map<string, ScheduleSlot[]>();
+    slots.forEach((s) => {
+      const arr = m.get(s.date) ?? [];
+      arr.push(s);
+      m.set(s.date, arr);
+    });
+    m.forEach((arr) => arr.sort((a, b) => a.periodIndex - b.periodIndex));
+    return m;
+  }, [slots]);
+
+  const d = parseISO(cursor);
+  const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+  const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const firstDow = monthStart.getDay();
+  const days: (string | null)[] = [];
+  for (let i = 0; i < firstDow; i++) days.push(null);
+  for (let i = 1; i <= monthEnd.getDate(); i++) {
+    days.push(toISO(new Date(d.getFullYear(), d.getMonth(), i)));
+  }
+  while (days.length % 7 !== 0) days.push(null);
+  const monthLabel = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const dayList = openDay ? slotsByDate.get(openDay) ?? [] : [];
+
+  const updateSlot = (id: string, patch: Partial<ScheduleSlot>) => {
+    onChangeSlots(slots.map((s) => (s.id === id ? { ...s, ...patch, locked: true } : s)));
+  };
+
+  return (
+    <>
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardContent className="p-3 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-slate-900 text-sm">{monthLabel}</h3>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCursor(toISO(new Date(d.getFullYear(), d.getMonth() - 1, 1)))}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCursor(new Date().toISOString().slice(0, 10))}
+                className="h-7 text-xs"
+              >
+                Today
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCursor(toISO(new Date(d.getFullYear(), d.getMonth() + 1, 1)))}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden min-w-[720px]">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <div
+                  key={d}
+                  className="bg-slate-50 text-center py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
+                >
+                  {d}
+                </div>
+              ))}
+              {days.map((iso, i) => {
+                const list = iso ? slotsByDate.get(iso) ?? [] : [];
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={!iso}
+                    onClick={() => iso && setOpenDay(iso)}
+                    className={cn(
+                      'bg-white min-h-[110px] p-1.5 flex flex-col gap-1 text-left transition-colors',
+                      iso ? 'hover:bg-blue-50/40' : 'bg-slate-50/40 cursor-default',
+                      iso === todayIso && 'ring-2 ring-blue-400 ring-inset',
+                    )}
+                  >
+                    {iso && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-slate-600">
+                            {Number(iso.slice(-2))}
+                          </span>
+                          {list.length > 0 && (
+                            <span className="text-[9px] text-slate-400 tabular-nums">
+                              {list.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {list.slice(0, 4).map((sl) => {
+                            const sub = subjectMap.get(sl.subjectId);
+                            const pal = subjectPalette(sub?.color ?? 'blue');
+                            return (
+                              <span
+                                key={sl.id}
+                                className={cn(
+                                  'text-[10px] px-1.5 py-0.5 rounded border truncate font-medium',
+                                  pal.slot,
+                                )}
+                                title={`P${sl.periodIndex + 1} · ${sub?.name ?? ''}`}
+                              >
+                                P{sl.periodIndex + 1} · {sub?.name}
+                              </span>
+                            );
+                          })}
+                          {list.length > 4 && (
+                            <span className="text-[10px] text-slate-500 px-1">
+                              +{list.length - 4} more
+                            </span>
+                          )}
+                          {iso && list.length === 0 && (
+                            <span className="text-[10px] text-slate-300 italic px-1">No class</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-500 italic">
+            Click any day to view and edit its periods (chapter, topic, teacher).
+          </p>
+        </CardContent>
+      </Card>
+
+      <Sheet open={!!openDay} onOpenChange={(o) => !o && setOpenDay(null)}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{openDay ? formatPretty(openDay) : ''}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 mt-4">
+            {dayList.length === 0 ? (
+              <div className="text-sm text-slate-400 italic text-center py-8">
+                No classes scheduled.
+              </div>
+            ) : (
+              dayList.map((sl) => (
+                <div key={sl.id} className="rounded-lg border border-slate-200 p-2">
+                  <div className="text-[11px] text-slate-500 mb-1.5 flex items-center gap-2">
+                    <span className="font-semibold text-slate-700">P{sl.periodIndex + 1}</span>
+                    <span className="tabular-nums">{sl.startTime}–{sl.endTime}</span>
+                  </div>
+                  <Step3Cell
+                    slot={sl}
+                    program={program}
+                    subjectMap={subjectMap}
+                    faculty={faculty}
+                    onUpdate={(patch) => updateSlot(sl.id, patch)}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+};
+
 export default ProgramSchedulePage;
+
