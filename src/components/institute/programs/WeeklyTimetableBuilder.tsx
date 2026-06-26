@@ -330,7 +330,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
           </div>
 
           {/* Week chips with hover-delete */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
+
             {weekStarts.map((ws, i) => {
               const filled = authoredWeeks.has(ws);
               const isActive = i === activeIdx;
