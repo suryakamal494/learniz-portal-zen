@@ -1,95 +1,41 @@
 ## Root cause
 
-Both bugs trace back to flexbox shrinking rules, not to anything in the timetable code itself.
-
-### 1. Step 1 "Default faculty per subject" — Mathematics dropdown overflows the card (image 1)
-
-```
-<div className="flex items-center gap-3">
-  <span dot />
-  <div className="flex-1 text-sm">{s.name}</div>   ← grows with text
-  <FacultyCombobox … />                            ← fixed width trigger
-</div>
-```
-
-`flex-1` on the label has no `min-w-0`, so long subject names (`Mathematics`, `Social Studies`) push the row wider than the card. The combobox trigger then sticks out the right side. This is purely a row-layout bug.
-
-### 2. Steps 2 & 3 — timetable scrolls the **whole page** horizontally and slides under the sticky top bar (images 2 & 3)
-
-The grid is correctly wrapped in `overflow-x-auto` with a `min-w-[760px]` / `min-w-[900px]` table. That *should* produce an inner scroll. It doesn't, because every flex ancestor up the chain defaults to `min-width: auto`:
+The last fix added `min-w-0 / overflow-x-hidden` on the page wrapper and the `<Outlet>` div — but the shadcn `<SidebarInset>` between them is a flex child with no `min-width: 0` and no overflow clip:
 
 ```
 SidebarProvider (flex row)
-  └─ SidebarInset (flex col)            ← min-width: auto
-       └─ <Outlet>
-            └─ ProgramSchedulePage
-                 └─ max-w-7xl … p-6      ← min-width: auto
-                      └─ Card
-                           └─ overflow-x-auto
-                                └─ table min-w-[900px]   ← pushes everyone wider
+  └─ SidebarInset (flex-1, min-width: auto ← grows with content)   ← MISSING CLAMP
+       └─ header (sticky)
+       └─ <div min-w-0 w-full> (Outlet wrapper)
+            └─ ProgramSchedulePage (overflow-x-hidden)
 ```
 
-Because the inner table sets a min content width, and no ancestor declares `min-w-0`, the **page** grows wider than the viewport. Result:
-- Body gets a horizontal scrollbar (visible at bottom of images 2 & 3).
-- The sticky top header is positioned relative to the viewport, but the page slides under it on horizontal scroll → "timetable goes behind the nav bar".
-- The sidebar appears to "move with" the timetable for the same reason.
+Because `SidebarInset` itself can grow wider than the available track, the **page** (not the timetable card) gets the horizontal scrollbar. When the user scrolls right, the whole main column slides under the fixed sidebar — exactly what the screenshot shows.
 
-This is the canonical Tailwind/flex pitfall — fix is to add `min-w-0` (and `w-full`) at the flex chain so the inner `overflow-x-auto` is the one that scrolls.
+Secondary contributors:
+- The sticky header in `InstituteLayout` is inside `SidebarInset`, so when the inset grows, the header grows with it and visually "tucks under" the sidebar on horizontal scroll.
+- The Step 3 month view sets `min-w-[720px]` on the inner calendar without an `overflow-x-auto` wrapper around it (line 1757), so on narrow widths it also contributes to overflow.
 
-### 3. Desktop should fit without horizontal scroll at all
+## Fix (presentation only)
 
-Once the flex chain shrinks correctly, the actual numbers are fine on a ≥1280px desktop:
+### 1. `src/components/institute/InstituteLayout.tsx`
+- Pass `className="min-w-0 overflow-x-hidden"` to `<SidebarInset>` so the main column can shrink under the sidebar and any inner overflow is clipped at the inset boundary instead of bubbling to the page.
+- Keep the sticky header as-is; once the inset is clamped it will align cleanly to the right of the sidebar.
 
-| Region | Width |
-|---|---|
-| Sidebar (expanded) | ~256px |
-| Page padding (`p-6` × 2) | 48px |
-| Available for table | ~976px @ 1280 viewport |
-| Table `min-w-[900px]` (preview) / `760px` (builder) | fits |
+### 2. `src/pages/institute/programs/ProgramSchedulePage.tsx`
+- Keep the existing `overflow-x-hidden` on the outer wrapper as a defense-in-depth.
+- Step 3 month view (around line 1757): wrap the `grid grid-cols-7 … min-w-[720px]` in a `<div className="overflow-x-auto min-w-0">` so horizontal overflow stays inside the card, matching the week view.
+- Confirm the W-chip strip already lives inside an `overflow-x-auto` container; if not, wrap it the same way.
 
-So no architectural change is needed — just lower the `min-w` floors slightly and let the inner scroll handle smaller laptops/tablets.
+### 3. `src/components/institute/programs/WeeklyTimetableBuilder.tsx`
+- No structural change needed — the table already has `overflow-x-auto min-w-0`. Once `SidebarInset` is clamped, this card will be the only thing that scrolls horizontally on narrow viewports.
 
-## Fixes (frontend / presentation only)
+## Result
 
-### `src/components/institute/InstituteLayout.tsx`
-- Wrap `<Outlet />` in `<div className="min-w-0 w-full">` (currently `flex-1`) so the route content can shrink under the sidebar.
-- Keep header `sticky top-0 z-40 bg-background` (already there); add `border-b shadow-sm` so when content does scroll vertically it doesn't visually bleed.
-
-### `src/pages/institute/programs/ProgramSchedulePage.tsx`
-- Outer page wrapper: `max-w-7xl mx-auto p-6 space-y-5 min-w-0 w-full` (add `min-w-0 w-full`).
-- The two grid wrappers that hold the timetable (`grid grid-cols-1 lg:grid-cols-2`) get `min-w-0` and their children get `min-w-0`.
-
-### `src/components/institute/programs/WeeklyTimetableBuilder.tsx` (Step 2 table)
-- Card wrapping table: `<CardContent className="p-0 overflow-x-auto min-w-0">`.
-- Table: drop `min-w-[760px]` → `min-w-[680px]` so 6 day columns of `min-w-[100px]` fit a 13" laptop without scroll, but still scroll on tablet.
-- Each day `<th>` and `<td>` `min-w-[100px]` (down from 120) to free width.
-- Wrap the whole builder card stack in `<div className="min-w-0 w-full">`.
-
-### `src/pages/institute/programs/ProgramSchedulePage.tsx` (Step 3 preview table)
-- Same fix: `<CardContent className="p-0 overflow-x-auto min-w-0">`, table `min-w-[820px]` (down from 900), day cells `min-w-[120px]` (down from 140).
-- Make the W-chip strip wrapper `min-w-0` so it scrolls *inside* the card, not the whole page.
-
-### `src/pages/institute/programs/ProgramSchedulePage.tsx` Step 1 faculty card
-Replace the row markup:
-
-```tsx
-<div className="flex items-center gap-3 min-w-0">
-  <span className="h-2 w-2 rounded-full shrink-0" />
-  <div className="text-sm text-slate-700 w-28 shrink-0 truncate">{s.name}</div>
-  <div className="flex-1 min-w-0">
-    <FacultyCombobox … />   {/* trigger gets w-full */}
-  </div>
-</div>
-```
-
-Inside `FacultyCombobox` (subject combobox), give the `PopoverTrigger` button `w-full` so it fills the `flex-1 min-w-0` slot instead of bursting out.
+- On ≥1280px desktop: no horizontal scrollbar anywhere — the timetable fits in the main column.
+- On <1024px (tablet): the page itself never scrolls horizontally; only the timetable grid (and month calendar) scroll inside their cards.
+- The sidebar stays fixed; the sticky header stays aligned to the main column; content can no longer slide under the sidebar.
 
 ## Out of scope
 
-- No business logic, mock data, calendar generation, or step-flow changes.
-- No restructuring of the sidebar component.
-- No new components.
-
-## Verification
-
-After implementing, scrolling the schedule page on a 1280×800 desktop should NOT produce a horizontal page scrollbar, the timetable should fully fit in the visible region, and the sticky header should sit cleanly above the content. On tablet (1024px), the inner table scrolls horizontally inside its card while the page itself stays put.
+Mock data, calendar generation logic, stepper flow, sidebar markup, or any non-presentation changes.
