@@ -52,12 +52,30 @@ export interface HolidayOverrides {
   added: Holiday[];
 }
 
+/** One cell in the weekly recurring timetable template. */
+export interface WeeklyTimetableCell {
+  /** ISO date of the Monday of the week this cell belongs to. */
+  weekStartDate: string;
+  weekday: WeekDay;
+  /** 0-based period index within the day. */
+  periodIndex: number;
+  /** Selected subject for this slot. Null means "free / no class". */
+  subjectId: string | null;
+}
+
+export interface WeeklyTimetable {
+  cells: WeeklyTimetableCell[];
+}
+
 export interface ScheduleConfig {
   startDate: string;        // YYYY-MM-DD
   endDate?: string;         // YYYY-MM-DD (optional — auto-computed)
   workingDays: WeekDay[];   // e.g. [1,2,3,4,5,6]
   periodsPerDay: number;
+  /** Default period length in minutes (used when no per-period override is set). */
   periodLengthMins: number;
+  /** Per-period duration overrides keyed by 1-based period number. */
+  periodOverrides?: Record<number, number>;
   /** When the first period of the day begins, "HH:mm". */
   dayStartTime: string;
   /** Breaks between periods (short break, lunch, …). */
@@ -69,7 +87,10 @@ export interface ScheduleConfig {
   /** Default faculty per subjectId. */
   defaultFaculty: Record<string, string>;
   classUrlTemplate?: string;
+  /** Recurring weekly timetable template authored in Step 2. */
+  weeklyTimetable?: WeeklyTimetable;
 }
+
 
 export interface ScheduleSlot {
   id: string;
