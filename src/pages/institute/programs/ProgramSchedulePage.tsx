@@ -1082,43 +1082,99 @@ const CoverageList: React.FC<{
   windowStart: string;
 }> = ({ program, windowStart }) => {
   const cursor = useMemo(() => computeCoverageCursor(program, windowStart), [program, windowStart]);
-  const topicMap = useMemo(() => {
-    const m = new Map<string, { topic: string; chapter: string }>();
-    program.subjects.forEach((s) =>
-      s.chapters.forEach((c) => c.topics.forEach((t) => m.set(t.id, { topic: t.name, chapter: c.name }))),
-    );
-    return m;
-  }, [program]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {program.subjects.map((s) => {
         const pal = subjectPalette(s.color);
         const entry = cursor[s.id];
-        const t = entry ? topicMap.get(entry.lastTopicId) : undefined;
+
+        // Locate the active chapter = chapter of last covered topic; fall back to first.
+        let activeChapter = s.chapters[0];
+        let coveredTopicIdx = -1;
+        if (entry) {
+          for (const ch of s.chapters) {
+            const idx = ch.topics.findIndex((t) => t.id === entry.lastTopicId);
+            if (idx !== -1) {
+              activeChapter = ch;
+              coveredTopicIdx = idx;
+              break;
+            }
+          }
+        }
+        const topics = activeChapter?.topics ?? [];
+        const covered = coveredTopicIdx + 1; // 0 if none
+        const pending = topics.length - covered;
+        const pct = topics.length ? Math.round((covered / topics.length) * 100) : 0;
+        const chIdx = s.chapters.findIndex((c) => c.id === activeChapter?.id);
+
         return (
           <div
             key={s.id}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex items-center gap-2 text-sm"
+            className="rounded-xl border border-slate-200 bg-white p-3 space-y-2"
           >
-            <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-slate-800 truncate">{s.name}</div>
-              {entry && t ? (
-                <div className="text-xs text-slate-500 truncate">
-                  Up to <span className="text-slate-700 font-medium">{t.chapter} → {t.topic}</span>
-                  <span className="text-slate-400"> · {entry.lastDate}</span>
-                </div>
+            <div className="flex items-center gap-2">
+              <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', pal.dot)} />
+              <div className="font-semibold text-sm text-slate-900 truncate flex-1">{s.name}</div>
+              {entry ? (
+                <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                  Last class · {formatPretty(entry.lastDate)}
+                </span>
               ) : (
-                <div className="text-xs text-slate-400 italic">Not started yet</div>
+                <span className="text-[10px] italic text-slate-400 shrink-0">Not started</span>
               )}
             </div>
+
+            {activeChapter && (
+              <>
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="font-medium text-slate-700 truncate">
+                    Ch {chIdx + 1} · {activeChapter.name}
+                  </span>
+                  <span className="ml-auto tabular-nums text-slate-500 shrink-0">
+                    {covered} / {topics.length} topics
+                  </span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={cn('h-full rounded-full transition-all', pal.dot)}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {topics.map((t, i) => {
+                    const isCovered = i < covered;
+                    return (
+                      <span
+                        key={t.id}
+                        className={cn(
+                          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border',
+                          isCovered
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-white border-dashed border-slate-300 text-slate-500',
+                        )}
+                        title={isCovered ? 'Covered' : 'Pending'}
+                      >
+                        {isCovered ? <Check className="h-2.5 w-2.5" /> : null}
+                        {t.name}
+                      </span>
+                    );
+                  })}
+                </div>
+                {pending > 0 && covered > 0 && (
+                  <div className="text-[10px] text-slate-500 italic">
+                    {pending} topic{pending === 1 ? '' : 's'} pending in this chapter
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
       })}
     </div>
   );
 };
+
 
 /* ──────────────── STEP 2 WEEKLY TIMETABLE ──────────────── */
 
