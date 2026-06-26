@@ -1803,10 +1803,10 @@ const Step3TimetableView: React.FC<{
       {/* Grid */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse min-w-[800px]">
+          <table className="w-full text-sm border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50">
-                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-32 border-b">
+                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-28 border-b border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
                   Period
                 </th>
                 {workingDows.map((d) => {
@@ -1814,7 +1814,7 @@ const Step3TimetableView: React.FC<{
                   return (
                     <th
                       key={d.d}
-                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l"
+                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l min-w-[140px]"
                     >
                       <div className="font-semibold text-slate-700">{d.short}</div>
                       <div className="text-[10px] text-slate-400 normal-case font-normal">
@@ -1824,6 +1824,7 @@ const Step3TimetableView: React.FC<{
                   );
                 })}
               </tr>
+
             </thead>
             <tbody>
               {layout.map((row, i) => {
