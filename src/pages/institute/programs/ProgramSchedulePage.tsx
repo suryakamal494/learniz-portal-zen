@@ -168,8 +168,8 @@ const ProgramSchedulePage: React.FC = () => {
   }, [config.weeklyTimetable]);
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
-      <div className="max-w-7xl mx-auto p-6 space-y-5">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-blue-50/30 min-w-0 w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto p-6 space-y-5 min-w-0 w-full">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
@@ -538,17 +538,19 @@ const SetupStep: React.FC<{
               const pal = subjectPalette(s.color);
               const subjectFaculty = faculty.filter((f) => !f.subjectId || f.subjectId === s.id);
               return (
-                <div key={s.id} className="flex items-center gap-3">
-                  <span className={cn('h-2 w-2 rounded-full', pal.dot)} />
-                  <div className="flex-1 text-sm text-slate-700">{s.name}</div>
-                  <FacultyCombobox
-                    value={config.defaultFaculty[s.id]}
-                    options={subjectFaculty}
-                    subjectId={s.id}
-                    onChange={(facId) =>
-                      onChange({ ...config, defaultFaculty: { ...config.defaultFaculty, [s.id]: facId } })
-                    }
-                  />
+                <div key={s.id} className="flex items-center gap-3 min-w-0">
+                  <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
+                  <div className="text-sm text-slate-700 w-24 shrink-0 truncate">{s.name}</div>
+                  <div className="flex-1 min-w-0">
+                    <FacultyCombobox
+                      value={config.defaultFaculty[s.id]}
+                      options={subjectFaculty}
+                      subjectId={s.id}
+                      onChange={(facId) =>
+                        onChange({ ...config, defaultFaculty: { ...config.defaultFaculty, [s.id]: facId } })
+                      }
+                    />
+                  </div>
                 </div>
               );
             })}
@@ -1055,9 +1057,9 @@ const FacultyCombobox: React.FC<{
     );
   }
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 w-full min-w-0">
       <Select value={value} onValueChange={(v) => (v === '__add__' ? setAdding(true) : onChange(v))}>
-        <SelectTrigger className="w-56 bg-white h-9">
+        <SelectTrigger className="w-full bg-white h-9">
           <SelectValue placeholder="Select faculty" />
         </SelectTrigger>
         <SelectContent>
@@ -1467,9 +1469,9 @@ const Step3TimetableView: React.FC<{
       </Card>
 
       {/* Grid */}
-      <Card className="border-slate-200/70 shadow-sm">
-        <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse min-w-[900px]">
+      <Card className="border-slate-200/70 shadow-sm min-w-0">
+        <CardContent className="p-0 overflow-x-auto min-w-0">
+          <table className="w-full text-sm border-collapse min-w-[820px]">
             <thead>
               <tr className="bg-slate-50">
                 <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-28 border-b border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
@@ -1480,7 +1482,7 @@ const Step3TimetableView: React.FC<{
                   return (
                     <th
                       key={d.d}
-                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l min-w-[140px]"
+                      className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b border-l min-w-[120px]"
                     >
                       <div className="font-semibold text-slate-700">{d.short}</div>
                       <div className="text-[10px] text-slate-400 normal-case font-normal">
