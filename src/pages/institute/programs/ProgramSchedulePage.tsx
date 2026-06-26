@@ -1302,6 +1302,16 @@ const CalendarStep: React.FC<{
         })}
       </div>
 
+      {mode === 'timetable' && (
+        <Step3TimetableView
+          program={program}
+          slots={slots}
+          config={config}
+          faculty={faculty}
+          subjectMap={subjectMap}
+          onChangeSlots={onChangeSlots}
+        />
+      )}
       {mode === 'month' && (
         <MonthView
           cursor={cursor}
