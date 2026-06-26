@@ -1,110 +1,155 @@
-# Programs Scheduling — Restructure Plan
 
-Four asks, grouped into four phases. Frontend-only (mock data); no schema changes outside the local TypeScript types.
+# Programs Scheduling — Round 2 Restructure
 
----
-
-## Understanding of requirements
-
-1. **Periods setup is too thin.** Today the Setup step only asks "how many periods" and "period length". It should compute the actual school day from `first period start + period length`, render the full period timetable (P1 8:30–9:10, P2 9:10–9:50, …) and let the school insert **breaks** (short break, lunch) at arbitrary positions between periods. Breaks consume minutes but are not teaching slots.
-
-2. **Holidays should be global** (set once at the Programs level), auto-applied to every program/batch, with **per-program edit/override** allowed (e.g. topper batches that skip a holiday).
-
-3. **The 4-step flow is bloated.** Step 3 ("Generate") is a single button. Merge it: after Workload is OK, clicking Next runs the generator and lands directly on **Preview**. Final flow = **Setup → Workload → Preview** (3 steps).
-
-4. **Faculty visibility & editing** in Preview and in the read-only Curriculum Calendar view. Default faculty per subject is already captured; surface it everywhere (time / subject / chapter / faculty), and allow inline change of faculty per slot — but only for **future dates** in the read-only curriculum view (past dates locked). Preview (the editor) keeps full edit.
+You're asking for a deep rework of the 3-step flow. I've grouped your asks into 6 themes and laid out a phase-wise plan that covers all the edge cases you raised.
 
 ---
 
-## Phase 1 — Period day builder (with breaks)
+## 1) Understanding of the requirements
 
-**Files:** `src/types/instituteProgram.ts`, `src/pages/institute/programs/ProgramSchedulePage.tsx`, `src/utils/calendarAutomation.ts`
+**A. Scrap the current "Workload" step.**
+The "periods needed vs slots available" framing is wrong. It's not a capacity dashboard — it's a *planning window*. Workload, in your sense, is: "for this batch, from date X to date Y, how much of the syllabus has already been mapped, and what's still pending." That belongs in **Setup** (as the window picker + a coverage summary), not as a standalone step.
 
-Type changes:
-```ts
-export interface PeriodBreak {
-  id: string;
-  afterPeriod: number;     // insert after period N (1-based)
-  name: string;            // "Short break", "Lunch"
-  durationMins: number;
-}
-export interface ScheduleConfig {
-  // existing…
-  dayStartTime: string;    // "08:30" (new — replaces implicit start)
-  breaks: PeriodBreak[];   // new
-  // periodsPerDay, periodLengthMins stay
-}
+**B. Planning happens window-by-window, not whole-year.**
+A school plans, e.g., July 1–31 now, then in late July plans Aug–Sept. So the page must:
+- Remember what was generated in previous windows (which subject/chapter/topic was last covered up to which date).
+- Show a *"Previously covered up to"* brief per subject in Setup.
+- Resume the new window from that point — never re-plan past windows.
+
+**C. Step 2 is a Weekly Timetable Builder, not a workload check.**
+A real timetable grid: rows = periods + breaks, columns = the working days of the *selected week*. Each cell = a subject. To make this usable they need power tools:
+- "**Fill row** → set Period 1 = Physics across the whole week."
+- "**Fill column** → set Monday all periods = Maths."
+- "**Copy week → next week / next N weeks / until end of window.**"
+- A repeating-pattern mode: "use this week's pattern for the entire window" (1-click).
+- Per-cell override after replication.
+- Navigation: ◀ Week 1 of 4 ▶, with a small overview strip of which weeks have been set up.
+
+**D. Step 3 is the Syllabus Automation Preview.**
+Once the timetable is locked, the system knows hours-per-subject-per-week. Combine that with topic hours from the Hours page **and** "last covered" markers to auto-fill chapter/topic into each cell. Display: date · period · subject · teacher · chapter · topic. Editable per cell (swap topic, swap teacher, lock).
+
+**E. Per-period editable durations in School Day.**
+Default 40 min, but any single period can be overridden (e.g. P2 = 90 min lab). The day timeline auto-rebalances downstream periods + breaks.
+
+**F. Mandatory-field gating between steps.**
+Before allowing "Next" from Setup: start date, working days, school-day config, default faculty per subject, and at least one selected week-window must be filled. Block + scroll to first missing field with a clear "This is required to continue" inline message and a top-of-page summary.
+
+**G. Post-generation editing.**
+After Step 3 generates, users must still be able to: edit a single class, swap teacher, swap topic, insert an extra class, mark a slot as completed/cancelled. Past dates locked, future dates editable.
+
+---
+
+## 2) Final step structure
+
+```
+Step 1 — Setup
+    • Academic window (start → end of THIS planning window)
+    • Working days
+    • School Day (start time + per-period rows with editable duration + breaks)
+    • Default faculty per subject (mandatory before Next)
+    • Holiday inheritance (institute + per-program overrides)
+    • Coverage brief: "Previously covered" per subject (from prior windows)
+
+Step 2 — Weekly Timetable
+    • Weekly grid (periods × working days) for the selected week
+    • Fill-row / Fill-column / Clear-row tools
+    • Copy-week → next / next N / all remaining weeks
+    • "Apply this pattern to whole window" 1-click
+    • Per-cell subject picker + per-cell override after copy
+    • Week navigator with status (Set / Inherited / Empty)
+
+Step 3 — Generate & Preview
+    • Auto-fills chapter/topic into each cell using
+        timetable cells × periods × topic hours × last-covered cursor
+    • Calendar view (month/week/list) of: date · period · subject · teacher · chapter · topic
+    • Inline edit per slot, insert extra class, lock, regenerate (unlocked only)
+    • "Save window" persists slots + advances each subject's last-covered cursor
 ```
 
-Setup UI redesign (replacing the current 2 number inputs):
-- Inputs: **Day starts at** (time), **Period length**, **Number of periods**.
-- Below: a live **"Your school day"** preview table — auto-computed rows:
+---
+
+## 3) Phase-wise implementation
+
+### Phase 1 — School Day: per-period durations
+**File:** `src/types/instituteProgram.ts`, `src/utils/calendarAutomation.ts`, `src/pages/institute/programs/ProgramSchedulePage.tsx`
+
+- Add `periodOverrides?: Record<number, number>` (1-based period index → minutes) to `ScheduleConfig`. `periodLengthMins` stays as the default.
+- Rewrite `computePeriodTimes` / `computeDayLayout` to use `overrides[i] ?? periodLengthMins` per period.
+- Setup UI: each period row in the "Your school day" table gets a small Duration input with a "Reset to default" affordance. Changing P2 from 40→90 automatically pushes P3+ later and recomputes break/end times.
+
+### Phase 2 — Mandatory-field validation + step gating
+**File:** `ProgramSchedulePage.tsx`
+
+- Central `validateStep(step, config, program)` returning `{ field, message }[]`.
+- Next button disabled when current step has blockers; clicking it scrolls to the first blocker and flashes a red ring + helper text.
+- Top-of-step "Missing required: Start date, Default faculty for Chemistry" summary chip.
+
+### Phase 3 — Replace "Workload" step with Weekly Timetable Builder
+**Files:** new `src/components/institute/programs/WeeklyTimetableBuilder.tsx`, `WeeklyTimetableGrid.tsx`, `WeekNavigator.tsx`; types in `instituteProgram.ts`; `ProgramSchedulePage.tsx`.
+
+- New type:
+  ```ts
+  interface WeeklyTimetableCell {
+    weekStartDate: string;     // ISO Monday of the week
+    weekday: WeekDay;
+    periodIndex: number;       // 0-based
+    subjectId: string | null;
+  }
+  interface WeeklyTimetable {
+    cells: WeeklyTimetableCell[];   // sparse, only filled cells
+  }
   ```
-  P1   08:30 – 09:10
-  P2   09:10 – 09:50
-  ─ Short break (15 min) ─    [edit] [remove]
-  P3   10:05 – 10:45
-  …
-  Day ends 14:25
-  ```
-- "**+ Add break after period [select]**" with name + minutes. Breaks list is sortable/removable.
-- All period rows are derived from `dayStartTime + periodLengthMins + breaks[]` — no manual time entry.
+- Store on `ScheduleConfig.weeklyTimetable`.
+- Grid component: rows = periods (with break rows visually injected, non-editable), columns = working weekdays. Each cell = a Subject `<Select>` (existing subject palette colors).
+- Toolbar actions:
+  - **Fill row** (apply this row's subject to every day in this week)
+  - **Fill column** (apply Monday's pattern down — sets every period in that day)
+  - **Clear row / Clear column / Clear week**
+  - **Copy this week →** dropdown: Next week / Next 2 / Next 4 / All remaining weeks in window / Custom range
+  - **Apply as repeating pattern** (single click — fills all weeks in window with this template; per-week overrides preserved if user opts in)
+- Week navigator strip at top: chips "W1 ✓ · W2 ✓ · W3 (inherited) · W4 ○" with prev/next arrows.
 
-Generator update (`calendarAutomation.ts`):
-- Add helper `computePeriodTimes(config) → [{ index, startTime, endTime }]` that honours `dayStartTime` and inserts break gaps.
-- `generateSchedule` uses it to set each slot's `startTime`/`endTime` (replaces hard-coded math).
+### Phase 4 — Coverage tracking ("previously covered up to")
+**Files:** `useInstitutePrograms.ts`, `instituteProgram.ts`, Setup card in `ProgramSchedulePage.tsx`.
 
----
+- Add per-program `coverageCursor: Record<subjectId, { lastTopicId, lastDate }>` updated when a window is saved/published.
+- Compute on the fly from `generatedSlots` for the prior windows (no schema migration needed): for each subject, the last slot's topic + date before the new window's start.
+- Setup shows a card: "Previously covered — Physics: up to *Kinematics → Projectile Motion* (28 Jun) · Chemistry: not started · …" with a small "Adjust starting topic" link per subject for the edge case where they want to redo or skip ahead.
 
-## Phase 2 — Global holiday setup at Programs level
+### Phase 5 — Step 3: Syllabus Automation engine + rich preview
+**Files:** `src/utils/calendarAutomation.ts` (new `generateFromTimetable`), `ProgramSchedulePage.tsx` (CalendarStep), `CurriculumCalendarView.tsx`.
 
-**Files:** `src/pages/institute/programs/ProgramsListPage.tsx` (entry point), new `src/pages/institute/programs/InstituteHolidaysPage.tsx`, `src/hooks/useInstitutePrograms.ts`, `src/types/instituteProgram.ts`, `src/pages/institute/programs/ProgramSchedulePage.tsx`.
+- New generator: walks each working date in the window × the saved weekly cells for that date's week × pulls the next topic from each subject's remaining queue (starting from `coverageCursor`).
+- Honours: locked slots, breaks, holidays, per-period durations, default faculty (with per-slot override), `isExtra` insertions.
+- Preview cells display: `08:30 P1 · Physics · Mr. Rao · Ch. Kinematics → Projectile motion`. ListView gets columns: Date · Period · Subject · Teacher · Chapter · Topic · Status.
+- Header actions: **Regenerate (unlocked only)**, **Save window** (persists slots + advances coverage cursor), **Insert extra class**.
 
-Data model:
-- Add an **institute-level** holiday store in `useInstitutePrograms` (in-memory mock + helpers `useInstituteHolidays()`, `setInstituteHolidays(list)`).
-- Per-program `ScheduleConfig` gains `overrides: { removed: string[]; added: Holiday[] }` (date strings) so a program can drop or add holidays without mutating the global list.
-- Computed `effectiveHolidays(program) = (global ∪ overrides.added) − overrides.removed`. Used by the generator and previews.
+### Phase 6 — Post-generation editing
+**Files:** `ProgramSchedulePage.tsx` (existing SlotEditor), `CurriculumCalendarView.tsx`.
 
-UI:
-- **Programs list page** → header gets a secondary button **"Holiday setup"** opening `/institute/programs/holidays`.
-- New page: full multi-select calendar + list (re-use the multi-date Popover + Calendar already in Setup), description optional, inline edit, remove.
-- **Program Schedule Setup step**: replace the existing per-program holiday card with a **read-only "Institute holidays"** card listing inherited dates. Each row has:
-  - a "Skip for this program" toggle (adds to `overrides.removed`),
-  - and a separate **"+ Add program-only holiday"** control for batch-specific extras.
-- A small link "Manage shared holidays →" jumps to the global page.
-
----
-
-## Phase 3 — Collapse 4 steps to 3 (auto-generate on Next)
-
-**File:** `src/pages/institute/programs/ProgramSchedulePage.tsx`
-
-- Remove the `generate` step from the stepper. New steps: `setup → workload → preview`.
-- "Next: Generate" button in Workload becomes **"Generate & Preview"**: runs `generateSchedule(...)`, persists slots, jumps to Preview.
-- Preview (current CalendarStep) gains a small **"Regenerate"** button in its header (so users can re-run without a separate step). Locked slots are preserved as today.
-- Delete `GenerateStep` component.
+- SlotEditor already supports edits — verify Topic/Chapter/Faculty selectors all present and wired.
+- Past-date slots: read-only (Lock icon + tooltip "Past class — fixed").
+- Add row-level actions in ListView: Edit · Lock · Insert extra · Mark cancelled.
 
 ---
 
-## Phase 4 — Faculty everywhere + editable in Preview & Curriculum
+## 4) Edge cases explicitly handled
 
-**Files:** `src/pages/institute/programs/ProgramSchedulePage.tsx` (CalendarStep + MonthView/WeekView/ListView/SlotEditor), `src/components/institute/programs/CurriculumCalendarView.tsx`, `src/pages/institute/programs/ProgramPreviewPage.tsx`.
-
-Preview (schedule editor):
-- MonthView slot chips: add faculty initials (e.g. `08:30 Phy · A. Rao`).
-- WeekView cells: append faculty short name under topic.
-- ListView: add a **Faculty** column.
-- `SlotEditor` (drawer) already supports edit — confirm a Faculty `<Select>` is present; if not, add it (with "+ Add faculty" matching the SetupStep combobox).
-
-Curriculum Calendar View (read-only `CurriculumCalendarView.tsx`):
-- Already shows faculty — make each faculty label a button that opens a small **Popover** with a faculty `<Select>` for that slot.
-- **Disable** the popover trigger when `slot.date < today` (past dates locked; show a lock icon tooltip "Past class — faculty fixed").
-- On change, call a new prop `onChangeFaculty(slotId, facultyId)` that the parent (`ProgramPreviewPage`) wires to `setGeneratedSlots(...)` so the change persists.
+- Period duration override pushing day past 24h → blocked at validation with a clear inline error.
+- Copy-week into a week that already has cells → confirm dialog "Overwrite W3?".
+- Replicate-to-window when some weeks are partially filled → choice: Overwrite / Keep existing / Only fill empties.
+- Selected window starts mid-week → first week renders only that partial week's columns; coverage cursor still respected.
+- New window overlaps an already-generated window → block with "Window overlaps the Jun planning window. Adjust start date."
+- Subject removed from a week's row in the timetable → its topics still queue into the *next* week that has it.
+- Default faculty missing for a subject used in the timetable → Setup blocks Next + Step 2 marks the column with a warning chip.
+- Holiday added mid-window after generation → "Regenerate from this date forward" prompt; past slots untouched.
 
 ---
 
-## Out of scope
+## 5) Out of scope (this round)
 
-- No backend/RLS work (mock store only).
-- No removal/rename of existing types beyond the additive fields listed.
-- Brochure / other modules untouched.
+- Multi-batch shared timetable templates (mentioned only as future-proofing — not implemented now).
+- Teacher availability / conflict detection across programs (next round; current per-program flow is the foundation).
+- Real backend persistence — everything stays in the in-memory `useInstitutePrograms` store.
+
+Approve and I'll start with Phase 1 (per-period durations + validation gating) and Phase 3 (Weekly Timetable Builder), since those unblock the rest.
