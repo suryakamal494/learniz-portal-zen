@@ -1915,11 +1915,12 @@ const Step3Cell: React.FC<{
         <button
           type="button"
           className={cn(
-            'w-full text-left rounded-md border px-2 py-1.5 transition-all hover:shadow-sm hover:ring-1',
+            'w-full text-left rounded-md border px-2 py-1.5 min-h-[78px] transition-all hover:shadow-sm hover:ring-1',
             pal.slot,
             pal.ring,
             slot.locked && 'ring-1 ring-slate-400',
           )}
+
         >
           <div className="flex items-center justify-between gap-1 mb-1">
             <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide')}>
