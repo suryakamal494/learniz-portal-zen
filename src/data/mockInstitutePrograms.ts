@@ -168,7 +168,50 @@ export const MOCK_FACULTY: InstituteFaculty[] = [
   { id: 'fac-4', name: 'Dr. Kavita Nair', subjectId: 'subj-chem-12' },
   { id: 'fac-5', name: 'Mr. Arjun Kapoor', subjectId: 'subj-math-12' },
   { id: 'fac-6', name: 'Ms. Neha Gupta', subjectId: 'subj-math-12' },
+  { id: 'fac-7', name: 'Dr. Meera Iyer', subjectId: 'subj-bio-12' },
+  { id: 'fac-8', name: 'Mr. Rohit Das', subjectId: 'subj-bio-12' },
+  { id: 'fac-9', name: 'Ms. Sneha Pillai', subjectId: 'subj-eng-12' },
+  { id: 'fac-10', name: 'Mr. James Thomas', subjectId: 'subj-eng-12' },
+  { id: 'fac-11', name: 'Mrs. Kavya Joshi', subjectId: 'subj-hin-12' },
+  { id: 'fac-12', name: 'Mr. Suresh Yadav', subjectId: 'subj-hin-12' },
+  { id: 'fac-13', name: 'Ms. Riya Khanna', subjectId: 'subj-soc-12' },
+  { id: 'fac-14', name: 'Mr. Aakash Verma', subjectId: 'subj-soc-12' },
 ];
+
+/* ---------- Seeded weekly timetable for Class 12 PCM (W1) ----------
+   Layout (P1..P6 × Mon..Sat) — mixes all 7 subjects realistically.
+*/
+const PCM_W1_START = '2025-04-14'; // Monday
+const PCM_TT_PATTERN: Record<number, string[]> = {
+  // periodIndex -> [Mon, Tue, Wed, Thu, Fri, Sat]
+  0: ['subj-phy-12',  'subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-chem-12', 'subj-math-12'],
+  1: ['subj-math-12', 'subj-phy-12',  'subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-chem-12'],
+  2: ['subj-bio-12',  'subj-eng-12',  'subj-hin-12',  'subj-soc-12',  'subj-bio-12',  'subj-eng-12'],
+  3: ['subj-hin-12',  'subj-soc-12',  'subj-bio-12',  'subj-eng-12',  'subj-hin-12',  'subj-soc-12'],
+  4: ['subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-bio-12',  'subj-math-12', 'subj-phy-12'],
+  5: ['subj-eng-12',  'subj-bio-12',  'subj-soc-12',  'subj-hin-12',  'subj-soc-12',  'subj-bio-12'],
+};
+const PCM_WEEKDAYS: (1 | 2 | 3 | 4 | 5 | 6)[] = [1, 2, 3, 4, 5, 6];
+const PCM_WEEKLY_TIMETABLE = {
+  cells: Object.entries(PCM_TT_PATTERN).flatMap(([pIdxStr, row]) =>
+    PCM_WEEKDAYS.map((wd, dayCol) => ({
+      weekStartDate: PCM_W1_START,
+      weekday: wd as 0 | 1 | 2 | 3 | 4 | 5 | 6,
+      periodIndex: Number(pIdxStr),
+      subjectId: row[dayCol],
+    })),
+  ),
+};
+
+const PCM_DEFAULT_FACULTY: Record<string, string> = {
+  'subj-phy-12': 'fac-1',
+  'subj-chem-12': 'fac-3',
+  'subj-math-12': 'fac-5',
+  'subj-bio-12': 'fac-7',
+  'subj-eng-12': 'fac-9',
+  'subj-hin-12': 'fac-11',
+  'subj-soc-12': 'fac-13',
+};
 
 export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
   {
@@ -182,8 +225,16 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
       buildSubject('subj-phy-12', 'Physics', SUBJECT_COLORS.physics, PHYSICS_12, true),
       buildSubject('subj-chem-12', 'Chemistry', SUBJECT_COLORS.chemistry, CHEM_12, true),
       buildSubject('subj-math-12', 'Mathematics', SUBJECT_COLORS.maths, MATH_12, true),
+      buildSubject('subj-bio-12', 'Biology', SUBJECT_COLORS.biology, BIO_12, true),
+      buildSubject('subj-eng-12', 'English', SUBJECT_COLORS.english, ENG_12, true),
+      buildSubject('subj-hin-12', 'Hindi', SUBJECT_COLORS.hindi, HIN_12, true),
+      buildSubject('subj-soc-12', 'Social Studies', SUBJECT_COLORS.social, SOC_12, true),
     ],
-    schedule: defaultSchedule(),
+    schedule: {
+      ...defaultSchedule(),
+      defaultFaculty: PCM_DEFAULT_FACULTY,
+      weeklyTimetable: PCM_WEEKLY_TIMETABLE,
+    },
   },
   {
     id: 'prog-2',
