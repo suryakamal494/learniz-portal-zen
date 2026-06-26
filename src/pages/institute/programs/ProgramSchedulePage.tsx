@@ -1831,7 +1831,7 @@ const Step3TimetableView: React.FC<{
                 if (row.kind === 'break') {
                   return (
                     <tr key={`brk-${i}`} className="bg-amber-50/60">
-                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic">
+                      <td className="px-3 py-1.5 text-[11px] text-amber-800 font-medium italic sticky left-0 bg-amber-50/80 border-r border-amber-100 z-[1]">
                         {row.label}
                         <span className="text-amber-500 ml-1">· {row.durationMins}m</span>
                       </td>
@@ -1847,12 +1847,13 @@ const Step3TimetableView: React.FC<{
                 const pIdx = row.index ?? 0;
                 return (
                   <tr key={`p-${pIdx}`} className="border-b border-slate-100">
-                    <td className="px-3 py-2 align-top bg-slate-50/50">
+                    <td className="px-3 py-2 align-top bg-slate-50/80 sticky left-0 border-r border-slate-200 z-[1]">
                       <div className="text-sm font-semibold text-slate-800">P{pIdx + 1}</div>
                       <div className="text-[10px] text-slate-500 tabular-nums">
                         {row.startTime}–{row.endTime}
                       </div>
                     </td>
+
                     {workingDows.map((d) => {
                       const dateIso = dateForWeekday(d.d);
                       const slot = slotByKey.get(`${dateIso}#${pIdx}`);
