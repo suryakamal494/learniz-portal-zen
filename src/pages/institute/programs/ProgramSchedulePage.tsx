@@ -1268,7 +1268,7 @@ const CalendarStep: React.FC<{
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-              {(['month', 'week', 'list'] as ViewMode[]).map((m) => (
+              {(['timetable', 'month', 'week', 'list'] as ViewMode[]).map((m) => (
                 <button
                   key={m}
                   type="button"
