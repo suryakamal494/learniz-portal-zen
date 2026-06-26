@@ -101,17 +101,6 @@ const SOC_12: { chapter: string; topics: string[] }[] = [
 ];
 
 
-  { chapter: 'Continuity & Differentiability', topics: ['Continuity', 'Differentiability', 'Chain Rule', 'Logarithmic Differentiation', 'Mean Value Theorems'] },
-  { chapter: 'Application of Derivatives', topics: ['Rate of Change', 'Tangents & Normals', 'Increasing / Decreasing', 'Maxima & Minima', 'Approximations'] },
-  { chapter: 'Integrals', topics: ['Indefinite Integrals', 'Methods of Integration', 'Integration by Parts', 'Definite Integrals', 'Properties of Definite Integrals'] },
-  { chapter: 'Application of Integrals', topics: ['Area under Curves', 'Area between Two Curves', 'Standard Regions', 'Mixed Problems', 'Real-life Applications'] },
-  { chapter: 'Differential Equations', topics: ['Order & Degree', 'Variable Separable', 'Homogeneous Equations', 'Linear Differential Eqns', 'Applications'] },
-  { chapter: 'Vector Algebra', topics: ['Types of Vectors', 'Addition & Subtraction', 'Dot Product', 'Cross Product', 'Scalar Triple Product'] },
-  { chapter: 'Three Dimensional Geometry', topics: ['Direction Cosines', 'Equation of a Line', 'Equation of a Plane', 'Angle between Lines / Planes', 'Distance Formulas'] },
-  { chapter: 'Linear Programming & Probability', topics: ['LPP Formulation', 'Graphical Method', 'Conditional Probability', "Bayes' Theorem", 'Random Variables'] },
-];
-
-/* ---------- Hour seeding strategy ----------
    We want hours to vary so totals look real. We use a small deterministic
    pattern keyed on chapter index + topic index so reloading is stable.
 */
