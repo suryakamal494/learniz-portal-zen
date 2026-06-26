@@ -48,8 +48,10 @@ import {
 import {
   addDays,
   capacityCheck,
+  computeCoverageCursor,
   computeDayLayout,
   formatPretty,
+  generateFromTimetable,
   generateSchedule,
   parseISO,
   rollupProgram,
@@ -57,12 +59,14 @@ import {
 } from '@/utils/calendarAutomation';
 import { formatHoursShort } from '@/utils/formatUtils';
 
-import { Holiday, ScheduleConfig, ScheduleSlot, WeekDay } from '@/types/instituteProgram';
+import { Holiday, ScheduleConfig, ScheduleSlot, WeekDay, WeeklyTimetable } from '@/types/instituteProgram';
 import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { WeeklyTimetableBuilder } from '@/components/institute/programs/WeeklyTimetableBuilder';
 
-type Step = 'setup' | 'workload' | 'preview';
+type Step = 'setup' | 'timetable' | 'preview';
+
 
 const DEFAULT_CONFIG: ScheduleConfig = {
   startDate: new Date().toISOString().slice(0, 10),
