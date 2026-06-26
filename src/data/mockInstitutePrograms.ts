@@ -11,6 +11,8 @@ const SUBJECT_COLORS = {
   maths: 'violet',
   biology: 'rose',
   english: 'amber',
+  hindi: 'orange',
+  social: 'cyan',
 } as const;
 
 /* ---------- Class 12 PCM canonical chapter \u2192 topics ---------- */
