@@ -431,16 +431,16 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
       {/* Grid */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full text-sm border-collapse min-w-[760px]">
             <thead>
               <tr className="bg-slate-50">
-                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-32 border-b">
+                <th className="text-left px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium w-28 border-b border-r border-slate-200 sticky left-0 bg-slate-50 z-10">
                   Period
                 </th>
                 {workingDows.map((d) => (
                   <th
                     key={d.d}
-                    className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b"
+                    className="text-left px-2 py-2 text-[11px] uppercase tracking-wider text-slate-500 font-medium border-b min-w-[120px]"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span>{d.short}</span>
@@ -455,6 +455,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                 ))}
               </tr>
             </thead>
+
             <tbody>
               {layout.map((row, i) => {
                 if (row.kind === 'break') {
