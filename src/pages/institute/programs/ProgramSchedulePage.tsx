@@ -1182,7 +1182,7 @@ const Stat: React.FC<{ label: string; value: number; sub?: string; negative?: bo
 
 /* ──────────────── STEP 4 CALENDAR ──────────────── */
 
-type ViewMode = 'month' | 'week' | 'list';
+type ViewMode = 'timetable' | 'month' | 'week' | 'list';
 
 const CalendarStep: React.FC<{
   program: any;
@@ -1193,7 +1193,7 @@ const CalendarStep: React.FC<{
   onRegenerate: () => void;
   onBack: () => void;
 }> = ({ program, slots, faculty, config, onChangeSlots, onRegenerate, onBack }) => {
-  const [mode, setMode] = useState<ViewMode>('month');
+  const [mode, setMode] = useState<ViewMode>('timetable');
   const [cursor, setCursor] = useState<string>(slots[0]?.date ?? new Date().toISOString().slice(0, 10));
   const [selectedSlot, setSelectedSlot] = useState<ScheduleSlot | null>(null);
 
