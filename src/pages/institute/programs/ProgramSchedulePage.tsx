@@ -538,17 +538,19 @@ const SetupStep: React.FC<{
               const pal = subjectPalette(s.color);
               const subjectFaculty = faculty.filter((f) => !f.subjectId || f.subjectId === s.id);
               return (
-                <div key={s.id} className="flex items-center gap-3">
-                  <span className={cn('h-2 w-2 rounded-full', pal.dot)} />
-                  <div className="flex-1 text-sm text-slate-700">{s.name}</div>
-                  <FacultyCombobox
-                    value={config.defaultFaculty[s.id]}
-                    options={subjectFaculty}
-                    subjectId={s.id}
-                    onChange={(facId) =>
-                      onChange({ ...config, defaultFaculty: { ...config.defaultFaculty, [s.id]: facId } })
-                    }
-                  />
+                <div key={s.id} className="flex items-center gap-3 min-w-0">
+                  <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
+                  <div className="text-sm text-slate-700 w-24 shrink-0 truncate">{s.name}</div>
+                  <div className="flex-1 min-w-0">
+                    <FacultyCombobox
+                      value={config.defaultFaculty[s.id]}
+                      options={subjectFaculty}
+                      subjectId={s.id}
+                      onChange={(facId) =>
+                        onChange({ ...config, defaultFaculty: { ...config.defaultFaculty, [s.id]: facId } })
+                      }
+                    />
+                  </div>
                 </div>
               );
             })}
