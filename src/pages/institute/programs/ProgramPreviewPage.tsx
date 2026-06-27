@@ -144,7 +144,7 @@ const ProgramPreviewPage: React.FC = () => {
                   <span className="text-slate-400">·</span>
                   <span>{program.subjects.length} subjects · {chaptersCount} chapters · {roll.totalTopics} topics</span>
                   <span className="text-slate-400">·</span>
-                  <span className="font-semibold text-slate-800">{formatHoursShort(roll.hours)} · ~{roll.periods}p</span>
+                  <span className="font-semibold text-slate-800">{roll.periods} periods</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 no-print flex-wrap sm:justify-end">
