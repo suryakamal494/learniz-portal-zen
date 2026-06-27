@@ -364,8 +364,7 @@ export function capacityCheck(
   program: InstituteProgram,
   config: ScheduleConfig,
 ): { needed: number; available: number; surplus: number; suggestedEndDate?: string } {
-  const periodMins = config.periodLengthMins;
-  const needed = rollupProgram(program, periodMins).periods;
+  const needed = rollupProgram(program, config.periodLengthMins).periods;
   const endIso = config.endDate ?? addDays(config.startDate, 730);
   const holidaySet = new Set(config.holidays.map((h) => h.date));
   const days = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
