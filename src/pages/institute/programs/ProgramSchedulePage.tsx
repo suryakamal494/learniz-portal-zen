@@ -1031,7 +1031,7 @@ const SetupStep: React.FC<{
             className="gap-2"
             disabled={blockers.length > 0}
           >
-            Next: Weekly Timetable <ArrowRight className="h-4 w-4" />
+            Next: Period Allocation <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
