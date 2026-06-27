@@ -476,8 +476,22 @@ const SetupStep: React.FC<{
   const hasErrors = issues.some((i) => i.level === 'error');
 
 
+  // Live capacity preview so users see the budget forming as Setup fields change.
+  const capacityPreview = useMemo(() => computeCapacity(config), [config]);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 -mb-1">
+        <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
+          <CheckCircle2 className="h-3.5 w-3.5" /> Auto-saved — every change is stored.
+        </div>
+        <CapacityStrip
+          workingDays={capacityPreview.workingDays}
+          periodsAvailable={capacityPreview.periodsAvailable}
+          compact
+        />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Window */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-5 space-y-4">
