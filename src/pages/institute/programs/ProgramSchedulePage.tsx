@@ -38,9 +38,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   addFaculty,
   configWithEffectiveHolidays,
+  finaliseHours,
   setGeneratedSlots,
   setSchedule,
   updateProgram,
+  updateTopicHours,
   useFaculty,
   useInstituteHolidays,
   useInstituteProgram,
@@ -48,6 +50,7 @@ import {
 import {
   addDays,
   capacityCheck,
+  computeCapacity,
   computeCoverageCursor,
   computeDayLayout,
   formatPretty,
@@ -57,6 +60,7 @@ import {
   parseISO,
   rollupProgram,
   toISO,
+  topicPeriods,
 } from '@/utils/calendarAutomation';
 import { formatHoursShort } from '@/utils/formatUtils';
 
@@ -65,6 +69,9 @@ import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { WeeklyTimetableBuilder } from '@/components/institute/programs/WeeklyTimetableBuilder';
+import { CapacityStrip } from '@/components/institute/programs/CapacityStrip';
+import { PeriodAllocationWorkspace } from '@/components/institute/programs/PeriodAllocationWorkspace';
+
 
 type Step = 'setup' | 'timetable' | 'preview';
 
