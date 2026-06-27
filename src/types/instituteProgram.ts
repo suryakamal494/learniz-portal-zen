@@ -90,8 +90,10 @@ export interface ScheduleConfig {
   /** Default faculty per subjectId. */
   defaultFaculty: Record<string, string>;
   classUrlTemplate?: string;
-  /** Recurring weekly timetable template authored in Step 2. */
+  /** Recurring weekly timetable template authored in Step 3. */
   weeklyTimetable?: WeeklyTimetable;
+  /** Step 2 — per-subject period budget (subject.id → periods to allot). */
+  subjectTargetPeriods?: Record<string, number>;
 }
 
 
