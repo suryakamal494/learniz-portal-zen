@@ -4,7 +4,6 @@ import {
   ArrowRight,
   CalendarOff,
   CalendarRange,
-  Clock,
   GraduationCap,
   Plus,
   Search,
