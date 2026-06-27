@@ -73,7 +73,7 @@ import { CapacityStrip } from '@/components/institute/programs/CapacityStrip';
 import { PeriodAllocationWorkspace } from '@/components/institute/programs/PeriodAllocationWorkspace';
 
 
-type Step = 'setup' | 'timetable' | 'preview';
+type Step = 'setup' | 'allocation' | 'timetable' | 'preview';
 
 
 const DEFAULT_CONFIG: ScheduleConfig = {
