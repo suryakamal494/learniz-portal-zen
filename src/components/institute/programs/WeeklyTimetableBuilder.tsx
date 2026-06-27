@@ -54,6 +54,7 @@ import {
   WeekDay,
   WeeklyTimetable,
   WeeklyTimetableCell,
+  InstituteFaculty,
 } from '@/types/instituteProgram';
 import {
   addDays,
@@ -80,6 +81,8 @@ interface Subject {
 interface Props {
   config: ScheduleConfig;
   subjects: Subject[];
+  /** Available faculty for per-cell / per-row assignment in Step 3. */
+  faculty?: InstituteFaculty[];
   onChange: (tt: WeeklyTimetable) => void;
 }
 
