@@ -281,7 +281,7 @@ const ProgramPreviewPage: React.FC = () => {
                         {formatShort(sPlan.startDate)} → {formatShort(sPlan.endDate)}
                       </span>
                     )}
-                    <span className="font-semibold">{formatHoursShort(sRoll.hours)} · ~{sRoll.periods}p</span>
+                    <span className="font-semibold">{sRoll.periods} periods</span>
                   </div>
                 </button>
 
