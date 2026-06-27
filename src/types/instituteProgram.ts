@@ -61,6 +61,9 @@ export interface WeeklyTimetableCell {
   periodIndex: number;
   /** Selected subject for this slot. Null means "free / no class". */
   subjectId: string | null;
+  /** Optional per-cell faculty override. When null/undefined, the default
+   *  faculty configured for the subject (config.defaultFaculty) is used. */
+  facultyId?: string | null;
 }
 
 export interface WeeklyTimetable {
