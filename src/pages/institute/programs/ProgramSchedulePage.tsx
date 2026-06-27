@@ -228,6 +228,20 @@ const ProgramSchedulePage: React.FC = () => {
                 });
                 return;
               }
+              setStep('allocation');
+            }}
+          />
+        )}
+        {step === 'allocation' && (
+          <PeriodAllocationWorkspace
+            program={program}
+            config={effectiveConfig}
+            onConfigChange={persistConfig}
+            onTopicPeriodsChange={handleTopicPeriodsChange}
+            onBack={() => setStep('setup')}
+            onNext={() => {
+              // Mark hours/period allocation as finalised for downstream consumers.
+              if (!program.hoursFinalised) finaliseHours(program.id, true);
               setStep('timetable');
             }}
           />
@@ -236,9 +250,10 @@ const ProgramSchedulePage: React.FC = () => {
           <TimetableStep
             program={program}
             config={config}
+            faculty={faculty}
             blockers={timetableBlockers}
             onChange={persistConfig}
-            onBack={() => setStep('setup')}
+            onBack={() => setStep('allocation')}
             onGenerate={() => {
               if (timetableBlockers.length > 0) {
                 toast({
