@@ -15,6 +15,27 @@ export function hoursToPeriods(hours: number, periodMins: number): number {
   return Math.ceil((hours * 60) / Math.max(1, periodMins));
 }
 
+/** Returns the period count stored on a topic. Step 2 now writes periods
+ *  directly into the `hours` field (no minutes conversion needed). */
+export function topicPeriods(topic: { hours: number }): number {
+  return Math.max(0, Math.round(topic.hours || 0));
+}
+
+/** Available class capacity from setup: working days × periods per day,
+ *  honouring holidays and working-day toggles. */
+export function computeCapacity(
+  config: ScheduleConfig,
+): { workingDays: number; periodsAvailable: number; endDateUsed: string } {
+  const endIso = config.endDate ?? addDays(config.startDate, 365);
+  const holidaySet = new Set((config.holidays ?? []).map((h) => h.date));
+  const days = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
+  return {
+    workingDays: days.length,
+    periodsAvailable: days.length * (config.periodsPerDay || 0),
+    endDateUsed: endIso,
+  };
+}
+
 export function parseISO(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1);
