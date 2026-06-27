@@ -340,8 +340,7 @@ const ProgramPreviewPage: React.FC = () => {
                                       <th className="font-medium py-1">Topic</th>
                                       <th className="font-medium py-1 w-24 text-right">Start</th>
                                       <th className="font-medium py-1 w-24 text-right">End</th>
-                                      <th className="font-medium py-1 w-16 text-right">Hours</th>
-                                      <th className="font-medium py-1 w-16 text-right">Periods</th>
+                                      <th className="font-medium py-1 w-20 text-right">Periods</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -356,9 +355,6 @@ const ProgramPreviewPage: React.FC = () => {
                                           </td>
                                           <td className="py-1.5 text-right tabular-nums text-slate-700">
                                             {tPlan ? formatShort(tPlan.endDate) : <span className="text-slate-300">—</span>}
-                                          </td>
-                                          <td className="py-1.5 text-right tabular-nums text-slate-700">
-                                            {t.hours > 0 ? formatHoursShort(t.hours) : <span className="text-slate-300">—</span>}
                                           </td>
                                           <td className="py-1.5 text-right tabular-nums text-slate-700">
                                             {periods || <span className="text-slate-300">—</span>}
