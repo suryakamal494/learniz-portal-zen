@@ -633,36 +633,104 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
   );
 };
 
-const RowFillMenu: React.FC<{ subjects: Subject[]; onFill: (id: string | null) => void }> = ({
-  subjects,
-  onFill,
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button
-        type="button"
-        className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
-        title="Use one subject across the week"
-      >
-        <Wand2 className="h-3 w-3" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      <div className="px-2 py-1 text-[10px] uppercase text-slate-500 font-semibold">
-        Use this subject across the week
-      </div>
-      {subjects.map((s) => (
-        <DropdownMenuItem key={s.id} onClick={() => onFill(s.id)}>
-          {s.name}
-        </DropdownMenuItem>
-      ))}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => onFill(null)} className="text-slate-500">
-        Clear row
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+const RowFillMenu: React.FC<{
+  subjects: Subject[];
+  faculty: InstituteFaculty[];
+  defaultFaculty: Record<string, string>;
+  onFill: (subjectId: string | null, facultyId: string | null) => void;
+}> = ({ subjects, faculty, defaultFaculty, onFill }) => {
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [facultyId, setFacultyId] = useState<string>('__default__');
+
+  const subject = subjects.find((s) => s.id === picked);
+  const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === picked);
+
+  const apply = () => {
+    if (!picked) return;
+    const fid =
+      facultyId === '__default__' ? (defaultFaculty[picked] ?? null) : facultyId;
+    onFill(picked, fid || null);
+    setOpen(false);
+    setPicked(null);
+    setFacultyId('__default__');
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setPicked(null); setFacultyId('__default__'); } }}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
+          title="Fill this period across the week"
+        >
+          <Wand2 className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-3 space-y-2.5">
+        <div>
+          <div className="text-sm font-semibold text-slate-900">Fill this period</div>
+          <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+            Pick the subject and (optionally) the faculty for every working day of this period.
+          </p>
+        </div>
+
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Subject</div>
+          <Select value={picked ?? ''} onValueChange={(v) => { setPicked(v); setFacultyId('__default__'); }}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Pick subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjects.map((s) => (
+                <SelectItem key={s.id} value={s.id} className="text-xs">
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {subject && facultyOptions.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
+              Faculty for this row
+            </div>
+            <Select value={facultyId} onValueChange={setFacultyId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__default__" className="text-xs">
+                  Default for {subject.name}
+                </SelectItem>
+                {facultyOptions.map((f) => (
+                  <SelectItem key={f.id} value={f.id} className="text-xs">
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-1 gap-1.5">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-rose-600 hover:text-rose-700"
+            onClick={() => { onFill(null, null); setOpen(false); }}
+          >
+            Clear row
+          </Button>
+          <Button size="sm" className="h-7 text-xs" onClick={apply} disabled={!picked}>
+            Apply to week
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 interface PlanDayPopoverProps {
   dayName: string;
