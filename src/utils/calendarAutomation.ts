@@ -584,13 +584,13 @@ interface FlatTopic {
   periods: number;
 }
 
-function flattenSubjectQueue(subject: InstituteSubject, periodMins: number, startIndex: number): FlatTopic[] {
+function flattenSubjectQueue(subject: InstituteSubject, _periodMins: number, startIndex: number): FlatTopic[] {
   const out: FlatTopic[] = [];
   let i = 0;
   for (const c of subject.chapters) {
     for (const t of c.topics) {
       if (i >= startIndex) {
-        const p = hoursToPeriods(t.hours, periodMins);
+        const p = topicPeriods(t);
         if (p > 0) out.push({ subjectId: subject.id, chapterId: c.id, topicId: t.id, periods: p });
       }
       i += 1;
