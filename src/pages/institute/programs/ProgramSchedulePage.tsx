@@ -119,35 +119,19 @@ const ProgramSchedulePage: React.FC = () => {
     );
   }
 
-  if (!program.hoursFinalised) {
-    return (
-      <div className="max-w-3xl mx-auto p-10">
-        <Card className="border-amber-200 bg-amber-50/40">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
-            <h2 className="text-xl font-bold text-slate-900">Set teaching hours first</h2>
-            <p className="text-sm text-slate-600">
-              The calendar generator needs hours per topic before it can plan the academic year.
-            </p>
-            <Button asChild>
-              <Link to={`/institute/programs/${program.id}/hours`} className="gap-2">
-                <Pencil className="h-4 w-4" /> Open Teaching Hours
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const persistConfig = (c: ScheduleConfig) => {
     setConfig(c);
     setSchedule(program.id, c);
   };
 
+  const handleTopicPeriodsChange = (topicId: string, periods: number) => {
+    updateTopicHours(program.id, topicId, periods);
+  };
+
   const steps: { id: Step; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'setup', label: 'Setup', icon: CalendarDays },
-    { id: 'timetable', label: 'Weekly timetable', icon: Layers },
+    { id: 'allocation', label: 'Period Allocation', icon: Layers },
+    { id: 'timetable', label: 'Weekly Timetable', icon: Clock },
     { id: 'preview', label: 'Preview', icon: Sparkles },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
