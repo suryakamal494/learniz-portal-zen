@@ -1189,11 +1189,12 @@ const CoverageList: React.FC<{
 const TimetableStep: React.FC<{
   program: ReturnType<typeof useInstituteProgram> extends infer T ? Exclude<T, undefined> : never;
   config: ScheduleConfig;
+  faculty: ReturnType<typeof useFaculty>;
   blockers: string[];
   onChange: (c: ScheduleConfig) => void;
   onBack: () => void;
   onGenerate: () => void;
-}> = ({ program, config, blockers, onChange, onBack, onGenerate }) => {
+}> = ({ program, config, faculty, blockers, onChange, onBack, onGenerate }) => {
   const subjects = program.subjects.map((s) => ({ id: s.id, name: s.name, color: s.color }));
 
   return (
@@ -1201,6 +1202,7 @@ const TimetableStep: React.FC<{
       <WeeklyTimetableBuilder
         config={config}
         subjects={subjects}
+        faculty={faculty}
         onChange={(tt: WeeklyTimetable) => onChange({ ...config, weeklyTimetable: tt })}
       />
 
