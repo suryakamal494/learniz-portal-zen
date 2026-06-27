@@ -615,8 +615,9 @@ export function generateFromTimetable(
     return generateSchedule(program, config, preservedLocked);
   }
 
-  // Build per-week cell lookup: weekStart -> weekday -> periodIndex -> subjectId.
-  const byWeek = new Map<string, Map<number, Map<number, string | null>>>();
+  // Build per-week cell lookup: weekStart -> weekday -> periodIndex -> { subjectId, facultyId }.
+  type CellInfo = { subjectId: string | null; facultyId?: string | null };
+  const byWeek = new Map<string, Map<number, Map<number, CellInfo>>>();
   tt.cells.forEach((c) => {
     let week = byWeek.get(c.weekStartDate);
     if (!week) {
@@ -628,7 +629,7 @@ export function generateFromTimetable(
       day = new Map();
       week.set(c.weekday, day);
     }
-    day.set(c.periodIndex, c.subjectId);
+    day.set(c.periodIndex, { subjectId: c.subjectId, facultyId: c.facultyId ?? null });
   });
 
   // For any week not explicitly authored, fall back to the *latest* authored
@@ -683,12 +684,14 @@ export function generateFromTimetable(
         lastUsedDate = date;
         continue;
       }
-      const subjectId = dayCells.get(p);
+      const cell = dayCells.get(p);
+      const subjectId = cell?.subjectId;
       if (!subjectId) continue; // free period
       const q = queues[subjectId];
       if (!q || q.length === 0) continue;
       const need = q[0];
       const t = periodTimes[p];
+      const facultyId = cell?.facultyId || config.defaultFaculty[need.subjectId] || '';
       slots.push({
         id: `slot-${date}-${p}`,
         date,
@@ -698,7 +701,7 @@ export function generateFromTimetable(
         subjectId: need.subjectId,
         chapterId: need.chapterId,
         topicId: need.topicId,
-        facultyId: config.defaultFaculty[need.subjectId] ?? '',
+        facultyId,
       });
       need.periods -= 1;
       consumed += 1;
