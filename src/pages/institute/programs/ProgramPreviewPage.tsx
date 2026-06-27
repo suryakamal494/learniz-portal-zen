@@ -324,7 +324,7 @@ const ProgramPreviewPage: React.FC = () => {
                                 </span>
                               )}
                               <span>
-                                {c.topics.length} topics · {formatHoursShort(chapterHours(c))} · ~{cPeriods}p
+                                {c.topics.length} topics · {cPeriods} periods
                               </span>
                             </div>
                           </button>
