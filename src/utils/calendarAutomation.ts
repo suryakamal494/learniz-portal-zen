@@ -73,17 +73,16 @@ export function rollupProgram(program: InstituteProgram, periodMins: number): Pr
   };
 }
 
-export function rollupSubject(subject: InstituteSubject, periodMins: number): SubjectRollup {
+export function rollupSubject(subject: InstituteSubject, _periodMins: number): SubjectRollup {
   let topics = 0;
   let topicsConfigured = 0;
-  let hours = 0;
   let periods = 0;
   subject.chapters.forEach((ch) => {
     ch.topics.forEach((t) => {
       topics += 1;
-      if (t.hours > 0) topicsConfigured += 1;
-      hours += t.hours || 0;
-      periods += hoursToPeriods(t.hours || 0, periodMins);
+      const p = topicPeriods(t);
+      if (p > 0) topicsConfigured += 1;
+      periods += p;
     });
   });
   return {
@@ -92,13 +91,19 @@ export function rollupSubject(subject: InstituteSubject, periodMins: number): Su
     color: subject.color,
     topics,
     topicsConfigured,
-    hours: round1(hours),
+    // `hours` is retained on the rollup type so existing callers still work,
+    // but now mirrors `periods` — Step 2 captures periods directly.
+    hours: periods,
     periods,
   };
 }
 
 export function chapterHours(chapter: { topics: { hours: number }[] }): number {
-  return round1(chapter.topics.reduce((a, t) => a + (t.hours || 0), 0));
+  return chapter.topics.reduce((a, t) => a + topicPeriods(t), 0);
+}
+
+export function chapterPeriods(chapter: { topics: { hours: number }[] }): number {
+  return chapter.topics.reduce((a, t) => a + topicPeriods(t), 0);
 }
 
 function round1(n: number): number {
