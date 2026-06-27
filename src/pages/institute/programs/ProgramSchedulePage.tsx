@@ -1036,6 +1036,7 @@ const SetupStep: React.FC<{
         </div>
       </div>
     </div>
+    </div>
   );
 };
 
