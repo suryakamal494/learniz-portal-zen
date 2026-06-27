@@ -251,7 +251,6 @@ export function generateSchedule(
   config: ScheduleConfig,
   preservedLocked: ScheduleSlot[] = [],
 ): GenerateResult {
-  const periodMins = config.periodLengthMins;
   // Build the per-subject queue of (topic, periodsNeeded) in curriculum order.
   type Need = { subjectId: string; chapterId: string; topicId: string; remaining: number };
   const queues: Record<string, Need[]> = {};
@@ -259,7 +258,7 @@ export function generateSchedule(
     const list: Need[] = [];
     s.chapters.forEach((c) => {
       c.topics.forEach((t) => {
-        const p = hoursToPeriods(t.hours, periodMins);
+        const p = topicPeriods(t);
         if (p > 0) list.push({ subjectId: s.id, chapterId: c.id, topicId: t.id, remaining: p });
       });
     });
