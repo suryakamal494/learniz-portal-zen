@@ -66,8 +66,8 @@ const ProgramsListPage: React.FC = () => {
             </div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Programs</h1>
             <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-              Configure teaching hours per program, then auto-generate the academic calendar that powers the teacher
-              schedule.
+              Allocate class periods per subject, build the weekly timetable, then auto-generate the academic
+              calendar that powers the teacher schedule.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -189,22 +189,7 @@ const ProgramsListPage: React.FC = () => {
                     </div>
 
                     {/* CTA row */}
-                    <div className="flex items-center justify-between gap-2 pt-2">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5 h-8 bg-white/90 backdrop-blur border-slate-300 text-slate-700 hover:bg-white hover:text-indigo-700 hover:border-indigo-300"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/institute/programs/${p.id}/hours`);
-                          }}
-                        >
-                          <Clock className="h-3.5 w-3.5" />
-                          Teaching Hours
-                        </Button>
-                      </div>
-
+                    <div className="flex items-center justify-end gap-2 pt-2">
                       <Button
                         size="sm"
                         className="gap-1.5 h-8 bg-slate-900 hover:bg-slate-800 text-white shadow-sm group-hover:bg-indigo-600 group-hover:shadow-md transition-colors"
@@ -213,7 +198,7 @@ const ProgramsListPage: React.FC = () => {
                           goSchedule();
                         }}
                       >
-                        Open
+                        Setup &amp; Allocation
                         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                       </Button>
                     </div>
