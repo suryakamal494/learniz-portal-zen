@@ -90,7 +90,7 @@ import StudentDetailPage from './pages/institute/StudentDetailPage';
 import { InstituteLayout } from './components/institute/InstituteLayout';
 import InstituteExamsPage from './pages/institute/exams/InstituteExamsPage';
 import ProgramsListPage from './pages/institute/programs/ProgramsListPage';
-import ProgramHoursPage from './pages/institute/programs/ProgramHoursPage';
+
 import ProgramPreviewPage from './pages/institute/programs/ProgramPreviewPage';
 import ProgramSchedulePage from './pages/institute/programs/ProgramSchedulePage';
 import InstituteHolidaysPage from './pages/institute/programs/InstituteHolidaysPage';
@@ -208,7 +208,11 @@ function App() {
           {/* Programs module */}
           <Route path="programs" element={<ProgramsListPage />} />
           <Route path="programs/holidays" element={<InstituteHolidaysPage />} />
-          <Route path="programs/:programId/hours" element={<ProgramHoursPage />} />
+          {/* Legacy: Teaching Hours moved into the Schedule wizard's Step 2. */}
+          <Route
+            path="programs/:programId/hours"
+            element={<Navigate to="../schedule" replace />}
+          />
           <Route path="programs/:programId/preview" element={<ProgramPreviewPage />} />
           <Route path="programs/:programId/schedule" element={<ProgramSchedulePage />} />
 

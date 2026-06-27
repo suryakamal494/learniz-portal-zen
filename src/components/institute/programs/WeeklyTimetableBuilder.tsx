@@ -54,6 +54,7 @@ import {
   WeekDay,
   WeeklyTimetable,
   WeeklyTimetableCell,
+  InstituteFaculty,
 } from '@/types/instituteProgram';
 import {
   addDays,
@@ -80,6 +81,8 @@ interface Subject {
 interface Props {
   config: ScheduleConfig;
   subjects: Subject[];
+  /** Available faculty for per-cell / per-row assignment in Step 3. */
+  faculty?: InstituteFaculty[];
   onChange: (tt: WeeklyTimetable) => void;
 }
 
@@ -98,7 +101,7 @@ function weeksInWindow(startIso: string, endIso: string): string[] {
 
 type CopyMode = 'next' | 'next4' | 'remaining' | 'all';
 
-export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onChange }) => {
+export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, faculty = [], onChange }) => {
   const layout = useMemo(() => computeDayLayout(config), [config]);
   const periodRows = useMemo(() => layout.filter((r) => r.kind === 'period'), [layout]);
 
@@ -123,11 +126,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
   // Confirm dialog state for bulk copy.
   const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; count: number } | null>(null);
 
+  /** Map of "weekday#periodIndex" -> { subjectId, facultyId } for active week. */
   const cellMap = useMemo(() => {
-    const m = new Map<string, string | null>();
+    const m = new Map<string, { subjectId: string | null; facultyId?: string | null }>();
     tt.cells
       .filter((c) => c.weekStartDate === activeWeek)
-      .forEach((c) => m.set(`${c.weekday}#${c.periodIndex}`, c.subjectId));
+      .forEach((c) =>
+        m.set(`${c.weekday}#${c.periodIndex}`, { subjectId: c.subjectId, facultyId: c.facultyId ?? null }),
+      );
     return m;
   }, [tt.cells, activeWeek]);
 
@@ -163,16 +169,45 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
     onChange({ cells: mutator(tt.cells) });
   };
 
-  const setCell = (weekStart: string, weekday: WeekDay, periodIndex: number, subjectId: string | null) => {
+  const setCellSubject = (
+    weekStart: string,
+    weekday: WeekDay,
+    periodIndex: number,
+    subjectId: string | null,
+  ) => {
     writeNoSnapshot((cells) => {
+      const existing = cells.find(
+        (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
+      );
       const others = cells.filter(
         (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
       );
-      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId }];
+      // Reset faculty override when subject is cleared or changed.
+      const facultyId =
+        subjectId && existing?.subjectId === subjectId ? existing?.facultyId ?? null : null;
+      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId, facultyId }];
     });
   };
 
-  const fillRow = (periodIndex: number, subjectId: string | null) => {
+  const setCellFaculty = (
+    weekStart: string,
+    weekday: WeekDay,
+    periodIndex: number,
+    facultyId: string | null,
+  ) => {
+    writeNoSnapshot((cells) => {
+      const existing = cells.find(
+        (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
+      );
+      if (!existing || !existing.subjectId) return cells;
+      const others = cells.filter(
+        (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
+      );
+      return [...others, { ...existing, facultyId }];
+    });
+  };
+
+  const fillRow = (periodIndex: number, subjectId: string | null, facultyId: string | null = null) => {
     const others = tt.cells.filter(
       (c) => !(c.weekStartDate === activeWeek && c.periodIndex === periodIndex),
     );
@@ -181,12 +216,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
       weekday: d.d,
       periodIndex,
       subjectId,
+      facultyId: subjectId ? facultyId : null,
     }));
     const sub = subjects.find((s) => s.id === subjectId);
+    const fac = faculty.find((f) => f.id === facultyId);
     snapshotAndWrite(
       [...others, ...added],
       subjectId
-        ? `${sub?.name ?? 'Subject'} set for P${periodIndex + 1} across the week`
+        ? `${sub?.name ?? 'Subject'}${fac ? ` · ${fac.name}` : ''} set for P${periodIndex + 1} across the week`
         : `P${periodIndex + 1} cleared across the week`,
     );
   };
@@ -487,40 +524,83 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
                         </div>
                         <RowFillMenu
                           subjects={subjects}
-                          onFill={(sid) => fillRow(pIdx, sid)}
+                          faculty={faculty}
+                          defaultFaculty={config.defaultFaculty}
+                          onFill={(sid, fid) => fillRow(pIdx, sid, fid)}
                         />
                       </div>
                     </td>
 
                     {workingDows.map((d) => {
-                      const value = cellMap.get(`${d.d}#${pIdx}`);
-                      const sub = subjects.find((s) => s.id === value);
+                      const cell = cellMap.get(`${d.d}#${pIdx}`);
+                      const subjectId = cell?.subjectId ?? null;
+                      const sub = subjects.find((s) => s.id === subjectId);
                       const pal = sub ? subjectPalette(sub.color) : null;
+                      const effectiveFacultyId =
+                        cell?.facultyId || (subjectId ? config.defaultFaculty[subjectId] : '') || '';
+                      const fac = faculty.find((f) => f.id === effectiveFacultyId);
+                      const facultyOptions = faculty.filter(
+                        (f) => !f.subjectId || f.subjectId === subjectId,
+                      );
                       return (
                         <td key={d.d} className="px-1 py-1 align-top">
-                          <Select
-                            value={value ?? '__free__'}
-                            onValueChange={(v) =>
-                              setCell(activeWeek, d.d, pIdx, v === '__free__' ? null : v)
-                            }
-                          >
-                            <SelectTrigger
-                              className={cn(
-                                'h-9 text-xs border bg-white',
-                                pal && cn(pal.slot, 'font-medium'),
-                              )}
+                          <div className="space-y-1">
+                            <Select
+                              value={subjectId ?? '__free__'}
+                              onValueChange={(v) =>
+                                setCellSubject(activeWeek, d.d, pIdx, v === '__free__' ? null : v)
+                              }
                             >
-                              <SelectValue placeholder="—" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__free__">— Free —</SelectItem>
-                              {subjects.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  {s.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger
+                                className={cn(
+                                  'h-9 text-xs border bg-white',
+                                  pal && cn(pal.slot, 'font-medium'),
+                                )}
+                              >
+                                <SelectValue placeholder="—" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__free__">— Free —</SelectItem>
+                                {subjects.map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>
+                                    {s.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {subjectId && facultyOptions.length > 0 && (
+                              <Select
+                                value={effectiveFacultyId || '__default__'}
+                                onValueChange={(v) =>
+                                  setCellFaculty(
+                                    activeWeek,
+                                    d.d,
+                                    pIdx,
+                                    v === '__default__' ? null : v,
+                                  )
+                                }
+                              >
+                                <SelectTrigger
+                                  className="h-7 text-[10px] border-slate-200 bg-slate-50/70 text-slate-700"
+                                  title={fac ? `Faculty: ${fac.name}` : 'No faculty set'}
+                                >
+                                  <SelectValue placeholder="Faculty">
+                                    {fac ? fac.name : 'Faculty'}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__default__">
+                                    Use default
+                                  </SelectItem>
+                                  {facultyOptions.map((f) => (
+                                    <SelectItem key={f.id} value={f.id} className="text-xs">
+                                      {f.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
                         </td>
                       );
                     })}
@@ -553,36 +633,104 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
   );
 };
 
-const RowFillMenu: React.FC<{ subjects: Subject[]; onFill: (id: string | null) => void }> = ({
-  subjects,
-  onFill,
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button
-        type="button"
-        className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
-        title="Use one subject across the week"
-      >
-        <Wand2 className="h-3 w-3" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      <div className="px-2 py-1 text-[10px] uppercase text-slate-500 font-semibold">
-        Use this subject across the week
-      </div>
-      {subjects.map((s) => (
-        <DropdownMenuItem key={s.id} onClick={() => onFill(s.id)}>
-          {s.name}
-        </DropdownMenuItem>
-      ))}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => onFill(null)} className="text-slate-500">
-        Clear row
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+const RowFillMenu: React.FC<{
+  subjects: Subject[];
+  faculty: InstituteFaculty[];
+  defaultFaculty: Record<string, string>;
+  onFill: (subjectId: string | null, facultyId: string | null) => void;
+}> = ({ subjects, faculty, defaultFaculty, onFill }) => {
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [facultyId, setFacultyId] = useState<string>('__default__');
+
+  const subject = subjects.find((s) => s.id === picked);
+  const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === picked);
+
+  const apply = () => {
+    if (!picked) return;
+    const fid =
+      facultyId === '__default__' ? (defaultFaculty[picked] ?? null) : facultyId;
+    onFill(picked, fid || null);
+    setOpen(false);
+    setPicked(null);
+    setFacultyId('__default__');
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setPicked(null); setFacultyId('__default__'); } }}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="h-5 w-5 rounded hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-700"
+          title="Fill this period across the week"
+        >
+          <Wand2 className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-3 space-y-2.5">
+        <div>
+          <div className="text-sm font-semibold text-slate-900">Fill this period</div>
+          <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+            Pick the subject and (optionally) the faculty for every working day of this period.
+          </p>
+        </div>
+
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Subject</div>
+          <Select value={picked ?? ''} onValueChange={(v) => { setPicked(v); setFacultyId('__default__'); }}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Pick subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjects.map((s) => (
+                <SelectItem key={s.id} value={s.id} className="text-xs">
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {subject && facultyOptions.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
+              Faculty for this row
+            </div>
+            <Select value={facultyId} onValueChange={setFacultyId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__default__" className="text-xs">
+                  Default for {subject.name}
+                </SelectItem>
+                {facultyOptions.map((f) => (
+                  <SelectItem key={f.id} value={f.id} className="text-xs">
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-1 gap-1.5">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-rose-600 hover:text-rose-700"
+            onClick={() => { onFill(null, null); setOpen(false); }}
+          >
+            Clear row
+          </Button>
+          <Button size="sm" className="h-7 text-xs" onClick={apply} disabled={!picked}>
+            Apply to week
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 interface PlanDayPopoverProps {
   dayName: string;

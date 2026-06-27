@@ -15,6 +15,27 @@ export function hoursToPeriods(hours: number, periodMins: number): number {
   return Math.ceil((hours * 60) / Math.max(1, periodMins));
 }
 
+/** Returns the period count stored on a topic. Step 2 now writes periods
+ *  directly into the `hours` field (no minutes conversion needed). */
+export function topicPeriods(topic: { hours: number }): number {
+  return Math.max(0, Math.round(topic.hours || 0));
+}
+
+/** Available class capacity from setup: working days × periods per day,
+ *  honouring holidays and working-day toggles. */
+export function computeCapacity(
+  config: ScheduleConfig,
+): { workingDays: number; periodsAvailable: number; endDateUsed: string } {
+  const endIso = config.endDate ?? addDays(config.startDate, 365);
+  const holidaySet = new Set((config.holidays ?? []).map((h) => h.date));
+  const days = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
+  return {
+    workingDays: days.length,
+    periodsAvailable: days.length * (config.periodsPerDay || 0),
+    endDateUsed: endIso,
+  };
+}
+
 export function parseISO(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1);
@@ -52,17 +73,16 @@ export function rollupProgram(program: InstituteProgram, periodMins: number): Pr
   };
 }
 
-export function rollupSubject(subject: InstituteSubject, periodMins: number): SubjectRollup {
+export function rollupSubject(subject: InstituteSubject, _periodMins: number): SubjectRollup {
   let topics = 0;
   let topicsConfigured = 0;
-  let hours = 0;
   let periods = 0;
   subject.chapters.forEach((ch) => {
     ch.topics.forEach((t) => {
       topics += 1;
-      if (t.hours > 0) topicsConfigured += 1;
-      hours += t.hours || 0;
-      periods += hoursToPeriods(t.hours || 0, periodMins);
+      const p = topicPeriods(t);
+      if (p > 0) topicsConfigured += 1;
+      periods += p;
     });
   });
   return {
@@ -71,13 +91,19 @@ export function rollupSubject(subject: InstituteSubject, periodMins: number): Su
     color: subject.color,
     topics,
     topicsConfigured,
-    hours: round1(hours),
+    // `hours` is retained on the rollup type so existing callers still work,
+    // but now mirrors `periods` — Step 2 captures periods directly.
+    hours: periods,
     periods,
   };
 }
 
 export function chapterHours(chapter: { topics: { hours: number }[] }): number {
-  return round1(chapter.topics.reduce((a, t) => a + (t.hours || 0), 0));
+  return chapter.topics.reduce((a, t) => a + topicPeriods(t), 0);
+}
+
+export function chapterPeriods(chapter: { topics: { hours: number }[] }): number {
+  return chapter.topics.reduce((a, t) => a + topicPeriods(t), 0);
 }
 
 function round1(n: number): number {
@@ -225,7 +251,6 @@ export function generateSchedule(
   config: ScheduleConfig,
   preservedLocked: ScheduleSlot[] = [],
 ): GenerateResult {
-  const periodMins = config.periodLengthMins;
   // Build the per-subject queue of (topic, periodsNeeded) in curriculum order.
   type Need = { subjectId: string; chapterId: string; topicId: string; remaining: number };
   const queues: Record<string, Need[]> = {};
@@ -233,7 +258,7 @@ export function generateSchedule(
     const list: Need[] = [];
     s.chapters.forEach((c) => {
       c.topics.forEach((t) => {
-        const p = hoursToPeriods(t.hours, periodMins);
+        const p = topicPeriods(t);
         if (p > 0) list.push({ subjectId: s.id, chapterId: c.id, topicId: t.id, remaining: p });
       });
     });
@@ -283,7 +308,7 @@ export function generateSchedule(
 
       const need = queues[pickedSubject][0];
       const t = periodTimes[p];
-      const fallback = periodTime(p, periodMins);
+      const fallback = periodTime(p, config.periodLengthMins);
       slots.push({
         id: `slot-${date}-${p}`,
         date,
@@ -339,8 +364,7 @@ export function capacityCheck(
   program: InstituteProgram,
   config: ScheduleConfig,
 ): { needed: number; available: number; surplus: number; suggestedEndDate?: string } {
-  const periodMins = config.periodLengthMins;
-  const needed = rollupProgram(program, periodMins).periods;
+  const needed = rollupProgram(program, config.periodLengthMins).periods;
   const endIso = config.endDate ?? addDays(config.startDate, 730);
   const holidaySet = new Set(config.holidays.map((h) => h.date));
   const days = buildWorkingDays(config.startDate, endIso, config.workingDays, holidaySet);
@@ -406,14 +430,13 @@ export interface DatePlan {
 }
 
 export function planDates(program: InstituteProgram, config: ScheduleConfig): DatePlan {
-  const periodMins = config.periodLengthMins;
   type Need = { subjectId: string; chapterId: string; topicId: string; remaining: number; totalPeriods: number };
   const queues: Record<string, Need[]> = {};
   program.subjects.forEach((s) => {
     const list: Need[] = [];
     s.chapters.forEach((c) => {
       c.topics.forEach((t) => {
-        const p = hoursToPeriods(t.hours, periodMins);
+        const p = topicPeriods(t);
         if (p > 0) list.push({ subjectId: s.id, chapterId: c.id, topicId: t.id, remaining: p, totalPeriods: p });
       });
     });
@@ -561,13 +584,13 @@ interface FlatTopic {
   periods: number;
 }
 
-function flattenSubjectQueue(subject: InstituteSubject, periodMins: number, startIndex: number): FlatTopic[] {
+function flattenSubjectQueue(subject: InstituteSubject, _periodMins: number, startIndex: number): FlatTopic[] {
   const out: FlatTopic[] = [];
   let i = 0;
   for (const c of subject.chapters) {
     for (const t of c.topics) {
       if (i >= startIndex) {
-        const p = hoursToPeriods(t.hours, periodMins);
+        const p = topicPeriods(t);
         if (p > 0) out.push({ subjectId: subject.id, chapterId: c.id, topicId: t.id, periods: p });
       }
       i += 1;
@@ -592,8 +615,9 @@ export function generateFromTimetable(
     return generateSchedule(program, config, preservedLocked);
   }
 
-  // Build per-week cell lookup: weekStart -> weekday -> periodIndex -> subjectId.
-  const byWeek = new Map<string, Map<number, Map<number, string | null>>>();
+  // Build per-week cell lookup: weekStart -> weekday -> periodIndex -> { subjectId, facultyId }.
+  type CellInfo = { subjectId: string | null; facultyId?: string | null };
+  const byWeek = new Map<string, Map<number, Map<number, CellInfo>>>();
   tt.cells.forEach((c) => {
     let week = byWeek.get(c.weekStartDate);
     if (!week) {
@@ -605,7 +629,7 @@ export function generateFromTimetable(
       day = new Map();
       week.set(c.weekday, day);
     }
-    day.set(c.periodIndex, c.subjectId);
+    day.set(c.periodIndex, { subjectId: c.subjectId, facultyId: c.facultyId ?? null });
   });
 
   // For any week not explicitly authored, fall back to the *latest* authored
@@ -660,12 +684,14 @@ export function generateFromTimetable(
         lastUsedDate = date;
         continue;
       }
-      const subjectId = dayCells.get(p);
+      const cell = dayCells.get(p);
+      const subjectId = cell?.subjectId;
       if (!subjectId) continue; // free period
       const q = queues[subjectId];
       if (!q || q.length === 0) continue;
       const need = q[0];
       const t = periodTimes[p];
+      const facultyId = cell?.facultyId || config.defaultFaculty[need.subjectId] || '';
       slots.push({
         id: `slot-${date}-${p}`,
         date,
@@ -675,7 +701,7 @@ export function generateFromTimetable(
         subjectId: need.subjectId,
         chapterId: need.chapterId,
         topicId: need.topicId,
-        facultyId: config.defaultFaculty[need.subjectId] ?? '',
+        facultyId,
       });
       need.periods -= 1;
       consumed += 1;

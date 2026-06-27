@@ -38,9 +38,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   addFaculty,
   configWithEffectiveHolidays,
+  finaliseHours,
   setGeneratedSlots,
   setSchedule,
   updateProgram,
+  updateTopicHours,
   useFaculty,
   useInstituteHolidays,
   useInstituteProgram,
@@ -48,6 +50,7 @@ import {
 import {
   addDays,
   capacityCheck,
+  computeCapacity,
   computeCoverageCursor,
   computeDayLayout,
   formatPretty,
@@ -57,6 +60,7 @@ import {
   parseISO,
   rollupProgram,
   toISO,
+  topicPeriods,
 } from '@/utils/calendarAutomation';
 import { formatHoursShort } from '@/utils/formatUtils';
 
@@ -65,8 +69,11 @@ import { subjectPalette } from '@/lib/subjectColors';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { WeeklyTimetableBuilder } from '@/components/institute/programs/WeeklyTimetableBuilder';
+import { CapacityStrip } from '@/components/institute/programs/CapacityStrip';
+import { PeriodAllocationWorkspace } from '@/components/institute/programs/PeriodAllocationWorkspace';
 
-type Step = 'setup' | 'timetable' | 'preview';
+
+type Step = 'setup' | 'allocation' | 'timetable' | 'preview';
 
 
 const DEFAULT_CONFIG: ScheduleConfig = {
@@ -112,35 +119,19 @@ const ProgramSchedulePage: React.FC = () => {
     );
   }
 
-  if (!program.hoursFinalised) {
-    return (
-      <div className="max-w-3xl mx-auto p-10">
-        <Card className="border-amber-200 bg-amber-50/40">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
-            <h2 className="text-xl font-bold text-slate-900">Set teaching hours first</h2>
-            <p className="text-sm text-slate-600">
-              The calendar generator needs hours per topic before it can plan the academic year.
-            </p>
-            <Button asChild>
-              <Link to={`/institute/programs/${program.id}/hours`} className="gap-2">
-                <Pencil className="h-4 w-4" /> Open Teaching Hours
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const persistConfig = (c: ScheduleConfig) => {
     setConfig(c);
     setSchedule(program.id, c);
   };
 
+  const handleTopicPeriodsChange = (topicId: string, periods: number) => {
+    updateTopicHours(program.id, topicId, periods);
+  };
+
   const steps: { id: Step; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'setup', label: 'Setup', icon: CalendarDays },
-    { id: 'timetable', label: 'Weekly timetable', icon: Layers },
+    { id: 'allocation', label: 'Period Allocation', icon: Layers },
+    { id: 'timetable', label: 'Weekly Timetable', icon: Clock },
     { id: 'preview', label: 'Preview', icon: Sparkles },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
@@ -237,6 +228,20 @@ const ProgramSchedulePage: React.FC = () => {
                 });
                 return;
               }
+              setStep('allocation');
+            }}
+          />
+        )}
+        {step === 'allocation' && (
+          <PeriodAllocationWorkspace
+            program={program}
+            config={effectiveConfig}
+            onConfigChange={persistConfig}
+            onTopicPeriodsChange={handleTopicPeriodsChange}
+            onBack={() => setStep('setup')}
+            onNext={() => {
+              // Mark hours/period allocation as finalised for downstream consumers.
+              if (!program.hoursFinalised) finaliseHours(program.id, true);
               setStep('timetable');
             }}
           />
@@ -245,9 +250,10 @@ const ProgramSchedulePage: React.FC = () => {
           <TimetableStep
             program={program}
             config={config}
+            faculty={faculty}
             blockers={timetableBlockers}
             onChange={persistConfig}
-            onBack={() => setStep('setup')}
+            onBack={() => setStep('allocation')}
             onGenerate={() => {
               if (timetableBlockers.length > 0) {
                 toast({
@@ -470,8 +476,22 @@ const SetupStep: React.FC<{
   const hasErrors = issues.some((i) => i.level === 'error');
 
 
+  // Live capacity preview so users see the budget forming as Setup fields change.
+  const capacityPreview = useMemo(() => computeCapacity(config), [config]);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 -mb-1">
+        <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
+          <CheckCircle2 className="h-3.5 w-3.5" /> Auto-saved — every change is stored.
+        </div>
+        <CapacityStrip
+          workingDays={capacityPreview.workingDays}
+          periodsAvailable={capacityPreview.periodsAvailable}
+          compact
+        />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Window */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-5 space-y-4">
@@ -1011,10 +1031,11 @@ const SetupStep: React.FC<{
             className="gap-2"
             disabled={blockers.length > 0}
           >
-            Next: Weekly Timetable <ArrowRight className="h-4 w-4" />
+            Next: Period Allocation <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
+    </div>
     </div>
   );
 };
@@ -1183,11 +1204,12 @@ const CoverageList: React.FC<{
 const TimetableStep: React.FC<{
   program: ReturnType<typeof useInstituteProgram> extends infer T ? Exclude<T, undefined> : never;
   config: ScheduleConfig;
+  faculty: ReturnType<typeof useFaculty>;
   blockers: string[];
   onChange: (c: ScheduleConfig) => void;
   onBack: () => void;
   onGenerate: () => void;
-}> = ({ program, config, blockers, onChange, onBack, onGenerate }) => {
+}> = ({ program, config, faculty, blockers, onChange, onBack, onGenerate }) => {
   const subjects = program.subjects.map((s) => ({ id: s.id, name: s.name, color: s.color }));
 
   return (
@@ -1195,6 +1217,7 @@ const TimetableStep: React.FC<{
       <WeeklyTimetableBuilder
         config={config}
         subjects={subjects}
+        faculty={faculty}
         onChange={(tt: WeeklyTimetable) => onChange({ ...config, weeklyTimetable: tt })}
       />
 
