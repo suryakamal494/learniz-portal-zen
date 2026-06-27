@@ -101,7 +101,7 @@ function weeksInWindow(startIso: string, endIso: string): string[] {
 
 type CopyMode = 'next' | 'next4' | 'remaining' | 'all';
 
-export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onChange }) => {
+export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, faculty = [], onChange }) => {
   const layout = useMemo(() => computeDayLayout(config), [config]);
   const periodRows = useMemo(() => layout.filter((r) => r.kind === 'period'), [layout]);
 
@@ -126,11 +126,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
   // Confirm dialog state for bulk copy.
   const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; count: number } | null>(null);
 
+  /** Map of "weekday#periodIndex" -> { subjectId, facultyId } for active week. */
   const cellMap = useMemo(() => {
-    const m = new Map<string, string | null>();
+    const m = new Map<string, { subjectId: string | null; facultyId?: string | null }>();
     tt.cells
       .filter((c) => c.weekStartDate === activeWeek)
-      .forEach((c) => m.set(`${c.weekday}#${c.periodIndex}`, c.subjectId));
+      .forEach((c) =>
+        m.set(`${c.weekday}#${c.periodIndex}`, { subjectId: c.subjectId, facultyId: c.facultyId ?? null }),
+      );
     return m;
   }, [tt.cells, activeWeek]);
 
@@ -166,16 +169,45 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
     onChange({ cells: mutator(tt.cells) });
   };
 
-  const setCell = (weekStart: string, weekday: WeekDay, periodIndex: number, subjectId: string | null) => {
+  const setCellSubject = (
+    weekStart: string,
+    weekday: WeekDay,
+    periodIndex: number,
+    subjectId: string | null,
+  ) => {
     writeNoSnapshot((cells) => {
+      const existing = cells.find(
+        (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
+      );
       const others = cells.filter(
         (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
       );
-      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId }];
+      // Reset faculty override when subject is cleared or changed.
+      const facultyId =
+        subjectId && existing?.subjectId === subjectId ? existing?.facultyId ?? null : null;
+      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId, facultyId }];
     });
   };
 
-  const fillRow = (periodIndex: number, subjectId: string | null) => {
+  const setCellFaculty = (
+    weekStart: string,
+    weekday: WeekDay,
+    periodIndex: number,
+    facultyId: string | null,
+  ) => {
+    writeNoSnapshot((cells) => {
+      const existing = cells.find(
+        (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
+      );
+      if (!existing || !existing.subjectId) return cells;
+      const others = cells.filter(
+        (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
+      );
+      return [...others, { ...existing, facultyId }];
+    });
+  };
+
+  const fillRow = (periodIndex: number, subjectId: string | null, facultyId: string | null = null) => {
     const others = tt.cells.filter(
       (c) => !(c.weekStartDate === activeWeek && c.periodIndex === periodIndex),
     );
@@ -184,12 +216,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, onCh
       weekday: d.d,
       periodIndex,
       subjectId,
+      facultyId: subjectId ? facultyId : null,
     }));
     const sub = subjects.find((s) => s.id === subjectId);
+    const fac = faculty.find((f) => f.id === facultyId);
     snapshotAndWrite(
       [...others, ...added],
       subjectId
-        ? `${sub?.name ?? 'Subject'} set for P${periodIndex + 1} across the week`
+        ? `${sub?.name ?? 'Subject'}${fac ? ` · ${fac.name}` : ''} set for P${periodIndex + 1} across the week`
         : `P${periodIndex + 1} cleared across the week`,
     );
   };
