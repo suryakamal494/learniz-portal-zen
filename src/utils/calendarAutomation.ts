@@ -308,7 +308,7 @@ export function generateSchedule(
 
       const need = queues[pickedSubject][0];
       const t = periodTimes[p];
-      const fallback = periodTime(p, periodMins);
+      const fallback = periodTime(p, config.periodLengthMins);
       slots.push({
         id: `slot-${date}-${p}`,
         date,
