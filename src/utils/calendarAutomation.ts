@@ -430,14 +430,13 @@ export interface DatePlan {
 }
 
 export function planDates(program: InstituteProgram, config: ScheduleConfig): DatePlan {
-  const periodMins = config.periodLengthMins;
   type Need = { subjectId: string; chapterId: string; topicId: string; remaining: number; totalPeriods: number };
   const queues: Record<string, Need[]> = {};
   program.subjects.forEach((s) => {
     const list: Need[] = [];
     s.chapters.forEach((c) => {
       c.topics.forEach((t) => {
-        const p = hoursToPeriods(t.hours, periodMins);
+        const p = topicPeriods(t);
         if (p > 0) list.push({ subjectId: s.id, chapterId: c.id, topicId: t.id, remaining: p, totalPeriods: p });
       });
     });
