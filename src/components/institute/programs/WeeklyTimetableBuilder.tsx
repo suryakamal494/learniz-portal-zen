@@ -524,40 +524,83 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                         </div>
                         <RowFillMenu
                           subjects={subjects}
-                          onFill={(sid) => fillRow(pIdx, sid)}
+                          faculty={faculty}
+                          defaultFaculty={config.defaultFaculty}
+                          onFill={(sid, fid) => fillRow(pIdx, sid, fid)}
                         />
                       </div>
                     </td>
 
                     {workingDows.map((d) => {
-                      const value = cellMap.get(`${d.d}#${pIdx}`);
-                      const sub = subjects.find((s) => s.id === value);
+                      const cell = cellMap.get(`${d.d}#${pIdx}`);
+                      const subjectId = cell?.subjectId ?? null;
+                      const sub = subjects.find((s) => s.id === subjectId);
                       const pal = sub ? subjectPalette(sub.color) : null;
+                      const effectiveFacultyId =
+                        cell?.facultyId || (subjectId ? config.defaultFaculty[subjectId] : '') || '';
+                      const fac = faculty.find((f) => f.id === effectiveFacultyId);
+                      const facultyOptions = faculty.filter(
+                        (f) => !f.subjectId || f.subjectId === subjectId,
+                      );
                       return (
                         <td key={d.d} className="px-1 py-1 align-top">
-                          <Select
-                            value={value ?? '__free__'}
-                            onValueChange={(v) =>
-                              setCell(activeWeek, d.d, pIdx, v === '__free__' ? null : v)
-                            }
-                          >
-                            <SelectTrigger
-                              className={cn(
-                                'h-9 text-xs border bg-white',
-                                pal && cn(pal.slot, 'font-medium'),
-                              )}
+                          <div className="space-y-1">
+                            <Select
+                              value={subjectId ?? '__free__'}
+                              onValueChange={(v) =>
+                                setCellSubject(activeWeek, d.d, pIdx, v === '__free__' ? null : v)
+                              }
                             >
-                              <SelectValue placeholder="—" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__free__">— Free —</SelectItem>
-                              {subjects.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  {s.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger
+                                className={cn(
+                                  'h-9 text-xs border bg-white',
+                                  pal && cn(pal.slot, 'font-medium'),
+                                )}
+                              >
+                                <SelectValue placeholder="—" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__free__">— Free —</SelectItem>
+                                {subjects.map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>
+                                    {s.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {subjectId && facultyOptions.length > 0 && (
+                              <Select
+                                value={effectiveFacultyId || '__default__'}
+                                onValueChange={(v) =>
+                                  setCellFaculty(
+                                    activeWeek,
+                                    d.d,
+                                    pIdx,
+                                    v === '__default__' ? null : v,
+                                  )
+                                }
+                              >
+                                <SelectTrigger
+                                  className="h-7 text-[10px] border-slate-200 bg-slate-50/70 text-slate-700"
+                                  title={fac ? `Faculty: ${fac.name}` : 'No faculty set'}
+                                >
+                                  <SelectValue placeholder="Faculty">
+                                    {fac ? fac.name : 'Faculty'}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__default__">
+                                    Use default
+                                  </SelectItem>
+                                  {facultyOptions.map((f) => (
+                                    <SelectItem key={f.id} value={f.id} className="text-xs">
+                                      {f.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
                         </td>
                       );
                     })}
