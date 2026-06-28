@@ -1732,6 +1732,26 @@ const Step3Cell: React.FC<{
   const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === slot.subjectId);
   const currentFaculty = faculty.find((f) => f.id === slot.facultyId);
 
+  // Resolve sub-program + track chips (works across CBSE/JEE slices).
+  const subPrograms: { id: string; code: string; name: string }[] = program.subPrograms ?? [];
+  const hasSubPrograms = subPrograms.length > 1;
+  const subProgram = slot.subProgramId
+    ? subPrograms.find((sp) => sp.id === slot.subProgramId)
+    : null;
+
+  const sched = program.schedule ?? {};
+  const activeSpId = sched.activeSubProgramId;
+  const sliceTracks: any[] = (() => {
+    if (!slot.subProgramId || slot.subProgramId === activeSpId) {
+      return sched.subjectTracks?.[slot.subjectId] ?? [];
+    }
+    return sched.subProgramSlices?.[slot.subProgramId]?.subjectTracks?.[slot.subjectId] ?? [];
+  })();
+  const track = slot.trackId
+    ? sliceTracks.find((t: any) => t.id === slot.trackId) ?? null
+    : null;
+  const showTrackChip = sliceTracks.filter((t: any) => t.enabled !== false).length > 1;
+
   const handleChapter = (chapterId: string) => {
     const newCh = chapters.find((c: any) => c.id === chapterId);
     const firstTopic = newCh?.topics?.[0]?.id ?? '';
@@ -1752,9 +1772,21 @@ const Step3Cell: React.FC<{
 
         >
           <div className="flex items-center justify-between gap-1 mb-1">
-            <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide')}>
-              {sub?.name}
-            </span>
+            <div className="flex items-center gap-1 min-w-0">
+              {hasSubPrograms && subProgram && (
+                <span className="text-[9px] font-bold uppercase tracking-wide px-1 py-0 rounded bg-indigo-100 text-indigo-700 shrink-0">
+                  {subProgram.code}
+                </span>
+              )}
+              <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide truncate')}>
+                {sub?.name}
+              </span>
+              {showTrackChip && track && (
+                <span className="text-[9px] font-semibold px-1 py-0 rounded bg-white/70 border border-slate-200 text-slate-700 shrink-0">
+                  {track.name}
+                </span>
+              )}
+            </div>
             {slot.locked && <Lock className="h-2.5 w-2.5 opacity-60 shrink-0" />}
           </div>
           <div className="text-[11px] font-semibold text-slate-800 truncate leading-tight">
@@ -1768,6 +1800,7 @@ const Step3Cell: React.FC<{
             {currentFaculty ? shortFacultyName(currentFaculty.name) : 'Unassigned'}
           </div>
         </button>
+
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3 space-y-3" align="start">
         <div className="space-y-1">
