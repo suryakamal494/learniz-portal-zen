@@ -905,13 +905,17 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
               <b>
                 {(() => {
                   const existingSubject = subjects.find((s) => s.id === replaceIntent?.existing.subjectId);
-                  const existingTrack = replaceIntent?.existing.subjectId
-                    ? tracksBySubject[replaceIntent.existing.subjectId]?.find((tr) => tr.id === replaceIntent.existing.trackId)
-                    : null;
-                  return `${existingSubject?.name ?? 'Subject'} · ${existingTrack?.name ?? 'T1'}`;
+                  const existingTrackInfo = replaceIntent?.existing.trackId ? trackIndex.get(replaceIntent.existing.trackId) : null;
+                  const existingTrack = existingTrackInfo?.track ?? null;
+                  const existingSp = subPrograms.find((sp) => sp.id === (replaceIntent?.existing.subProgramId ?? existingTrackInfo?.subProgramId));
+                  const prefix = hasSubPrograms && existingSp ? `${existingSp.code} · ` : '';
+                  return `${prefix}${existingSubject?.name ?? 'Subject'} · ${existingTrack?.name ?? 'T1'}`;
                 })()}
               </b>
-              . Replacing will assign <b>{replaceIntent?.next.subjectName} · {replaceIntent?.next.trackName}</b> here.
+              . Replacing will assign <b>
+                {hasSubPrograms && replaceIntent?.next.subProgramCode ? `${replaceIntent.next.subProgramCode} · ` : ''}
+                {replaceIntent?.next.subjectName} · {replaceIntent?.next.trackName}
+              </b> here.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -926,6 +930,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                   replaceIntent.next.subjectId,
                   replaceIntent.next.trackId,
                   replaceIntent.next.facultyId ?? null,
+                  replaceIntent.next.subProgramId ?? null,
                 );
                 setReplaceIntent(null);
               }}
