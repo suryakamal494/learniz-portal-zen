@@ -1854,7 +1854,7 @@ const Step3Cell: React.FC<{
                 {sub?.name}
               </span>
               {showTrackChip && track && (
-                <span className="text-[9px] font-semibold px-1 py-0 rounded bg-white/70 border border-slate-200 text-slate-700 shrink-0">
+                <span className="text-[9px] font-bold px-1 py-0 rounded bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
                   {track.name}
                 </span>
               )}
