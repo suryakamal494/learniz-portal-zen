@@ -176,7 +176,7 @@ export function setChapterTrack(programId: string, chapterId: string, trackId: s
 
 /* ─────────── Phase F — Sub-Programs (CBSE, JEE, …) ─────────── */
 
-import type { SubProgramSlice } from '@/types/instituteProgram';
+
 
 export function sliceFromSubProgramConfig(c: ScheduleConfig): SubProgramSlice {
   return {
