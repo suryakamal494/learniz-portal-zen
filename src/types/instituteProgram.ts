@@ -14,6 +14,9 @@ export interface InstituteChapter {
   id: string;
   name: string;
   topics: InstituteTopic[];
+  /** Phase C+ — when the parent subject has ≥2 tracks, the chapter belongs to one track.
+   *  null / undefined means "unassigned". */
+  trackId?: string | null;
 }
 
 export interface InstituteSubject {
