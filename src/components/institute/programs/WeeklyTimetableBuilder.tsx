@@ -395,7 +395,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
         skipped += 1;
         return;
       }
-      added.push({ weekStartDate: activeWeek, weekday: d.d, periodIndex, subjectId, trackId: targetTrack, facultyId: subjectId ? facultyId : null });
+      const subProgramId = subjectId && targetTrack ? trackIndex.get(targetTrack)?.subProgramId ?? activeSubProgramId ?? null : null;
+      added.push({ weekStartDate: activeWeek, weekday: d.d, periodIndex, subjectId, trackId: targetTrack, facultyId: subjectId ? facultyId : null, subProgramId });
     });
     const addedKeys = new Set(added.map((c) => `${c.weekday}#${c.periodIndex}`));
     const others = tt.cells.filter(
