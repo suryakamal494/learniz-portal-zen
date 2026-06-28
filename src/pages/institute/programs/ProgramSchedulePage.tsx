@@ -1820,8 +1820,9 @@ const Step3Cell: React.FC<{
   })();
   const track = slot.trackId
     ? sliceTracks.find((t: any) => t.id === slot.trackId) ?? null
-    : null;
-  const showTrackChip = sliceTracks.filter((t: any) => t.enabled !== false).length > 1;
+    : sliceTracks[0] ?? null;
+  // Always show track chip when we have any track for the subject.
+  const showTrackChip = !!track;
 
   const handleChapter = (chapterId: string) => {
     const newCh = chapters.find((c: any) => c.id === chapterId);
