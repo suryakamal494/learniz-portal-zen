@@ -68,6 +68,8 @@ export const AcademicWindowSwitcher: React.FC<Props> = ({ config, onChange }) =>
 
   const [dlgOpen, setDlgOpen] = useState(false);
   const [dlgMode, setDlgMode] = useState<'add' | 'edit'>('add');
+  const [lastSwitch, setLastSwitch] = useState<{ label: string; at: Date } | null>(null);
+  const [pulseId, setPulseId] = useState<string | null>(null);
   const [form, setForm] = useState<{ label: string; startDate: string; endDate: string; workingDays: WeekDay[]; periodsPerDay: number }>({
     label: '',
     startDate: '',
@@ -75,6 +77,7 @@ export const AcademicWindowSwitcher: React.FC<Props> = ({ config, onChange }) =>
     workingDays: [1, 2, 3, 4, 5, 6],
     periodsPerDay: 6,
   });
+
 
   const openAdd = () => {
     setDlgMode('add');
