@@ -7,6 +7,7 @@ import {
   InstituteProgram,
   ScheduleConfig,
   ScheduleSlot,
+  WeekDay,
 } from '@/types/instituteProgram';
 
 /** Session-only in-memory store. Survives navigation, lost on reload. */
