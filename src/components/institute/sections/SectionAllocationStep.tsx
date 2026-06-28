@@ -37,15 +37,52 @@ export const SectionAllocationStep: React.FC<Props> = ({ section, onBack, onNext
 
   const facultyById = useMemo(() => Object.fromEntries(faculty.map((f) => [f.id, f])), [faculty]);
 
+  // Program switcher state — only ONE program is edited at a time
+  const [activeProgramId, setActiveProgramId] = useState<string>(section.programs[0]?.id ?? '');
+  const [pulseId, setPulseId] = useState<string | null>(null);
+  useEffect(() => {
+    // self-heal if the active program is removed
+    if (!section.programs.find((p) => p.id === activeProgramId)) {
+      setActiveProgramId(section.programs[0]?.id ?? '');
+    }
+  }, [section.programs, activeProgramId]);
+
+  const activeProgram = section.programs.find((p) => p.id === activeProgramId) ?? section.programs[0];
+  const multiProgram = section.programs.length > 1;
+
+  const programTotals = useMemo(
+    () => Object.fromEntries(
+      section.programs.map((p) => [
+        p.id,
+        p.subjects.reduce((sum, su) => sum + su.tracks.reduce((s, t) => s + (t.allottedPeriods || 0), 0), 0),
+      ]),
+    ),
+    [section.programs],
+  );
+
+  const activeStats = useMemo(() => {
+    if (!activeProgram) return { subjects: 0, tracks: 0, allocated: 0 };
+    const subjects = activeProgram.subjects.length;
+    const tracks = activeProgram.subjects.reduce((s, su) => s + su.tracks.length, 0);
+    return { subjects, tracks, allocated: programTotals[activeProgram.id] ?? 0 };
+  }, [activeProgram, programTotals]);
+
   const blocker = overBy > 0
     ? `${overBy} periods over budget — reduce allocations`
     : allocated === 0
       ? 'Allocate at least one track before continuing'
       : null;
 
+  const switchProgram = (id: string) => {
+    if (id === activeProgramId) return;
+    setActiveProgramId(id);
+    setPulseId(id);
+    window.setTimeout(() => setPulseId((cur) => (cur === id ? null : cur)), 650);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Budget strip */}
+      {/* Budget strip — shared across all programs in this section */}
       <Card className={cn(
         'border shadow-sm',
         overBy > 0
@@ -74,22 +111,91 @@ export const SectionAllocationStep: React.FC<Props> = ({ section, onBack, onNext
               style={{ width: `${pct}%` }}
             />
           </div>
+          {multiProgram && (
+            <p className="text-[11px] text-slate-600">
+              Budget is shared across all <strong>{section.programs.length} programs</strong> in this section.
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Programs */}
-      <div className="space-y-3">
-        {section.programs.map((program) => (
-          <ProgramAllocationBlock
-            key={program.id}
-            section={section}
-            program={program}
-            facultyById={facultyById as never}
-            facultyPool={section.facultyPool}
-            facultyList={faculty}
-          />
-        ))}
-      </div>
+      {/* Program switcher — only the active program is edited below */}
+      {section.programs.length > 0 && (
+        <Card className="border-indigo-200 shadow-sm bg-gradient-to-r from-indigo-50/60 via-white to-blue-50/40">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-indigo-600" />
+              <span className="text-[11px] uppercase tracking-wider font-bold text-indigo-700">Programs</span>
+              <span className="text-[11px] text-slate-500">· each program manages its own tracks & periods within the shared section budget</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {section.programs.map((p) => {
+                const isActive = p.id === activeProgram?.id;
+                const isPulsing = pulseId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => switchProgram(p.id)}
+                    title={`${p.name} · ${programTotals[p.id]} periods`}
+                    className={cn(
+                      'group flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all',
+                      isActive
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/50',
+                      isPulsing && 'ring-4 ring-amber-300/60',
+                    )}
+                  >
+                    {isActive && <Check className="h-3.5 w-3.5 shrink-0" />}
+                    <div className="flex flex-col leading-tight">
+                      <span className={cn('text-xs font-bold', isActive ? 'text-white' : 'text-slate-900')}>{p.code}</span>
+                      <span className={cn('text-[10px] truncate max-w-[140px]', isActive ? 'text-indigo-100' : 'text-slate-500')}>
+                        {p.name}
+                      </span>
+                    </div>
+                    <span
+                      className={cn(
+                        'ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums',
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700',
+                      )}
+                    >
+                      {programTotals[p.id]}p
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {activeProgram && (
+              <div className="text-[11px] text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span><strong className="text-slate-900">{activeProgram.code}</strong> active</span>
+                <span className="text-slate-300">·</span>
+                <span>{activeStats.subjects} subjects</span>
+                <span className="text-slate-300">·</span>
+                <span>{activeStats.tracks} tracks</span>
+                <span className="text-slate-300">·</span>
+                <span><strong className="text-slate-900 tabular-nums">{activeStats.allocated}</strong> periods allocated</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active program — single block, no accordion stacking */}
+      {activeProgram && (
+        <ProgramAllocationBlock
+          key={activeProgram.id}
+          section={section}
+          program={activeProgram}
+          facultyById={facultyById as never}
+          facultyPool={section.facultyPool}
+          facultyList={faculty}
+        />
+      )}
+
+      {multiProgram && (
+        <p className="text-[11px] text-slate-500 text-center">
+          {section.programs.length - 1} more program{section.programs.length - 1 === 1 ? '' : 's'} hidden — switch above to edit
+        </p>
+      )}
 
       <div className="flex items-center justify-between gap-2 pt-2">
         <Button variant="outline" size="sm" onClick={onBack}>
