@@ -361,46 +361,53 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
                       const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === s.id);
                       const enabled = isTrackEnabled(tr);
                       const rowDisabled = locked || !enabled;
+                      const currentFaculty = tr.facultyId ?? config.defaultFaculty[s.id] ?? '';
                       return (
                         <div
                           key={tr.id}
                           className={cn(
-                            'grid grid-cols-[42px_1fr_112px_28px] gap-1.5 items-center transition-opacity',
+                            'space-y-1 transition-opacity',
                             !enabled && 'opacity-50',
                           )}
                         >
-                          <Badge variant="outline" className="justify-center h-8 bg-slate-50">{tr.name}</Badge>
-                          <Select
-                            value={tr.facultyId ?? config.defaultFaculty[s.id] ?? ''}
-                            onValueChange={(v) => setTrackFaculty(s.id, tr.id, v)}
-                            disabled={rowDisabled}
-                          >
-                            <SelectTrigger className="h-8 text-xs bg-white min-w-0"><SelectValue placeholder="Faculty" /></SelectTrigger>
-                            <SelectContent>
-                              {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <NumberStepper
-                            value={trackVal}
-                            onChange={(v) => setTrackTarget(s.id, tr.id, v)}
-                            ariaLabel={`Periods for ${s.name} ${tr.name}`}
-                            disabled={rowDisabled}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleTrackEnabled(s.id, tr.id)}
-                            disabled={locked}
-                            className={cn(
-                              'h-7 w-7 rounded grid place-items-center transition-colors',
-                              enabled
-                                ? 'text-emerald-600 hover:bg-emerald-50'
-                                : 'text-slate-400 hover:bg-slate-100',
-                              locked && 'opacity-40 cursor-not-allowed',
-                            )}
-                            title={enabled ? 'Track enabled — click to disable' : 'Track disabled — click to enable'}
-                          >
-                            {enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                          </button>
+                          <div className="grid grid-cols-[42px_1fr_28px] gap-1.5 items-center">
+                            <Badge variant="outline" className="justify-center h-8 bg-slate-50">{tr.name}</Badge>
+                            <NumberStepper
+                              value={trackVal}
+                              onChange={(v) => setTrackTarget(s.id, tr.id, v)}
+                              ariaLabel={`Periods for ${s.name} ${tr.name}`}
+                              disabled={rowDisabled}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => toggleTrackEnabled(s.id, tr.id)}
+                              disabled={locked}
+                              className={cn(
+                                'h-7 w-7 rounded grid place-items-center transition-colors',
+                                enabled
+                                  ? 'text-emerald-600 hover:bg-emerald-50'
+                                  : 'text-slate-400 hover:bg-slate-100',
+                                locked && 'opacity-40 cursor-not-allowed',
+                              )}
+                              title={enabled ? 'Track enabled — click to disable' : 'Track disabled — click to enable'}
+                            >
+                              {enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                          {facultyOptions.length > 0 && (
+                            <Select
+                              value={currentFaculty}
+                              onValueChange={(v) => setTrackFaculty(s.id, tr.id, v)}
+                              disabled={rowDisabled}
+                            >
+                              <SelectTrigger className="h-7 text-[11px] bg-white">
+                                <SelectValue placeholder="Assign faculty" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
                       );
                     })}
