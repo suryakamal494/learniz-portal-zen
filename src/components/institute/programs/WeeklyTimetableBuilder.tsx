@@ -51,6 +51,7 @@ import { cn } from '@/lib/utils';
 import { subjectPalette } from '@/lib/subjectColors';
 import {
   ScheduleConfig,
+  ScheduleTrack,
   WeekDay,
   WeeklyTimetable,
   WeeklyTimetableCell,
@@ -76,6 +77,16 @@ interface Subject {
   id: string;
   name: string;
   color: string;
+}
+
+interface AllocationOption {
+  subjectId: string;
+  subjectName: string;
+  subjectColor: string;
+  trackId: string;
+  trackName: string;
+  facultyId?: string;
+  target: number;
 }
 
 interface Props {
@@ -119,6 +130,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
   const tt: WeeklyTimetable = config.weeklyTimetable ?? { cells: [] };
   const [activeIdx, setActiveIdx] = useState(0);
   const activeWeek = weekStarts[activeIdx] ?? weekStarts[0];
+  const [armed, setArmed] = useState<AllocationOption | null>(null);
+  const [replaceIntent, setReplaceIntent] = useState<{
+    weekStart: string;
+    weekday: WeekDay;
+    periodIndex: number;
+    next: AllocationOption;
+    existing: WeeklyTimetableCell;
+  } | null>(null);
 
   // Single-level undo snapshot (Gmail-style).
   const snapshotRef = useRef<WeeklyTimetableCell[] | null>(null);
@@ -126,14 +145,51 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
   // Confirm dialog state for bulk copy.
   const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; count: number } | null>(null);
 
-  /** Map of "weekday#periodIndex" -> { subjectId, facultyId } for active week. */
+  const tracksBySubject = useMemo<Record<string, ScheduleTrack[]>>(() => {
+    const out: Record<string, ScheduleTrack[]> = {};
+    subjects.forEach((s) => {
+      const stored = config.subjectTracks?.[s.id];
+      out[s.id] = stored && stored.length > 0
+        ? stored
+        : [{
+            id: `trk-${s.id}-t1`,
+            subjectId: s.id,
+            name: 'T1',
+            facultyId: config.defaultFaculty[s.id],
+            allottedPeriods: config.subjectTargetPeriods?.[s.id] ?? 0,
+          }];
+    });
+    return out;
+  }, [subjects, config.subjectTracks, config.subjectTargetPeriods, config.defaultFaculty]);
+
+  const placedByTrack = useMemo(() => {
+    const out: Record<string, number> = {};
+    tt.cells.forEach((c) => {
+      if (!c.subjectId) return;
+      const trackId = c.trackId ?? tracksBySubject[c.subjectId]?.[0]?.id ?? `trk-${c.subjectId}-t1`;
+      out[trackId] = (out[trackId] ?? 0) + 1;
+    });
+    return out;
+  }, [tt.cells, tracksBySubject]);
+
+  const allocationOptions = useMemo<AllocationOption[]>(() => subjects.flatMap((s) =>
+    (tracksBySubject[s.id] ?? []).map((tr) => ({
+      subjectId: s.id,
+      subjectName: s.name,
+      subjectColor: s.color,
+      trackId: tr.id,
+      trackName: tr.name,
+      facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
+      target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
+    })),
+  ), [subjects, tracksBySubject, config.defaultFaculty, config.trackTargetPeriods, config.subjectTargetPeriods]);
+
+  /** Map of "weekday#periodIndex" -> cell info for active week. */
   const cellMap = useMemo(() => {
-    const m = new Map<string, { subjectId: string | null; facultyId?: string | null }>();
+    const m = new Map<string, WeeklyTimetableCell>();
     tt.cells
       .filter((c) => c.weekStartDate === activeWeek)
-      .forEach((c) =>
-        m.set(`${c.weekday}#${c.periodIndex}`, { subjectId: c.subjectId, facultyId: c.facultyId ?? null }),
-      );
+      .forEach((c) => m.set(`${c.weekday}#${c.periodIndex}`, c));
     return m;
   }, [tt.cells, activeWeek]);
 
@@ -174,6 +230,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
     weekday: WeekDay,
     periodIndex: number,
     subjectId: string | null,
+    trackId?: string | null,
+    facultyIdOverride?: string | null,
   ) => {
     writeNoSnapshot((cells) => {
       const existing = cells.find(
@@ -184,9 +242,31 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
       );
       // Reset faculty override when subject is cleared or changed.
       const facultyId =
-        subjectId && existing?.subjectId === subjectId ? existing?.facultyId ?? null : null;
-      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId, facultyId }];
+        facultyIdOverride !== undefined
+          ? facultyIdOverride
+          : subjectId && existing?.subjectId === subjectId && existing?.trackId === trackId
+            ? existing?.facultyId ?? null
+            : null;
+      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId, trackId: subjectId ? trackId ?? null : null, facultyId }];
     });
+  };
+
+  const placeAllocation = (
+    weekStart: string,
+    weekday: WeekDay,
+    periodIndex: number,
+    option: AllocationOption,
+    opts: { force?: boolean } = {},
+  ) => {
+    const existing = tt.cells.find(
+      (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
+    );
+    const same = existing?.subjectId === option.subjectId && (existing.trackId ?? tracksBySubject[option.subjectId]?.[0]?.id) === option.trackId;
+    if (existing?.subjectId && !opts.force && !same) {
+      setReplaceIntent({ weekStart, weekday, periodIndex, next: option, existing });
+      return;
+    }
+    setCellSubject(weekStart, weekday, periodIndex, option.subjectId, option.trackId, option.facultyId ?? null);
   };
 
   const setCellFaculty = (
@@ -207,23 +287,33 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
     });
   };
 
-  const fillRow = (periodIndex: number, subjectId: string | null, facultyId: string | null = null) => {
-    const others = tt.cells.filter(
-      (c) => !(c.weekStartDate === activeWeek && c.periodIndex === periodIndex),
+  const fillRow = (periodIndex: number, subjectId: string | null, facultyId: string | null = null, trackId?: string | null) => {
+    const targetTrack = subjectId ? trackId ?? tracksBySubject[subjectId]?.[0]?.id ?? null : null;
+    const existingKeys = new Set(
+      tt.cells
+        .filter((c) => c.weekStartDate === activeWeek && c.periodIndex === periodIndex && c.subjectId)
+        .map((c) => `${c.weekday}#${c.periodIndex}`),
     );
-    const added: WeeklyTimetableCell[] = workingDows.map((d) => ({
-      weekStartDate: activeWeek,
-      weekday: d.d,
-      periodIndex,
-      subjectId,
-      facultyId: subjectId ? facultyId : null,
-    }));
+    const added: WeeklyTimetableCell[] = [];
+    let skipped = 0;
+    workingDows.forEach((d) => {
+      const key = `${d.d}#${periodIndex}`;
+      if (subjectId && existingKeys.has(key)) {
+        skipped += 1;
+        return;
+      }
+      added.push({ weekStartDate: activeWeek, weekday: d.d, periodIndex, subjectId, trackId: targetTrack, facultyId: subjectId ? facultyId : null });
+    });
+    const addedKeys = new Set(added.map((c) => `${c.weekday}#${c.periodIndex}`));
+    const others = tt.cells.filter(
+      (c) => !(c.weekStartDate === activeWeek && c.periodIndex === periodIndex && addedKeys.has(`${c.weekday}#${c.periodIndex}`)),
+    );
     const sub = subjects.find((s) => s.id === subjectId);
     const fac = faculty.find((f) => f.id === facultyId);
     snapshotAndWrite(
       [...others, ...added],
       subjectId
-        ? `${sub?.name ?? 'Subject'}${fac ? ` · ${fac.name}` : ''} set for P${periodIndex + 1} across the week`
+        ? `Filled ${added.length} cells · skipped ${skipped} occupied cells${sub ? ` with ${sub.name}` : ''}${fac ? ` · ${fac.name}` : ''}`
         : `P${periodIndex + 1} cleared across the week`,
     );
   };
@@ -419,6 +509,11 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               {activeFilled} / {totalCells} cells filled
             </Badge>
+            {armed && (
+              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                Armed: {armed.subjectName} · {armed.trackName}
+              </Badge>
+            )}
             <div className="flex-1" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -461,6 +556,44 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900">Subject / track palette</h4>
+              <p className="text-[11px] text-slate-500">Pick a track, then click grid cells. Occupied cells ask before replacing.</p>
+            </div>
+            {armed && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setArmed(null)}>Clear armed</Button>}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            {allocationOptions.map((opt) => {
+              const pal = subjectPalette(opt.subjectColor);
+              const placed = placedByTrack[opt.trackId] ?? 0;
+              const isArmed = armed?.trackId === opt.trackId;
+              return (
+                <button
+                  type="button"
+                  key={opt.trackId}
+                  onClick={() => setArmed(opt)}
+                  className={cn(
+                    'min-h-12 rounded-lg border px-3 py-2 text-left transition-all bg-white',
+                    isArmed ? cn(pal.slot, 'ring-2 ring-offset-1', pal.ring) : 'border-slate-200 hover:border-slate-300',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm truncate">{opt.subjectName}</span>
+                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-white/70">{opt.trackName}</Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-600 tabular-nums mt-0.5">
+                    {placed} / {opt.target || '—'} placed
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -524,9 +657,10 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                         </div>
                         <RowFillMenu
                           subjects={subjects}
+                          allocationOptions={allocationOptions}
                           faculty={faculty}
                           defaultFaculty={config.defaultFaculty}
-                          onFill={(sid, fid) => fillRow(pIdx, sid, fid)}
+                          onFill={(sid, fid, tid) => fillRow(pIdx, sid, fid, tid)}
                         />
                       </div>
                     </td>
@@ -535,39 +669,39 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                       const cell = cellMap.get(`${d.d}#${pIdx}`);
                       const subjectId = cell?.subjectId ?? null;
                       const sub = subjects.find((s) => s.id === subjectId);
+                      const trackId = subjectId ? cell?.trackId ?? tracksBySubject[subjectId]?.[0]?.id : null;
+                      const track = subjectId ? tracksBySubject[subjectId]?.find((tr) => tr.id === trackId) : null;
                       const pal = sub ? subjectPalette(sub.color) : null;
                       const effectiveFacultyId =
-                        cell?.facultyId || (subjectId ? config.defaultFaculty[subjectId] : '') || '';
+                        cell?.facultyId || track?.facultyId || (subjectId ? config.defaultFaculty[subjectId] : '') || '';
                       const fac = faculty.find((f) => f.id === effectiveFacultyId);
                       const facultyOptions = faculty.filter(
                         (f) => !f.subjectId || f.subjectId === subjectId,
                       );
                       return (
                         <td key={d.d} className="px-1 py-1 align-top">
-                          <div className="space-y-1">
-                            <Select
-                              value={subjectId ?? '__free__'}
-                              onValueChange={(v) =>
-                                setCellSubject(activeWeek, d.d, pIdx, v === '__free__' ? null : v)
-                              }
-                            >
-                              <SelectTrigger
-                                className={cn(
-                                  'h-9 text-xs border bg-white',
-                                  pal && cn(pal.slot, 'font-medium'),
-                                )}
-                              >
-                                <SelectValue placeholder="—" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__free__">— Free —</SelectItem>
-                                {subjects.map((s) => (
-                                  <SelectItem key={s.id} value={s.id}>
-                                    {s.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                          <button
+                            type="button"
+                            onClick={() => armed && placeAllocation(activeWeek, d.d, pIdx, armed)}
+                            className={cn(
+                              'w-full min-h-[64px] rounded-lg border px-2 py-1.5 text-left transition-all',
+                              subjectId && pal ? cn(pal.slot, 'hover:ring-1', pal.ring) : 'border-dashed border-slate-200 bg-white text-slate-300 hover:border-blue-300 hover:bg-blue-50/30',
+                              armed && !subjectId && 'ring-1 ring-blue-200',
+                            )}
+                          >
+                            {subjectId && sub ? (
+                              <>
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[11px] font-bold truncate">{sub.name}</span>
+                                  <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-600 truncate mt-1">{fac ? fac.name.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '') : 'Faculty'}</div>
+                              </>
+                            ) : (
+                              <div className="h-full grid place-items-center text-lg">＋</div>
+                            )}
+                          </button>
+                          <div className="space-y-1 mt-1">
                             {subjectId && facultyOptions.length > 0 && (
                               <Select
                                 value={effectiveFacultyId || '__default__'}
