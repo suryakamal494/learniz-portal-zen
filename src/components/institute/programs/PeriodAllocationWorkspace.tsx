@@ -253,7 +253,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
       <CapacityStrip
         workingDays={capacity.workingDays}
         periodsAvailable={capacity.periodsAvailable}
-        allocated={totalAllocated}
+        allocated={totalTargets}
         showRemaining
       />
 
@@ -267,7 +267,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 First, decide how many of the {capacity.periodsAvailable.toLocaleString()} available periods each
-                subject gets. Then expand a subject below to split its budget across chapters and topics.
+                subject track gets. Then expand a subject below to split the subject budget across chapters and topics.
               </p>
             </div>
             <Button
@@ -348,7 +348,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
               )}
             >
               {targetSurplus > 0
-                ? `${targetSurplus} to allot`
+                ? `${targetSurplus} unused capacity`
                 : targetSurplus < 0
                   ? `${Math.abs(targetSurplus)} over`
                   : 'Fully distributed ✓'}
