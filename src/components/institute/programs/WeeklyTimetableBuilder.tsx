@@ -52,6 +52,7 @@ import { subjectPalette } from '@/lib/subjectColors';
 import {
   ScheduleConfig,
   ScheduleTrack,
+  SubProgram,
   WeekDay,
   WeeklyTimetable,
   WeeklyTimetableCell,
