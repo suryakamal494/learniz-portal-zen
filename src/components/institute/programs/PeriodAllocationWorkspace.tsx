@@ -4,6 +4,8 @@ import {
   ChevronDown,
   ChevronRight,
   CheckCircle2,
+  Check,
+  Layers,
   Minus,
   Plus,
   Wand2,
