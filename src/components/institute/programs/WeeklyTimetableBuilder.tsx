@@ -763,6 +763,46 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!replaceIntent} onOpenChange={(o) => !o && setReplaceIntent(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace allocation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This slot already has{' '}
+              <b>
+                {(() => {
+                  const existingSubject = subjects.find((s) => s.id === replaceIntent?.existing.subjectId);
+                  const existingTrack = replaceIntent?.existing.subjectId
+                    ? tracksBySubject[replaceIntent.existing.subjectId]?.find((tr) => tr.id === replaceIntent.existing.trackId)
+                    : null;
+                  return `${existingSubject?.name ?? 'Subject'} · ${existingTrack?.name ?? 'T1'}`;
+                })()}
+              </b>
+              . Replacing will assign <b>{replaceIntent?.next.subjectName} · {replaceIntent?.next.trackName}</b> here.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!replaceIntent) return;
+                setCellSubject(
+                  replaceIntent.weekStart,
+                  replaceIntent.weekday,
+                  replaceIntent.periodIndex,
+                  replaceIntent.next.subjectId,
+                  replaceIntent.next.trackId,
+                  replaceIntent.next.facultyId ?? null,
+                );
+                setReplaceIntent(null);
+              }}
+            >
+              Replace
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
