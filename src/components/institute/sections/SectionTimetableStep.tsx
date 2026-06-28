@@ -147,7 +147,9 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext 
               <div className="text-[10px] uppercase tracking-wider text-indigo-600 font-semibold">Armed</div>
               <div className="mt-1 flex items-center justify-between gap-2">
                 <div className="text-sm font-semibold text-slate-900 truncate">
-                  {armedLabel.program?.code} · {armedLabel.subject.name} · {armedLabel.track?.name}
+                  {showProgram && <>{armedLabel.program?.code} · </>}
+                  {armedLabel.subject.name}
+                  {armedLabel.subject.tracks.length > 1 && <> · {armedLabel.track?.name}</>}
                 </div>
                 <button
                   onClick={() => setArmed(null)}
