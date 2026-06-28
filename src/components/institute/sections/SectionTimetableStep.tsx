@@ -231,6 +231,7 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext 
                               slot={{ weekStartDate: weekStart, weekday: d, periodIndex: p }}
                               onClick={() => handleCellClick(d as number, p)}
                               facultyById={facultyById}
+                              showProgram={showProgram}
                             />
                           </td>
                         );
