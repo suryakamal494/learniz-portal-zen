@@ -1,347 +1,102 @@
-## Audit conclusion
 
-Yes — I understand the blunder.
+## Updated audit + plan (incorporating your latest clarifications)
 
-I incorrectly created a separate **Section-scoped scheduling workspace** and added a new banner/card saying **“Plan multiple programs together.”** That was not your intended flow.
+### Direct answers to your questions
 
-Your intended requirement was:
+**Q1. Drop cross-program cell conflict (old Phase 7)?**
+✅ Dropped. Each section is self-scoped; we won't try to detect a CBSE↔JEE clash that spans sections. One-cell-one-allocation stays — but only *within the active section's own timetable*.
 
-```text
-Institute sidebar
-  → Sections
-    → existing cards currently shown under Programs
-      → Setup & Allocation button
-        → existing 4-step flow:
-           1. Setup
-           2. Period Allocation
-           3. Weekly Timetable
-           4. Preview
+**Q2. Multiple programs in one section — how does period budgeting work?**
+Shared pool, as you described:
+```
+Section capacity = working_days × periods_per_day        (fixed)
+Allocated        = Σ all tracks across ALL programs in the section
+Remaining        = Capacity − Allocated
+```
+Program 1 taking 50 + Program 2 taking 50 → 100 deducted from the section budget. No per-program quota.
+
+**Q3. Where do I group chapters into a specific track? Does the UI exist today?**
+❌ **No, it does not exist today.** This is a real gap.
+
+Today's Step 2 shows:
+```
+Subject (Physics)
+ ├─ Track row: T1  [faculty ▾]  [periods #]
+ ├─ Track row: T2  [faculty ▾]  [periods #]
+ └─ Chapter list (flat, NOT bound to any track)
+     ├─ Chapter 1 → Topic 1 [periods #]
+     ├─ Chapter 2 → Topic 2 [periods #]
+     └─ …
+```
+So when tracks exist, the user has no way to say "Chapter 3 → T1, Chapter 4 → T2." This must be added.
+
+---
+
+### Proposed UI for chapter-to-track grouping (new Phase C+)
+
+Inside Step 2, when a subject has **≥2 tracks**, the subject's chapter list switches from one flat list into a **track-tabbed list**:
+
+```
+─ Physics  ──────────────────────────────────────────────
+  Tracks:  [ T1  Sharma · 60p ]  [ T2  Mehta · 40p ]  [+ Add track]
+
+  ┌─ T1 (Sharma · 60 periods) ─────────────────────────┐
+  │  Chapter 1 — Kinematics      [ assign ▾ T1 ✓ ]    │
+  │  Chapter 2 — Laws of Motion  [ assign ▾ T1 ✓ ]    │
+  │  Chapter 3 — Work, Energy    [ assign ▾ T1 ✓ ]    │
+  │  Σ 24 periods allotted to topics here              │
+  └────────────────────────────────────────────────────┘
+
+  ┌─ T2 (Mehta · 40 periods) ──────────────────────────┐
+  │  Chapter 4 — Thermodynamics  [ assign ▾ T2 ✓ ]    │
+  │  Chapter 5 — Optics          [ assign ▾ T2 ✓ ]    │
+  └────────────────────────────────────────────────────┘
+
+  ┌─ Unassigned (drag/select track) ───────────────────┐
+  │  Chapter 6 — Modern Physics  [ assign ▾ ▾ ]       │
+  └────────────────────────────────────────────────────┘
 ```
 
-You wanted all the new scheduling rules added inside the existing **Setup & Allocation** flow, not as a parallel UI or separate route.
-
-## What was implemented vs what you asked
-
-### 1. Existing flow location
-
-**Asked:** Use the existing `Programs → Setup & Allocation → 4-stepper` flow.
-
-**Current implementation:**
-- Existing route still exists: `/institute/programs/:programId/schedule`.
-- But I also added a new route: `/institute/sections/:sectionId/schedule`.
-- I added a new banner on the Programs page: **“New · Section-scoped scheduling / Plan multiple programs together.”**
-
-**Audit result:** Not correct. The new separate section workspace should be removed/parked, and the existing flow should become the single source of truth.
-
-### 2. Programs vs Sections terminology
-
-**Asked:** Rename **Programs** as **Sections**. The existing cards are effectively batch/section cards.
-
-**Current implementation:**
-- Sidebar still says **Programs**.
-- Page title still says **Programs**.
-- CTA still says **New Program**.
-- Breadcrumb still says **Programs**.
-- Card data still renders from `useInstitutePrograms()`.
-
-**Audit result:** Not implemented correctly. Terminology must be corrected in the existing module.
-
-### 3. “Setup” and “Period Allocation” relationship
-
-They are not the same thing, but they are part of the same existing Setup & Allocation wizard.
-
-```text
-Setup = defines the section capacity and operating rules
-- academic window
-- working days
-- periods per day
-- period length
-- day start time
-- breaks
-- holidays
-- default/faculty selection where needed
-
-Period Allocation = spends that fixed capacity
-- subject-wise allocation
-- track-wise allocation
-- chapter/topic allocation
-- capacity validation
-```
-
-So your understanding is right: both belong inside the same **Setup & Allocation** workflow. They should not be split into a separate “section scheduling” product surface.
-
-### 4. Multiple programs together
-
-My thinking was: one physical section may have multiple academic programs such as CBSE + JEE, and since the timetable has one cell per period, those programs must share the same section period budget.
-
-But the UI I built expressed this incorrectly. I exposed it as a new separate concept: **“Plan multiple programs together.”** That created confusion.
-
-Correct interpretation:
-- The user should not see a separate “multiple programs together” banner.
-- If a section/batch contains multiple academic tracks/programs, that should be handled inside the existing Setup & Allocation flow as data, not as a separate entry point.
-- The visible module should still feel like: **open a section card → configure setup/allocation**.
-
-### 5. One cell, one allocation rule
-
-**Asked:** One cell only one subject/track/allocation. If CBSE Physics T1 is allocated in a slot, JEE Physics T1 cannot occupy that same slot. Another track must use another cell.
-
-**Current implementation:**
-- Implemented in the new section store/workspace.
-- Not implemented inside the existing `ProgramSchedulePage` / existing `WeeklyTimetableBuilder` flow.
-
-**Audit result:** Business rule was implemented in the wrong place.
-
-### 6. Conflict UX
-
-**Asked:** Occupied cell click should show **Confirm & Replace**.
-
-**Current implementation:**
-- Implemented in the new section timetable step.
-- Existing weekly timetable still uses direct subject selection/popovers and does not enforce the same allocation object model.
-
-**Audit result:** Implemented in the wrong place.
-
-### 7. Row/bulk fill behavior
-
-**Asked:** Row/bulk fill should skip occupied cells.
-
-**Current implementation:**
-- Implemented in the new section workspace.
-- Existing `WeeklyTimetableBuilder` row fill currently replaces the whole row.
-
-**Audit result:** Existing flow still needs correction.
-
-### 8. Capacity counter scope
-
-**Asked:** Capacity is fixed for a specific section/batch. It does not change whether the section has 1 subject, 10 subjects, 1 program, or 10 programs.
-
-**Current implementation:**
-- Existing program flow computes capacity per program schedule.
-- New section flow computes section capacity correctly, but in the wrong UI.
-
-**Audit result:** Logic direction was right, placement was wrong. Capacity must be shown and enforced in the existing Setup & Allocation flow after renaming it to Sections.
-
-### 9. UI/UX polish
-
-**Asked:** Modern, professional, easy to understand, subject colors, headers, desktop overview visible properly.
-
-**Current implementation:**
-- Some polish exists in both old and new flows.
-- Subject colors exist.
-- But the new banner and separate route make the UX confusing.
-- Desktop overview is split across two competing scheduling experiences.
-
-**Audit result:** Visual work exists, but product structure is wrong.
-
-## Corrective implementation plan
-
-### Phase 0 — Park the mistaken work safely
-
-Do not delete the useful logic immediately. First, park it so the useful pieces can be reused.
-
-**Keep for reuse:**
-- one-cell-one-allocation model
-- conflict replacement logic
-- skip-occupied row fill logic
-- track color/pattern ideas
-- section capacity helper logic
-
-**Remove from visible product UI:**
-- “New · Section-scoped scheduling” banner
-- “Plan multiple programs together” CTA
-- `/institute/sections/:sectionId/schedule` as a visible entry point
-
-**Update internal plan note:**
-- Mark previous phase plan as parked.
-- Add corrected direction: implement into existing Setup & Allocation flow.
-
-### Phase 1 — Rename Programs module to Sections
-
-Change visible terminology only, without changing the user journey.
-
-```text
-Before                         After
-Programs                       Sections
-New Program                    New Section / disabled if still coming soon
-Programs & Calendar Automation Sections & Calendar Automation
-Setup & Allocation             Setup & Allocation
-View curriculum                View curriculum / Preview, based on current behavior
-```
-
-Sidebar:
-```text
-Programs group → Sections group
-Programs item  → Sections item
-/institute/programs can remain as the route internally for now
-```
-
-Important: keep the existing card grid. These are the cards the user already understands.
-
-### Phase 2 — Treat existing cards as section/batch cards
-
-The existing cards remain the entry point.
-
-Card meaning becomes:
-```text
-Card = one section / batch planning unit
-```
-
-Display should make that clear:
-- Class/batch name prominent, e.g. `Class 12 PCM — Excellence`
-- Section labels shown clearly, e.g. `Sections A, B`
-- Subject chips remain visible
-- CTA remains **Setup & Allocation**
-
-No extra “multiple programs together” banner.
-
-### Phase 3 — Extend the existing data model, not the separate section model
-
-Add the missing scheduling parameters into the existing `InstituteProgram` / schedule model.
-
-Needed additions:
-- academic window remains in `schedule.startDate` / `schedule.endDate`
-- fixed section capacity remains derived from setup fields
-- subject/track allocation support inside existing schedule data
-- cell allocation model for timetable cells
-
-Correct cell model concept:
-```ts
-cell = {
-  weekStartDate,
-  weekday,
-  periodIndex,
-  allocation: {
-    subjectId,
-    trackId,
-    facultyId?
-  } | null
-}
-```
-
-If future data includes multiple academic programs within one section, the allocation can include `programId`, but it should not become a separate visible UI concept unless needed.
-
-### Phase 4 — Fix Step 1: Setup inside existing wizard
-
-Improve the existing Setup step, not the separate Section Setup page.
-
-Setup must show:
-- academic start and end date
-- working days
-- periods/day
-- period length
-- day start time
-- breaks
-- holidays
-- capacity preview
-- faculty/default teacher configuration where needed
-
-Capacity language must be section/batch-first:
-```text
-Section capacity = working days × periods/day across this academic window.
-This number stays fixed no matter how periods are distributed across subjects or tracks.
-```
-
-Desktop layout:
-```text
-Left: Setup form
-Right: sticky capacity summary + day timeline + holiday summary
-```
-
-### Phase 5 — Fix Step 2: Period Allocation inside existing wizard
-
-Refactor existing `PeriodAllocationWorkspace` to support tracks and the fixed section capacity rule.
-
-Required behavior:
-- subject-level colored headers
-- track rows under each subject: T1, T2, etc.
-- add track action inside a subject
-- faculty per track if required
-- period allocation per track
-- chapter/topic allocation below track/subject
-- total allocation cannot exceed section capacity
-
-Validation:
-```text
-Hard block: total allocated > section capacity
-Soft warning: subject has 0 allocation
-Allowed: total allocated less than capacity if user intentionally leaves free periods
-```
-
-This matters because you said the section period count is fixed, but all periods may or may not be assigned immediately depending on planning stage.
-
-### Phase 6 — Fix Step 3: Weekly Timetable inside existing wizard
-
-Rewrite the existing `WeeklyTimetableBuilder` behavior to use allocation chips instead of plain subject-only cells.
-
-Required behavior:
-- left palette: subject/track options with remaining count
-- cell accepts only one allocation
-- clicking occupied cell opens Confirm & Replace
-- row fill skips occupied cells
-- different tracks always require different cells
-- cell shows subject color, track name, faculty line
-- no faculty conflict detection for now
-
-Conflict modal:
-```text
-Replace allocation?
-This slot currently has Physics · T1.
-Replacing will remove that allocation from this cell and place Chemistry · T1 here.
-
-Cancel | Replace
-```
-
-Row fill:
-```text
-Filled 4 cells · skipped 2 occupied cells
-```
-
-### Phase 7 — Fix Step 4: Preview inside existing wizard
-
-Keep the existing preview/generation flow, but make it understand track allocations.
-
-Preview should show:
-- dated classes generated from the weekly timetable
-- subject colors
-- track labels where relevant
-- chapter/topic mapping
-- draft/locked/published status only if already needed; otherwise keep it parked
-
-Do not introduce a new preview surface.
-
-### Phase 8 — Cleanup and guardrails
-
-Remove or hide the mistaken visible additions:
-- remove section banner from the list page
-- remove section route from visible navigation
-- avoid exposing `MOCK_SECTIONS` in the product UI
-
-Keep reusable code only if it is folded back into the existing flow.
-
-### Phase 9 — Responsive and professional UX pass
-
-After the corrected behavior is in the existing flow:
-- test desktop overview at 1024, 1280, 1440
-- test mobile at 360 and 768
-- make subject headers readable
-- ensure no text overlap in timetable cells
-- ensure touch targets are at least 44px
-- keep subject colors consistent
-- keep counters as whole numbers only
-- use time format like `6h 42m`, never decimal hours
-
-## Final corrected product direction
-
-The final product should feel like this:
-
-```text
-Sections
-  └─ Section / batch card
-      └─ Setup & Allocation
-          ├─ Setup: define capacity
-          ├─ Period Allocation: distribute capacity across subjects/tracks/topics
-          ├─ Weekly Timetable: place one allocation per cell
-          └─ Preview: generate dated teaching plan
-```
-
-No separate “new section scoped scheduling” workspace. No confusing “Plan multiple programs together” banner. The rules you gave should live inside the existing Setup & Allocation flow.
+Mechanics:
+- Each chapter carries `trackId?: string` (new field on `InstituteChapter`).
+- When the subject has exactly 1 track, every chapter is auto-bound to it — no extra UI shown.
+- When ≥2 tracks, an "Assign to track" dropdown appears on each chapter row + an "Unassigned" bucket at the bottom.
+- Per-track footer shows: `chapter count · topics-configured / topics-total · periods allotted / track target`.
+- A topic's periods only count toward the **track it belongs to** (inherited from its parent chapter).
+- Hard validation: a chapter's topic-period sum must not exceed the parent track's target.
+- Generator (Step 3 palette + Step 4 preview) reads `chapter.trackId` so when the user places a "Physics · T1" cell, the calendar maps it only to topics from T1 chapters.
+
+---
+
+### Revised phase plan (after your edits)
+
+| Phase | Title | Notes |
+|---|---|---|
+| **A** | Faculty pool in Step 1 | multi-select pool, Step 2 track-faculty filters to pool |
+| **B** | Multiple academic windows in Step 1 | window list + active switcher; allocation & timetable stored per `windowId` |
+| **C** | Enable/disable track + Lock subject | `enabled` flag on track, `locked` on subject |
+| **C+** | **Chapter→Track grouping in Step 2** *(new, per your Q3)* | track-tabbed chapter UI when ≥2 tracks; `chapter.trackId` field; validation against track target |
+| **D** | Conditional cell display | program+subject+track+teacher rendering matrix |
+| **E** | Multiple programs per section | Section wraps `programs[]`; shared period pool; Step 2/3 iterate programs; **no cross-section conflict logic** |
+| **F** | Responsive & visual polish pass | 1024/1280/1440 desktop + 768/360 mobile |
+
+Dropped from the plan:
+- ❌ Old Phase 7 — cross-program / cross-section cell conflict.
+
+---
+
+### Build order I recommend
+
+1. **Phase A → C+ first** (faculty pool, multi-windows, track enable/lock, **chapter-to-track grouping**) — these all live inside Step 1 + Step 2 and are independent.
+2. **Phase D** — cosmetic/render only, low risk.
+3. **Phase E** — data-shape change (Section wraps programs); biggest refactor, do last with your explicit go-ahead.
+4. **Phase F** — polish.
+
+---
+
+### One blocker question before I start coding
+For **Phase B (multiple academic windows)** — when you switch from Window 1 → Window 2:
+- **(a)** the period allocation + weekly timetable are *separate per window* (each window has its own plan), OR
+- **(b)** allocations are *shared*, the window only changes the date range the calendar lays them onto?
+
+Pick one and I'll start with Phase A immediately after, holding E until you confirm.
