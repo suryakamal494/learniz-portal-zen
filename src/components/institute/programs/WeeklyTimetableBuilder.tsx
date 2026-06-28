@@ -461,6 +461,33 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
     snapshotAndWrite([...others, ...added], `Planned ${assignments.size} period(s) for ${dayName}`);
   };
 
+  /** Drag-to-swap two cells in the active week. Empty target → move. */
+  const swapCells = (
+    srcKey: string, // "weekday#periodIndex"
+    dstKey: string,
+  ) => {
+    if (srcKey === dstKey) return;
+    const [sWd, sPi] = srcKey.split('#').map(Number);
+    const [dWd, dPi] = dstKey.split('#').map(Number);
+    const matchSrc = (c: WeeklyTimetableCell) =>
+      c.weekStartDate === activeWeek && c.weekday === sWd && c.periodIndex === sPi;
+    const matchDst = (c: WeeklyTimetableCell) =>
+      c.weekStartDate === activeWeek && c.weekday === dWd && c.periodIndex === dPi;
+    const src = tt.cells.find(matchSrc);
+    const dst = tt.cells.find(matchDst);
+    if (!src && !dst) return;
+    const others = tt.cells.filter((c) => !matchSrc(c) && !matchDst(c));
+    const next: WeeklyTimetableCell[] = [...others];
+    if (src) {
+      next.push({ ...src, weekday: dWd as WeekDay, periodIndex: dPi });
+    }
+    if (dst) {
+      next.push({ ...dst, weekday: sWd as WeekDay, periodIndex: sPi });
+    }
+    snapshotAndWrite(next, dst && src ? 'Swapped two periods' : 'Moved period');
+  };
+
+
   const clearWeek = (weekStart: string, label: string) => {
     const next = tt.cells.filter((c) => c.weekStartDate !== weekStart);
     snapshotAndWrite(next, `Cleared ${label}`);
