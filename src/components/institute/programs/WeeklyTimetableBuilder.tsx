@@ -778,15 +778,16 @@ const RowFillMenu: React.FC<{
   const [picked, setPicked] = useState<string | null>(null);
   const [facultyId, setFacultyId] = useState<string>('__default__');
 
-  const subject = subjects.find((s) => s.id === picked);
-  const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === picked);
+  const selectedOption = allocationOptions.find((o) => o.trackId === picked);
+  const subject = subjects.find((s) => s.id === selectedOption?.subjectId);
+  const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === selectedOption?.subjectId);
 
   const apply = () => {
     if (!picked) return;
-    const fid =
-      facultyId === '__default__' ? (defaultFaculty[picked] ?? null) : facultyId;
-    const opt = allocationOptions.find((o) => o.trackId === picked);
-    onFill(opt?.subjectId ?? picked, fid || opt?.facultyId || null, opt?.trackId ?? null);
+    const fid = facultyId === '__default__'
+      ? (selectedOption?.facultyId ?? (selectedOption?.subjectId ? defaultFaculty[selectedOption.subjectId] : null))
+      : facultyId;
+    onFill(selectedOption?.subjectId ?? picked, fid || null, selectedOption?.trackId ?? null);
     setOpen(false);
     setPicked(null);
     setFacultyId('__default__');
