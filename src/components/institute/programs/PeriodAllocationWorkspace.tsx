@@ -616,7 +616,8 @@ const NumberStepper: React.FC<{
   value: number;
   onChange: (v: number) => void;
   ariaLabel?: string;
-}> = ({ value, onChange, ariaLabel }) => (
+  disabled?: boolean;
+}> = ({ value, onChange, ariaLabel, disabled }) => (
   <div className="flex items-center gap-1 shrink-0">
     <Button
       type="button"
@@ -625,6 +626,7 @@ const NumberStepper: React.FC<{
       className="h-8 w-8"
       onClick={() => onChange(Math.max(0, value - 1))}
       aria-label="Decrease"
+      disabled={disabled}
     >
       <Minus className="h-3.5 w-3.5" />
     </Button>
@@ -636,6 +638,7 @@ const NumberStepper: React.FC<{
       onChange={(e) => onChange(Math.max(0, Math.round(Number(e.target.value) || 0)))}
       className="h-8 w-16 text-center tabular-nums bg-white px-1"
       aria-label={ariaLabel}
+      disabled={disabled}
     />
     <Button
       type="button"
@@ -644,8 +647,10 @@ const NumberStepper: React.FC<{
       className="h-8 w-8"
       onClick={() => onChange(value + 1)}
       aria-label="Increase"
+      disabled={disabled}
     >
       <Plus className="h-3.5 w-3.5" />
     </Button>
   </div>
+);
 );
