@@ -91,7 +91,7 @@ const ProgramsListPage: React.FC = () => {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search programs..."
+                placeholder="Search sections..."
                 className="pl-9 bg-white"
               />
             </div>
