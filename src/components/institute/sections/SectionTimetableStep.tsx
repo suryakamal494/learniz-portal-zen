@@ -384,30 +384,39 @@ const TimetableCell: React.FC<{
   const pal = sectionPalette(subject.color);
   const fac = facultyById[facultyId ?? track.facultyId];
 
+  // When something is armed, clicks should trigger placement (and thus the
+  // conflict-replace dialog when the cell is filled). When NOTHING is armed,
+  // clicking a filled cell opens the faculty/clear popover.
+  const cellButton = (
+    <button
+      onClick={armed ? onClick : undefined}
+      className={cn(
+        'w-full h-full min-h-[68px] rounded-lg border text-left p-2 transition-all hover:shadow-md',
+        pal.surface, pal.border,
+        armed && 'cursor-copy ring-1 ring-indigo-200/0 hover:ring-2 hover:ring-indigo-300',
+      )}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className={cn('h-3 w-3 rounded shrink-0', pal.solid)} style={trackPattern(trackIdx)} />
+        <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
+          {program.code}
+        </span>
+        <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
+      </div>
+      <div className="text-xs font-semibold text-slate-900 truncate">{subject.name}</div>
+      <div className="text-[10px] text-slate-600 truncate mt-0.5">
+        {fac ? shortName(fac.name) : 'no faculty'}
+      </div>
+    </button>
+  );
+
+  if (armed) return cellButton;
+
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'w-full h-full min-h-[68px] rounded-lg border text-left p-2 transition-all hover:shadow-md',
-            pal.surface, pal.border,
-          )}
-        >
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className={cn('h-3 w-3 rounded shrink-0', pal.solid)} style={trackPattern(trackIdx)} />
-            <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
-              {program.code}
-            </span>
-            <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
-          </div>
-          <div className="text-xs font-semibold text-slate-900 truncate">{subject.name}</div>
-          <div className="text-[10px] text-slate-600 truncate mt-0.5">
-            {fac ? shortName(fac.name) : 'no faculty'}
-          </div>
-        </button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{cellButton}</PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="start">
-        <div className={cn('px-3 py-2 bg-gradient-to-r text-white', `bg-gradient-to-r ${pal.headerGradient}`)}>
+        <div className={cn('px-3 py-2 bg-gradient-to-r text-white', pal.headerGradient)}>
           <div className="text-[10px] uppercase tracking-wider opacity-80">{program.code}</div>
           <div className="text-sm font-bold">{subject.name} · {track.name}</div>
         </div>
