@@ -776,8 +776,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                       const cell = cellMap.get(`${d.d}#${pIdx}`);
                       const subjectId = cell?.subjectId ?? null;
                       const sub = subjects.find((s) => s.id === subjectId);
-                      const trackId = subjectId ? cell?.trackId ?? tracksBySubject[subjectId]?.[0]?.id : null;
-                      const track = subjectId ? tracksBySubject[subjectId]?.find((tr) => tr.id === trackId) : null;
+                      const cellSubProgramId = cell?.subProgramId ?? null;
+                      const trackInfo = cell?.trackId ? trackIndex.get(cell.trackId) : null;
+                      const track = subjectId
+                        ? trackInfo?.track ?? tracksBySubject[subjectId]?.find((tr) => tr.id === cell?.trackId) ?? tracksBySubject[subjectId]?.[0] ?? null
+                        : null;
+                      const subProgram = (cellSubProgramId ?? trackInfo?.subProgramId)
+                        ? subPrograms.find((sp) => sp.id === (cellSubProgramId ?? trackInfo?.subProgramId))
+                        : null;
                       const pal = sub ? subjectPalette(sub.color) : null;
                       const effectiveFacultyId =
                         cell?.facultyId || track?.facultyId || (subjectId ? config.defaultFaculty[subjectId] : '') || '';
@@ -785,6 +791,12 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                       const facultyOptions = faculty.filter(
                         (f) => !f.subjectId || f.subjectId === subjectId,
                       );
+                      const showTrackChip = subjectId
+                        ? (() => {
+                            const sliceTracks = tracksForSubjectInSlice(subjectId, sliceFor(cellSubProgramId ?? trackInfo?.subProgramId));
+                            return sliceTracks.filter((tr) => tr.enabled !== false).length > 1;
+                          })()
+                        : false;
                       return (
                         <td key={d.d} className="px-1 py-1 align-top">
                           <button
@@ -798,14 +810,18 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                           >
                             {subjectId && sub ? (
                               <>
+                                {hasSubPrograms && subProgram && (
+                                  <div className="mb-0.5">
+                                    <span className="inline-block text-[9px] font-bold uppercase tracking-wide px-1 py-0 rounded bg-indigo-100 text-indigo-700">
+                                      {subProgram.code}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="flex items-center justify-between gap-1">
                                   <span className="text-[11px] font-bold truncate">{sub.name}</span>
-                                  {(() => {
-                                    const enabledTracks = (tracksBySubject[subjectId] ?? []).filter((tr) => tr.enabled !== false);
-                                    return enabledTracks.length > 1 ? (
-                                      <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
-                                    ) : null;
-                                  })()}
+                                  {showTrackChip && (
+                                    <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
+                                  )}
                                 </div>
                                 {fac && (
                                   <div className="text-[10px] text-slate-600 truncate mt-1">
