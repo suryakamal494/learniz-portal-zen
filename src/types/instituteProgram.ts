@@ -136,13 +136,14 @@ export interface ScheduleConfig {
 }
 
 /** Phase F — per-sub-program slice. Schedule-level fields (window, working
- *  days, periods/day, breaks, faculty pool, dayStartTime) stay shared. */
+ *  days, periods/day, breaks, faculty pool, dayStartTime) stay shared. The
+ *  weekly timetable is ALSO shared across sub-programs — the palette merges
+ *  tracks from every slice so CBSE and JEE can be scheduled side-by-side. */
 export interface SubProgramSlice {
   subjectTargetPeriods: Record<string, number>;
   subjectTracks: Record<string, ScheduleTrack[]>;
   trackTargetPeriods: Record<string, number>;
   subjectLocks: Record<string, boolean>;
-  weeklyTimetable: WeeklyTimetable;
 }
 
 /** Phase F — sub-program metadata (CBSE / JEE / NEET …). */
