@@ -370,20 +370,28 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
                             !enabled && 'opacity-50',
                           )}
                         >
-                          <div className="grid grid-cols-[42px_1fr_28px] gap-1.5 items-center">
-                            <Badge variant="outline" className="justify-center h-8 bg-slate-50">{tr.name}</Badge>
-                            <NumberStepper
-                              value={trackVal}
-                              onChange={(v) => setTrackTarget(s.id, tr.id, v)}
-                              ariaLabel={`Periods for ${s.name} ${tr.name}`}
-                              disabled={rowDisabled}
-                            />
+                          <div className="flex items-center gap-1.5">
+                            <Badge
+                              variant="outline"
+                              className="h-8 px-1.5 bg-slate-50 text-[11px] truncate max-w-[72px] shrink-0 justify-center"
+                              title={tr.name}
+                            >
+                              {tr.name}
+                            </Badge>
+                            <div className="flex-1 min-w-0 flex justify-center">
+                              <NumberStepper
+                                value={trackVal}
+                                onChange={(v) => setTrackTarget(s.id, tr.id, v)}
+                                ariaLabel={`Periods for ${s.name} ${tr.name}`}
+                                disabled={rowDisabled}
+                              />
+                            </div>
                             <button
                               type="button"
                               onClick={() => toggleTrackEnabled(s.id, tr.id)}
                               disabled={locked}
                               className={cn(
-                                'h-7 w-7 rounded grid place-items-center transition-colors',
+                                'h-7 w-7 rounded grid place-items-center transition-colors shrink-0',
                                 enabled
                                   ? 'text-emerald-600 hover:bg-emerald-50'
                                   : 'text-slate-400 hover:bg-slate-100',
