@@ -55,7 +55,15 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
   const capacity = useMemo(() => computeCapacity(config), [config]);
   const targets = config.subjectTargetPeriods ?? {};
   const trackTargets = config.trackTargetPeriods ?? {};
-  const faculty = useFaculty();
+  const allFaculty = useFaculty();
+  const pool = config.facultyPool ?? [];
+  const faculty = useMemo(
+    () => (pool.length === 0 ? allFaculty : allFaculty.filter((f) => pool.includes(f.id))),
+    [allFaculty, pool],
+  );
+  const subjectLocks = config.subjectLocks ?? {};
+  const isSubjectLocked = (subjectId: string) => !!subjectLocks[subjectId];
+  const isTrackEnabled = (tr: ScheduleTrack) => tr.enabled !== false;
 
   const tracksBySubject = useMemo(() => {
     const out: Record<string, ScheduleTrack[]> = {};
