@@ -54,7 +54,7 @@ const InstituteHolidaysPage: React.FC = () => {
       <div className="max-w-3xl mx-auto p-6 space-y-5">
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
-            <ArrowLeft className="h-3.5 w-3.5" /> Programs
+            <ArrowLeft className="h-3.5 w-3.5" /> Sections
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-slate-900 font-medium">Holiday setup</span>
@@ -63,7 +63,7 @@ const InstituteHolidaysPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Institute holidays</h1>
           <p className="text-sm text-slate-600 mt-1">
-            Set once — applied automatically to every program. Individual programs can skip or add their own
+            Set once — applied automatically to every section. Individual sections can skip or add their own
             without changing this list.
           </p>
         </div>
