@@ -51,9 +51,9 @@ const moduleGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'Programs',
+    label: 'Sections',
     items: [
-      { title: 'Programs', url: '/institute/programs', icon: CalendarRange },
+      { title: 'Sections', url: '/institute/programs', icon: CalendarRange },
     ],
   },
   {
