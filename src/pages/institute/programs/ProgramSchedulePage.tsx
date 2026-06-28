@@ -1720,17 +1720,53 @@ const Step3TimetableView: React.FC<{
 
                     {workingDows.map((d) => {
                       const dateIso = dateForWeekday(d.d);
-                      const slot = slotByKey.get(`${dateIso}#${pIdx}`);
+                      const key = `${dateIso}#${pIdx}`;
+                      const slot = slotByKey.get(key);
+                      const isOver = dragOverKey === key && dragKey && dragKey !== key;
                       return (
-                        <td key={d.d} className="px-1.5 py-1.5 align-top border-l border-slate-100">
+                        <td
+                          key={d.d}
+                          className={cn(
+                            'px-1.5 py-1.5 align-top border-l border-slate-100 transition-colors',
+                            isOver && 'bg-blue-50 ring-2 ring-blue-300 ring-inset rounded',
+                          )}
+                          onDragOver={(e) => {
+                            if (!dragKey || !slot) return;
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dragOverKey !== key) setDragOverKey(key);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverKey === key) setDragOverKey(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const src = e.dataTransfer.getData('text/plain') || dragKey;
+                            if (src) swapByKey(src, key);
+                            setDragKey(null);
+                            setDragOverKey(null);
+                          }}
+                        >
                           {slot ? (
-                            <Step3Cell
-                              slot={slot}
-                              program={program}
-                              subjectMap={subjectMap}
-                              faculty={faculty}
-                              onUpdate={(patch) => updateSlot(slot.id, patch)}
-                            />
+                            <div
+                              draggable
+                              onDragStart={(e) => {
+                                setDragKey(key);
+                                e.dataTransfer.setData('text/plain', key);
+                                e.dataTransfer.effectAllowed = 'move';
+                              }}
+                              onDragEnd={() => { setDragKey(null); setDragOverKey(null); }}
+                              className={cn('cursor-grab active:cursor-grabbing', dragKey === key && 'opacity-50')}
+                              title="Drag to swap with another period"
+                            >
+                              <Step3Cell
+                                slot={slot}
+                                program={program}
+                                subjectMap={subjectMap}
+                                faculty={faculty}
+                                onUpdate={(patch) => updateSlot(slot.id, patch)}
+                              />
+                            </div>
                           ) : (
                             <div className="text-[11px] text-slate-300 italic text-center py-3">—</div>
                           )}
