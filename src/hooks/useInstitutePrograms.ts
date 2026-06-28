@@ -173,6 +173,50 @@ export function setChapterTrack(programId: string, chapterId: string, trackId: s
   }));
 }
 
+/* ─────────── Phase F — Sub-Programs (CBSE, JEE, …) ─────────── */
+
+import type { SubProgramSlice } from '@/types/instituteProgram';
+
+export function sliceFromSubProgramConfig(c: ScheduleConfig): SubProgramSlice {
+  return {
+    subjectTargetPeriods: c.subjectTargetPeriods ?? {},
+    subjectTracks: c.subjectTracks ?? {},
+    trackTargetPeriods: c.trackTargetPeriods ?? {},
+    subjectLocks: c.subjectLocks ?? {},
+    weeklyTimetable: c.weeklyTimetable ?? { cells: [] },
+  };
+}
+
+const emptySlice: SubProgramSlice = {
+  subjectTargetPeriods: {},
+  subjectTracks: {},
+  trackTargetPeriods: {},
+  subjectLocks: {},
+  weeklyTimetable: { cells: [] },
+};
+
+/** Persist the current flat slice into the outgoing sub-program, then load
+ *  the next sub-program's slice into the flat ScheduleConfig fields. Pure. */
+export function switchSubProgram(c: ScheduleConfig, nextId: string): ScheduleConfig {
+  const slices = { ...(c.subProgramSlices ?? {}) };
+  const currentId = c.activeSubProgramId;
+  if (currentId) {
+    slices[currentId] = sliceFromSubProgramConfig(c);
+  }
+  const incoming = slices[nextId] ?? emptySlice;
+  return {
+    ...c,
+    subProgramSlices: slices,
+    activeSubProgramId: nextId,
+    subjectTargetPeriods: incoming.subjectTargetPeriods,
+    subjectTracks: incoming.subjectTracks,
+    trackTargetPeriods: incoming.trackTargetPeriods,
+    subjectLocks: incoming.subjectLocks,
+    weeklyTimetable: incoming.weeklyTimetable,
+  };
+}
+
+
 /* ─────────── Phase B — Multiple Academic Windows ─────────── */
 
 /** Per-window slice fields. Schedule-level (shared): periodLengthMins,
