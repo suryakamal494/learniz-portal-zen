@@ -173,6 +173,9 @@ const ProgramSchedulePage: React.FC = () => {
           <span>Setup &amp; Allocation</span>
         </div>
 
+        {/* Phase B — academic windows switcher (visible on every step) */}
+        <AcademicWindowSwitcher config={config} onChange={persistConfig} />
+
         {/* Stepper */}
         <Card className="border-slate-200/70 shadow-sm">
           <CardContent className="p-3">
