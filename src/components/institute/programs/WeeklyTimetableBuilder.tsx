@@ -52,6 +52,7 @@ import { subjectPalette } from '@/lib/subjectColors';
 import {
   ScheduleConfig,
   ScheduleTrack,
+  SubProgram,
   WeekDay,
   WeeklyTimetable,
   WeeklyTimetableCell,
@@ -87,11 +88,17 @@ interface AllocationOption {
   trackName: string;
   facultyId?: string;
   target: number;
+  subProgramId?: string;
+  subProgramCode?: string;
 }
 
 interface Props {
   config: ScheduleConfig;
   subjects: Subject[];
+  /** Phase F — sub-programs defined on the parent program. When >1, the
+   *  palette merges tracks across all sub-programs and each painted cell
+   *  carries its `subProgramId`. */
+  subPrograms?: SubProgram[];
   /** Available faculty for per-cell / per-row assignment in Step 3. */
   faculty?: InstituteFaculty[];
   onChange: (tt: WeeklyTimetable) => void;
@@ -112,7 +119,7 @@ function weeksInWindow(startIso: string, endIso: string): string[] {
 
 type CopyMode = 'next' | 'next4' | 'remaining' | 'all';
 
-export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, faculty = [], onChange }) => {
+export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subPrograms = [], faculty = [], onChange }) => {
   const layout = useMemo(() => computeDayLayout(config), [config]);
   const periodRows = useMemo(() => layout.filter((r) => r.kind === 'period'), [layout]);
 
@@ -145,46 +152,120 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
   // Confirm dialog state for bulk copy.
   const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; count: number } | null>(null);
 
+  const hasSubPrograms = subPrograms.length > 1;
+  const activeSubProgramId = config.activeSubProgramId ?? subPrograms[0]?.id;
+
+  /** Per-sub-program resolved slice. The currently-active sub-program reads
+   *  from the flat config (mirror of its slice); inactive ones read from
+   *  `config.subProgramSlices`. */
+  const sliceFor = (subProgramId?: string) => {
+    if (!hasSubPrograms || !subProgramId || subProgramId === activeSubProgramId) {
+      return {
+        subjectTargetPeriods: config.subjectTargetPeriods ?? {},
+        subjectTracks: config.subjectTracks ?? {},
+        trackTargetPeriods: config.trackTargetPeriods ?? {},
+      };
+    }
+    const s = config.subProgramSlices?.[subProgramId];
+    return {
+      subjectTargetPeriods: s?.subjectTargetPeriods ?? {},
+      subjectTracks: s?.subjectTracks ?? {},
+      trackTargetPeriods: s?.trackTargetPeriods ?? {},
+    };
+  };
+
+  /** Build the default-track shape for a subject under a given slice. */
+  const tracksForSubjectInSlice = (
+    subjectId: string,
+    slice: ReturnType<typeof sliceFor>,
+  ): ScheduleTrack[] => {
+    const stored = slice.subjectTracks[subjectId];
+    if (stored && stored.length > 0) return stored;
+    return [{
+      id: `trk-${subjectId}-t1`,
+      subjectId,
+      name: 'T1',
+      facultyId: config.defaultFaculty[subjectId],
+      allottedPeriods: slice.subjectTargetPeriods[subjectId] ?? 0,
+    }];
+  };
+
+  /** Active-slice tracks by subject (kept for active-sub-program cell
+   *  rendering paths that previously used `tracksBySubject`). */
   const tracksBySubject = useMemo<Record<string, ScheduleTrack[]>>(() => {
+    const slice = sliceFor(activeSubProgramId);
     const out: Record<string, ScheduleTrack[]> = {};
     subjects.forEach((s) => {
-      const stored = config.subjectTracks?.[s.id];
-      out[s.id] = stored && stored.length > 0
-        ? stored
-        : [{
-            id: `trk-${s.id}-t1`,
-            subjectId: s.id,
-            name: 'T1',
-            facultyId: config.defaultFaculty[s.id],
-            allottedPeriods: config.subjectTargetPeriods?.[s.id] ?? 0,
-          }];
+      out[s.id] = tracksForSubjectInSlice(s.id, slice);
     });
     return out;
-  }, [subjects, config.subjectTracks, config.subjectTargetPeriods, config.defaultFaculty]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, config.subjectTracks, config.subjectTargetPeriods, config.defaultFaculty, activeSubProgramId, config.subProgramSlices]);
+
+  /** Cross-sub-program lookup: trackId → { subProgram, subject, track } */
+  const trackIndex = useMemo(() => {
+    const idx = new Map<string, { subProgramId?: string; subProgramCode?: string; subjectId: string; track: ScheduleTrack }>();
+    const collect = (subProgramId: string | undefined, subProgramCode: string | undefined) => {
+      const slice = sliceFor(subProgramId);
+      subjects.forEach((s) => {
+        tracksForSubjectInSlice(s.id, slice).forEach((tr) => {
+          idx.set(tr.id, { subProgramId, subProgramCode, subjectId: s.id, track: tr });
+        });
+      });
+    };
+    if (hasSubPrograms) {
+      subPrograms.forEach((sp) => collect(sp.id, sp.code));
+    } else {
+      collect(undefined, undefined);
+    }
+    return idx;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, subPrograms, hasSubPrograms, activeSubProgramId, config.subjectTracks, config.subjectTargetPeriods, config.subProgramSlices, config.defaultFaculty]);
+
+  const optionKey = (subProgramId: string | null | undefined, trackId: string | null | undefined) =>
+    `${subProgramId ?? '_'}::${trackId ?? '_'}`;
 
   const placedByTrack = useMemo(() => {
     const out: Record<string, number> = {};
     tt.cells.forEach((c) => {
       if (!c.subjectId) return;
-      const trackId = c.trackId ?? tracksBySubject[c.subjectId]?.[0]?.id ?? `trk-${c.subjectId}-t1`;
-      out[trackId] = (out[trackId] ?? 0) + 1;
+      const trackId = c.trackId ?? `trk-${c.subjectId}-t1`;
+      const k = optionKey(c.subProgramId ?? null, trackId);
+      out[k] = (out[k] ?? 0) + 1;
     });
     return out;
-  }, [tt.cells, tracksBySubject]);
+  }, [tt.cells]);
 
-  const allocationOptions = useMemo<AllocationOption[]>(() => subjects.flatMap((s) =>
-    (tracksBySubject[s.id] ?? [])
-      .filter((tr) => tr.enabled !== false)
-      .map((tr) => ({
-        subjectId: s.id,
-        subjectName: s.name,
-        subjectColor: s.color,
-        trackId: tr.id,
-        trackName: tr.name,
-        facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
-        target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
-      })),
-  ), [subjects, tracksBySubject, config.defaultFaculty, config.trackTargetPeriods, config.subjectTargetPeriods]);
+  const allocationOptions = useMemo<AllocationOption[]>(() => {
+    const opts: AllocationOption[] = [];
+    const pushFromSlice = (subProgramId: string | undefined, subProgramCode: string | undefined) => {
+      const slice = sliceFor(subProgramId);
+      subjects.forEach((s) => {
+        tracksForSubjectInSlice(s.id, slice)
+          .filter((tr) => tr.enabled !== false)
+          .forEach((tr) => {
+            opts.push({
+              subjectId: s.id,
+              subjectName: s.name,
+              subjectColor: s.color,
+              trackId: tr.id,
+              trackName: tr.name,
+              facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
+              target: slice.trackTargetPeriods[tr.id] ?? tr.allottedPeriods ?? slice.subjectTargetPeriods[s.id] ?? 0,
+              subProgramId,
+              subProgramCode,
+            });
+          });
+      });
+    };
+    if (hasSubPrograms) {
+      subPrograms.forEach((sp) => pushFromSlice(sp.id, sp.code));
+    } else {
+      pushFromSlice(undefined, undefined);
+    }
+    return opts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, subPrograms, hasSubPrograms, activeSubProgramId, config.subjectTracks, config.subjectTargetPeriods, config.trackTargetPeriods, config.defaultFaculty, config.subProgramSlices]);
 
   /** Map of "weekday#periodIndex" -> cell info for active week. */
   const cellMap = useMemo(() => {
@@ -234,6 +315,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
     subjectId: string | null,
     trackId?: string | null,
     facultyIdOverride?: string | null,
+    subProgramId?: string | null,
   ) => {
     writeNoSnapshot((cells) => {
       const existing = cells.find(
@@ -242,14 +324,24 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
       const others = cells.filter(
         (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
       );
-      // Reset faculty override when subject is cleared or changed.
       const facultyId =
         facultyIdOverride !== undefined
           ? facultyIdOverride
           : subjectId && existing?.subjectId === subjectId && existing?.trackId === trackId
             ? existing?.facultyId ?? null
             : null;
-      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId, trackId: subjectId ? trackId ?? null : null, facultyId }];
+      const resolvedSubProgramId = subjectId
+        ? subProgramId ?? (trackId ? trackIndex.get(trackId)?.subProgramId : undefined) ?? activeSubProgramId ?? null
+        : null;
+      return [...others, {
+        weekStartDate: weekStart,
+        weekday,
+        periodIndex,
+        subjectId,
+        trackId: subjectId ? trackId ?? null : null,
+        facultyId,
+        subProgramId: resolvedSubProgramId,
+      }];
     });
   };
 
@@ -263,12 +355,15 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
     const existing = tt.cells.find(
       (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
     );
-    const same = existing?.subjectId === option.subjectId && (existing.trackId ?? tracksBySubject[option.subjectId]?.[0]?.id) === option.trackId;
+    const same =
+      existing?.subjectId === option.subjectId &&
+      existing?.trackId === option.trackId &&
+      (existing?.subProgramId ?? null) === (option.subProgramId ?? null);
     if (existing?.subjectId && !opts.force && !same) {
       setReplaceIntent({ weekStart, weekday, periodIndex, next: option, existing });
       return;
     }
-    setCellSubject(weekStart, weekday, periodIndex, option.subjectId, option.trackId, option.facultyId ?? null);
+    setCellSubject(weekStart, weekday, periodIndex, option.subjectId, option.trackId, option.facultyId ?? null, option.subProgramId ?? null);
   };
 
   const setCellFaculty = (
@@ -304,7 +399,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
         skipped += 1;
         return;
       }
-      added.push({ weekStartDate: activeWeek, weekday: d.d, periodIndex, subjectId, trackId: targetTrack, facultyId: subjectId ? facultyId : null });
+      const subProgramId = subjectId && targetTrack ? trackIndex.get(targetTrack)?.subProgramId ?? activeSubProgramId ?? null : null;
+      added.push({ weekStartDate: activeWeek, weekday: d.d, periodIndex, subjectId, trackId: targetTrack, facultyId: subjectId ? facultyId : null, subProgramId });
     });
     const addedKeys = new Set(added.map((c) => `${c.weekday}#${c.periodIndex}`));
     const others = tt.cells.filter(
@@ -357,6 +453,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
       weekday,
       periodIndex: pIdx,
       subjectId: sid,
+      subProgramId: activeSubProgramId ?? null,
     }));
     const dayName = DOW_FULL.find((d) => d.d === weekday)?.long ?? '';
     snapshotAndWrite([...others, ...added], `Planned ${assignments.size} period(s) for ${dayName}`);
@@ -574,12 +671,13 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             {allocationOptions.map((opt) => {
               const pal = subjectPalette(opt.subjectColor);
-              const placed = placedByTrack[opt.trackId] ?? 0;
-              const isArmed = armed?.trackId === opt.trackId;
+              const k = optionKey(opt.subProgramId ?? null, opt.trackId);
+              const placed = placedByTrack[k] ?? 0;
+              const isArmed = armed ? optionKey(armed.subProgramId ?? null, armed.trackId) === k : false;
               return (
                 <button
                   type="button"
-                  key={opt.trackId}
+                  key={k}
                   onClick={() => setArmed(opt)}
                   className={cn(
                     'min-h-12 rounded-lg border px-3 py-2 text-left transition-all bg-white',
@@ -588,7 +686,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-sm truncate">{opt.subjectName}</span>
-                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-white/70">{opt.trackName}</Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {hasSubPrograms && opt.subProgramCode && (
+                        <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-indigo-50 border-indigo-200 text-indigo-700">
+                          {opt.subProgramCode}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-white/70">{opt.trackName}</Badge>
+                    </div>
                   </div>
                   <div className="text-[11px] text-slate-600 tabular-nums mt-0.5">
                     {placed} / {opt.target || '—'} placed
@@ -671,8 +776,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                       const cell = cellMap.get(`${d.d}#${pIdx}`);
                       const subjectId = cell?.subjectId ?? null;
                       const sub = subjects.find((s) => s.id === subjectId);
-                      const trackId = subjectId ? cell?.trackId ?? tracksBySubject[subjectId]?.[0]?.id : null;
-                      const track = subjectId ? tracksBySubject[subjectId]?.find((tr) => tr.id === trackId) : null;
+                      const cellSubProgramId = cell?.subProgramId ?? null;
+                      const trackInfo = cell?.trackId ? trackIndex.get(cell.trackId) : null;
+                      const track = subjectId
+                        ? trackInfo?.track ?? tracksBySubject[subjectId]?.find((tr) => tr.id === cell?.trackId) ?? tracksBySubject[subjectId]?.[0] ?? null
+                        : null;
+                      const subProgram = (cellSubProgramId ?? trackInfo?.subProgramId)
+                        ? subPrograms.find((sp) => sp.id === (cellSubProgramId ?? trackInfo?.subProgramId))
+                        : null;
                       const pal = sub ? subjectPalette(sub.color) : null;
                       const effectiveFacultyId =
                         cell?.facultyId || track?.facultyId || (subjectId ? config.defaultFaculty[subjectId] : '') || '';
@@ -680,6 +791,12 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                       const facultyOptions = faculty.filter(
                         (f) => !f.subjectId || f.subjectId === subjectId,
                       );
+                      const showTrackChip = subjectId
+                        ? (() => {
+                            const sliceTracks = tracksForSubjectInSlice(subjectId, sliceFor(cellSubProgramId ?? trackInfo?.subProgramId));
+                            return sliceTracks.filter((tr) => tr.enabled !== false).length > 1;
+                          })()
+                        : false;
                       return (
                         <td key={d.d} className="px-1 py-1 align-top">
                           <button
@@ -693,14 +810,18 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                           >
                             {subjectId && sub ? (
                               <>
+                                {hasSubPrograms && subProgram && (
+                                  <div className="mb-0.5">
+                                    <span className="inline-block text-[9px] font-bold uppercase tracking-wide px-1 py-0 rounded bg-indigo-100 text-indigo-700">
+                                      {subProgram.code}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="flex items-center justify-between gap-1">
                                   <span className="text-[11px] font-bold truncate">{sub.name}</span>
-                                  {(() => {
-                                    const enabledTracks = (tracksBySubject[subjectId] ?? []).filter((tr) => tr.enabled !== false);
-                                    return enabledTracks.length > 1 ? (
-                                      <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
-                                    ) : null;
-                                  })()}
+                                  {showTrackChip && (
+                                    <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
+                                  )}
                                 </div>
                                 {fac && (
                                   <div className="text-[10px] text-slate-600 truncate mt-1">
@@ -784,13 +905,17 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
               <b>
                 {(() => {
                   const existingSubject = subjects.find((s) => s.id === replaceIntent?.existing.subjectId);
-                  const existingTrack = replaceIntent?.existing.subjectId
-                    ? tracksBySubject[replaceIntent.existing.subjectId]?.find((tr) => tr.id === replaceIntent.existing.trackId)
-                    : null;
-                  return `${existingSubject?.name ?? 'Subject'} · ${existingTrack?.name ?? 'T1'}`;
+                  const existingTrackInfo = replaceIntent?.existing.trackId ? trackIndex.get(replaceIntent.existing.trackId) : null;
+                  const existingTrack = existingTrackInfo?.track ?? null;
+                  const existingSp = subPrograms.find((sp) => sp.id === (replaceIntent?.existing.subProgramId ?? existingTrackInfo?.subProgramId));
+                  const prefix = hasSubPrograms && existingSp ? `${existingSp.code} · ` : '';
+                  return `${prefix}${existingSubject?.name ?? 'Subject'} · ${existingTrack?.name ?? 'T1'}`;
                 })()}
               </b>
-              . Replacing will assign <b>{replaceIntent?.next.subjectName} · {replaceIntent?.next.trackName}</b> here.
+              . Replacing will assign <b>
+                {hasSubPrograms && replaceIntent?.next.subProgramCode ? `${replaceIntent.next.subProgramCode} · ` : ''}
+                {replaceIntent?.next.subjectName} · {replaceIntent?.next.trackName}
+              </b> here.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -805,6 +930,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                   replaceIntent.next.subjectId,
                   replaceIntent.next.trackId,
                   replaceIntent.next.facultyId ?? null,
+                  replaceIntent.next.subProgramId ?? null,
                 );
                 setReplaceIntent(null);
               }}

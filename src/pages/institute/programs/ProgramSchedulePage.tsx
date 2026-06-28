@@ -1354,6 +1354,7 @@ const TimetableStep: React.FC<{
       <WeeklyTimetableBuilder
         config={config}
         subjects={subjects}
+        subPrograms={program.subPrograms ?? []}
         faculty={pooledFaculty}
         onChange={(tt: WeeklyTimetable) => onChange({ ...config, weeklyTimetable: tt })}
       />

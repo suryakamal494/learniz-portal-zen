@@ -1,125 +1,52 @@
 
-## Goal
+## Problem
 
-Two scoped changes — no other UI moves:
+Today each sub-program (CBSE, JEE Mains) has its own isolated slice that includes its own `weeklyTimetable`. When you switch sub-programs in Period Allocation, the timetable swaps too — so only the active sub-program's tracks appear in the timetable palette (e.g. only CBSE Physics T1, T2 OR only JEE Physics T1, never together).
 
-1. Delete the "Section workspace · shared period pool" promo card on the Programs list page (you don't want this entry).
-2. On the existing section page (`/institute/programs/:programId/schedule`, the one in your screenshot), add the **Program Switcher** inside Step 2 — Period Allocation. Sub-programs (CBSE, JEE, …) live INSIDE each section/program and each carries its own subject targets, tracks and chapter splits. Timetable cells show the sub-program code only when there are 2+ sub-programs.
+Expected: the weekly timetable is one shared grid for the section. The palette must show every track from every sub-program at once, prefixed by the sub-program (e.g. "CBSE · Physics T1", "CBSE · Physics T2", "JEE Mains · Physics T1"), and each painted cell remembers which sub-program it belongs to.
 
-## Changes
+## Plan
 
-### 1. Remove the section workspace promo card
+### 1. Data model — share the timetable, keep allocation sliced
+- `SubProgramSlice` keeps its own `subjectTargetPeriods`, `subjectTracks`, `trackTargetPeriods`, `subjectLocks` (allocation is per sub-program — correct today).
+- Remove `weeklyTimetable` from `SubProgramSlice`. The single `config.weeklyTimetable` becomes the shared grid for the whole section.
+- Extend `WeeklyTimetableCell` with `subProgramId: string` so each painted cell carries its origin. Tracks `trk-…` are already unique per sub-program because they live inside per-sub-program `subjectTracks`.
 
-`src/pages/institute/programs/ProgramsListPage.tsx` — delete the block guarded by `multiProgramSections.length > 0` (lines ~89–115 today, header "Section workspace · shared period pool"). Drop the now-unused `useSections` import. The individual section cards (Class 12 PCM, Class 11 PCM…) stay untouched.
+### 2. Hook — stop swapping the timetable on switch
+- `switchSubProgram` (`useInstitutePrograms.ts`): marshal only allocation fields into the outgoing slice and hydrate only allocation fields from the incoming slice. Leave `config.weeklyTimetable` untouched across switches.
+- `sliceFromSubProgramConfig` / `emptySlice`: drop `weeklyTimetable`.
 
-The standalone `/institute/sections/:id/schedule` route + `SectionSchedulePage.tsx` are left in place, just no longer linked from the list — per your "delete only the card" instruction.
+### 3. Palette — merge tracks across all sub-programs
+- `PeriodAllocationWorkspace` passes `program.subPrograms` and `program.subProgramSlices` into `WeeklyTimetableBuilder` (or precomputes a merged track list and passes that).
+- `WeeklyTimetableBuilder` builds `allocationOptions` by iterating every sub-program's slice (`subjectTracks`, `subjectTargetPeriods`, `trackTargetPeriods`) plus the active flat config for the currently-edited sub-program. Each option carries `{subProgramId, subProgramCode, subjectId, subjectName, subjectColor, trackId, trackName, target, facultyId}`.
+- Palette pills render as `[color dot] Subject  [SubProgramCode · TrackName]  placed/target` so CBSE Physics T1, CBSE Physics T2, JEE Mains Physics T1 all coexist.
+- When a program has no sub-programs (or just one), behavior is unchanged — palette shows the existing flat tracks without a sub-program chip.
 
-### 2. Add Sub-Program layer to `InstituteProgram`
+### 4. Painting & rendering cells
+- `armCell` and `setCellSubject` also persist `subProgramId` from the armed option onto the cell.
+- Cell rendering reads `cell.subProgramId`, looks up the sub-program (code + color) and the track from that sub-program's slice, and renders the sub-program code chip above the subject + track when the program has 2+ sub-programs (already the rule we set previously).
+- "Fill row" / "Plan this day" carry `subProgramId` through alongside `subjectId` / `trackId`.
 
-`src/types/instituteProgram.ts` — add:
+### 5. Placed counts & validation
+- `placedByTrack` keys on `trackId` (already unique across sub-programs since track ids are namespaced inside each slice). No collision risk.
+- Capacity strip / unused-capacity math in `PeriodAllocationWorkspace` continues to use the active slice only (per sub-program allocation). The shared timetable's placed counts compare against each track's own target.
 
-```ts
-export interface SubProgram {
-  id: string;     // e.g. 'sp-cbse'
-  code: string;   // 'CBSE' — shown on switcher pill & timetable chip
-  name: string;   // 'CBSE Class 12'
-  color?: string; // optional accent
-}
+### 6. Mock data migration
+- `mockInstitutePrograms.ts`: remove the per-slice `weeklyTimetable` seeds (or keep one shared seed at the top level). Existing prog-1 keeps CBSE + JEE Advanced sub-programs.
 
-export interface InstituteProgram {
-  ...
-  /** Sub-programs (CBSE, JEE, NEET, …) that share this section's grid. */
-  subPrograms?: SubProgram[];
-  /** Which sub-program is currently being edited. */
-  activeSubProgramId?: string;
-}
+### 7. Cleanup
+- Drop unused imports for `WeeklyTimetable` inside the slice type.
+- No new routes. No UI removed from the period allocation card.
 
-export interface ScheduleConfig {
-  ...
-  /** Per-sub-program allocation slices. Key = subProgramId. */
-  subProgramSlices?: Record<string, {
-    subjectTargetPeriods: Record<string, number>;
-    subjectTracks: Record<string, ScheduleTrack[]>;
-    trackTargetPeriods: Record<string, number>;
-    subjectLocks: Record<string, boolean>;
-  }>;
-  /** Mirrored from the active slice for backward compat. */
-  activeSubProgramId?: string;
-}
-```
+## Files to touch
 
-The flat `subjectTargetPeriods` / `subjectTracks` / `trackTargetPeriods` / `subjectLocks` keep working — they always mirror the active sub-program's slice (same pattern as the existing window swap in `useInstitutePrograms.ts`).
+- `src/types/instituteProgram.ts` — slice no longer carries `weeklyTimetable`; cell gets `subProgramId`.
+- `src/hooks/useInstitutePrograms.ts` — `switchSubProgram`, `sliceFromSubProgramConfig`, `emptySlice` updated.
+- `src/data/mockInstitutePrograms.ts` — drop per-slice timetable seeds.
+- `src/components/institute/programs/PeriodAllocationWorkspace.tsx` — pass sub-program context into the builder.
+- `src/components/institute/programs/WeeklyTimetableBuilder.tsx` — merged palette, sub-program-aware painting & cell rendering, fill-row / plan-day carry `subProgramId`.
 
-### 3. Mock CBSE + JEE inside `prog-1`
+## Out of scope
 
-`src/data/mockInstitutePrograms.ts` — add to `prog-1` (Class 12 PCM):
-
-```ts
-subPrograms: [
-  { id: 'sp-cbse', code: 'CBSE', name: 'CBSE Class 12',  color: 'blue'   },
-  { id: 'sp-jee',  code: 'JEE',  name: 'JEE Advanced',   color: 'violet' },
-],
-activeSubProgramId: 'sp-cbse',
-```
-
-Other programs (prog-2, prog-3) keep a single implicit sub-program — switcher hides when `subPrograms.length <= 1`.
-
-### 4. Sub-program swap helpers
-
-`src/hooks/useInstitutePrograms.ts` — mirror the window-swap helpers:
-
-- `ensureSubPrograms(program)` — guarantees at least one sub-program; wraps current flat slice into "Default" if none.
-- `switchActiveSubProgram(programId, subProgramId)` — persists current flat slice into the outgoing sub-program's `subProgramSlices` entry, then hydrates the flat fields from the incoming entry. Re-emits.
-- All existing setters (`setSchedule`, target/track mutations done via PeriodAllocationWorkspace's `onConfigChange`) continue writing to the flat fields — `switchActiveSubProgram` is the only place that moves data into the slice store.
-
-### 5. Wire the switcher into `PeriodAllocationWorkspace`
-
-`src/components/institute/programs/PeriodAllocationWorkspace.tsx`:
-
-- Take `program` (already in props) and read `program.subPrograms`.
-- When `subPrograms.length > 1`, render a sticky **Program Switcher** card directly above the "Allot periods to each subject" panel (matches the placement & visual language used in `SectionAllocationStep` — indigo pill row, code + name, periods-allocated chip, pulse on switch).
-- Clicking a pill calls `switchActiveSubProgram(program.id, sp.id)`. The component then re-renders with the new sub-program's `subjectTargetPeriods` / `subjectTracks` already mirrored into `config`.
-- A single sub-program (or none defined) renders nothing — page looks identical to today.
-
-### 6. Conditional sub-program label on Weekly Timetable
-
-`src/components/institute/programs/WeeklyTimetableBuilder.tsx`:
-
-- Compute `showSubProgram = (program.subPrograms?.length ?? 0) > 1`.
-- When painting / rendering a cell, look up the sub-program from the cell's stored `subProgramId` (new optional field on `WeeklyTimetableCell`, defaulted to `activeSubProgramId` at write time). When `showSubProgram` is true, render `<chip>{subProgram.code}</chip>` above the subject name; otherwise show subject only (and track when the subject has 2+ tracks).
-- `WeeklyTimetableCell` in `src/types/instituteProgram.ts` gains `subProgramId?: string`.
-
-### 7. Cell-write call sites
-
-Wherever a `WeeklyTimetableCell` is written today (timetable builder click/drag handlers), stamp the current `activeSubProgramId` onto the cell. Cells without `subProgramId` (legacy) display as if they belong to the active sub-program.
-
-## Files touched
-
-- `src/pages/institute/programs/ProgramsListPage.tsx` (delete the promo card)
-- `src/types/instituteProgram.ts` (`SubProgram`, slices, optional cell `subProgramId`)
-- `src/data/mockInstitutePrograms.ts` (seed CBSE + JEE on prog-1)
-- `src/hooks/useInstitutePrograms.ts` (`ensureSubPrograms`, `switchActiveSubProgram`, slice marshalling)
-- `src/components/institute/programs/PeriodAllocationWorkspace.tsx` (render switcher; everything else is driven by the mirrored flat slice)
-- `src/components/institute/programs/WeeklyTimetableBuilder.tsx` (conditional sub-program chip; stamp `subProgramId` on writes)
-
-No new routes. No data loss for programs without sub-programs. The `SectionSchedulePage` and `useSection` store are untouched.
-
-## Visual reference (Period Allocation, after change)
-
-```text
-┌─ ACADEMIC WINDOW [Term 1 · Foundation] [Term 2] [Term 3] ───────────────────┐
-└──────────────────────────────────────────────────────────────────────────────┘
-   Setup ─── (2) Period Allocation ─── 3 Weekly Timetable ─── 4 Preview
-
-┌─ Working 119 · Available 714 · Allocated 211/714 · Remaining 503 ───────────┐
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌─ PROGRAMS · each sub-program owns its tracks & period split ────────────────┐
-│  [ ✓ CBSE  CBSE Class 12  120p ]   [  JEE   JEE Advanced   91p ]            │
-│  CBSE active · 7 subjects · 9 tracks · 120 periods allocated                │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌─ Allot periods to each subject (CBSE) ──────────────────────────────────────┐
-│  Physics 40   Chemistry 35   Maths 50   Biology 30   …                       │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+- Conflict detection across sub-programs sharing a slot (a future enhancement — say, warning if CBSE Physics T1 and JEE Physics T1 land on the same Mon P3 with the same faculty).
+- Changing the look of the sub-program switcher itself.
