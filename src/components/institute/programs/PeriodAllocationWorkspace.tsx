@@ -287,6 +287,18 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
         showRemaining
       />
 
+      {/* Phase F — sub-program switcher (CBSE / JEE / …) */}
+      {(program.subPrograms?.length ?? 0) > 1 && (
+        <SubProgramSwitcher
+          subPrograms={program.subPrograms!}
+          activeId={config.activeSubProgramId ?? program.subPrograms![0].id}
+          slices={config.subProgramSlices}
+          currentFlatTotal={totalTargets}
+          onSwitch={(id) => onConfigChange(switchSubProgram(config, id))}
+        />
+      )}
+
+
       {/* Subject targets bar */}
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-4 space-y-3">
