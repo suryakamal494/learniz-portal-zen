@@ -164,12 +164,12 @@ const ProgramSchedulePage: React.FC = () => {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
-            <ArrowLeft className="h-3.5 w-3.5" /> Programs
+            <ArrowLeft className="h-3.5 w-3.5" /> Sections
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-slate-900 font-medium truncate">{program.name}</span>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span>Schedule</span>
+          <span>Setup &amp; Allocation</span>
         </div>
 
         {/* Stepper */}
