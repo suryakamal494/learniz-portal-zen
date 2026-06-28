@@ -822,12 +822,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                       const facultyOptions = faculty.filter(
                         (f) => !f.subjectId || f.subjectId === subjectId,
                       );
-                      const showTrackChip = subjectId
-                        ? (() => {
-                            const sliceTracks = tracksForSubjectInSlice(subjectId, sliceFor(cellSubProgramId ?? trackInfo?.subProgramId));
-                            return sliceTracks.filter((tr) => tr.enabled !== false).length > 1;
-                          })()
-                        : false;
+                      const showTrackChip = !!track;
                       const cellKey = `${d.d}#${pIdx}`;
                       const isDragOver = dragOverKey === cellKey && dragKey && dragKey !== cellKey;
                       return (
