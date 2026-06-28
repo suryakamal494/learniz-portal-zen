@@ -223,7 +223,6 @@ const ProgramAllocationBlock: React.FC<{
   facultyPool: string[];
   facultyList: { id: string; name: string }[];
 }> = ({ section, program, facultyPool, facultyList }) => {
-  const [open, setOpen] = useState(true);
   const programTotal = program.subjects.reduce(
     (sum, su) => sum + su.tracks.reduce((s, t) => s + (t.allottedPeriods || 0), 0),
     0,
@@ -231,31 +230,26 @@ const ProgramAllocationBlock: React.FC<{
 
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 hover:bg-slate-100"
-      >
+      <div className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
         <div className="flex items-center gap-2">
-          {open ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
           <Badge className="bg-slate-900 text-white hover:bg-slate-900 text-[10px] font-bold">{program.code}</Badge>
           <span className="text-sm font-semibold text-slate-900">{program.name}</span>
+          <span className="text-[11px] text-slate-500">· allot periods to each subject</span>
         </div>
         <div className="text-xs text-slate-600 tabular-nums font-medium">{programTotal} periods</div>
-      </button>
-      {open && (
-        <CardContent className="p-3 space-y-2">
-          {program.subjects.map((su) => (
-            <SubjectRow
-              key={su.id}
-              section={section}
-              programId={program.id}
-              subject={su}
-              facultyPool={facultyPool}
-              facultyList={facultyList}
-            />
-          ))}
-        </CardContent>
-      )}
+      </div>
+      <CardContent className="p-3 space-y-2">
+        {program.subjects.map((su) => (
+          <SubjectRow
+            key={su.id}
+            section={section}
+            programId={program.id}
+            subject={su}
+            facultyPool={facultyPool}
+            facultyList={facultyList}
+          />
+        ))}
+      </CardContent>
     </Card>
   );
 };
