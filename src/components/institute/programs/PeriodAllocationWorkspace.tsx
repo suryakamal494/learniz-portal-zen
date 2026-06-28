@@ -476,34 +476,9 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
               );
             })}
           </div>
-
-          <div className="flex items-center justify-between text-xs pt-1">
-            <span className="text-slate-500">
-              Targets total:{' '}
-              <span className="font-semibold text-slate-900 tabular-nums">
-                {totalTargets.toLocaleString()}
-              </span>{' '}
-              / {capacity.periodsAvailable.toLocaleString()}
-            </span>
-            <span
-              className={cn(
-                'font-semibold tabular-nums',
-                targetSurplus > 0
-                  ? 'text-amber-700'
-                  : targetSurplus < 0
-                    ? 'text-rose-700'
-                    : 'text-emerald-700',
-              )}
-            >
-              {targetSurplus > 0
-                ? `${targetSurplus} unused capacity`
-                : targetSurplus < 0
-                  ? `${Math.abs(targetSurplus)} over`
-                  : 'Fully distributed ✓'}
-            </span>
-          </div>
         </CardContent>
       </Card>
+
 
       {/* Per-subject expand: chapters → topics */}
       <div className="space-y-3">
