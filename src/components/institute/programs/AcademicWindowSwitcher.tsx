@@ -208,16 +208,19 @@ export const AcademicWindowSwitcher: React.FC<Props> = ({ config, onChange }) =>
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {windows.map((w) => {
               const isActive = w.id === activeId;
+              const isPulsing = pulseId === w.id;
               return (
                 <button
                   key={w.id}
                   type="button"
                   onClick={() => handleSwitch(w.id)}
+                  title={isActive ? `${w.label} (active)` : `Click to load ${w.label}'s allocation & timetable`}
                   className={cn(
                     'flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border text-left whitespace-nowrap transition-all',
                     isActive
                       ? 'bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-200'
                       : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50',
+                    isPulsing && 'animate-pulse ring-4 ring-amber-300',
                   )}
                 >
                   <span className="text-sm font-semibold flex items-center gap-1.5">
@@ -241,8 +244,15 @@ export const AcademicWindowSwitcher: React.FC<Props> = ({ config, onChange }) =>
               <span>{active.workingDays.map((d) => DOW.find((x) => x.d === d)?.label).filter(Boolean).join(' ')}</span>
             </div>
           )}
+
+          {import.meta.env.DEV && lastSwitch && (
+            <div className="text-[10px] font-mono text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">
+              [dev] last switched → <b>{lastSwitch.label}</b> at {lastSwitch.at.toLocaleTimeString()} · swapped allocation, tracks, weekly timetable & holiday overrides
+            </div>
+          )}
         </div>
       </Card>
+
 
       <Dialog open={dlgOpen} onOpenChange={setDlgOpen}>
         <DialogContent className="sm:max-w-md">
