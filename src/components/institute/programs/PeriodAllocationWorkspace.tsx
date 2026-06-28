@@ -202,6 +202,18 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
     });
   };
 
+  const toggleTrackEnabled = (subjectId: string, trackId: string) => {
+    const tracks = (tracksBySubject[subjectId] ?? []).map((tr) =>
+      tr.id === trackId ? { ...tr, enabled: tr.enabled === false ? true : false } : tr,
+    );
+    onConfigChange({ ...config, subjectTracks: { ...config.subjectTracks, [subjectId]: tracks } });
+  };
+
+  const toggleSubjectLock = (subjectId: string) => {
+    const next = { ...subjectLocks, [subjectId]: !subjectLocks[subjectId] };
+    onConfigChange({ ...config, subjectLocks: next });
+  };
+
   const distributeTargetsEvenly = () => {
     const n = program.subjects.length;
     if (n === 0 || capacity.periodsAvailable === 0) return;
