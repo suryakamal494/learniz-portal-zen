@@ -152,46 +152,116 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
   // Confirm dialog state for bulk copy.
   const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; count: number } | null>(null);
 
+  const hasSubPrograms = subPrograms.length > 1;
+  const activeSubProgramId = config.activeSubProgramId ?? subPrograms[0]?.id;
+
+  /** Per-sub-program resolved slice. The currently-active sub-program reads
+   *  from the flat config (mirror of its slice); inactive ones read from
+   *  `config.subProgramSlices`. */
+  const sliceFor = (subProgramId?: string) => {
+    if (!hasSubPrograms || !subProgramId || subProgramId === activeSubProgramId) {
+      return {
+        subjectTargetPeriods: config.subjectTargetPeriods ?? {},
+        subjectTracks: config.subjectTracks ?? {},
+        trackTargetPeriods: config.trackTargetPeriods ?? {},
+      };
+    }
+    const s = config.subProgramSlices?.[subProgramId];
+    return {
+      subjectTargetPeriods: s?.subjectTargetPeriods ?? {},
+      subjectTracks: s?.subjectTracks ?? {},
+      trackTargetPeriods: s?.trackTargetPeriods ?? {},
+    };
+  };
+
+  /** Build the default-track shape for a subject under a given slice. */
+  const tracksForSubjectInSlice = (
+    subjectId: string,
+    slice: ReturnType<typeof sliceFor>,
+  ): ScheduleTrack[] => {
+    const stored = slice.subjectTracks[subjectId];
+    if (stored && stored.length > 0) return stored;
+    return [{
+      id: `trk-${subjectId}-t1`,
+      subjectId,
+      name: 'T1',
+      facultyId: config.defaultFaculty[subjectId],
+      allottedPeriods: slice.subjectTargetPeriods[subjectId] ?? 0,
+    }];
+  };
+
+  /** Active-slice tracks by subject (kept for active-sub-program cell
+   *  rendering paths that previously used `tracksBySubject`). */
   const tracksBySubject = useMemo<Record<string, ScheduleTrack[]>>(() => {
+    const slice = sliceFor(activeSubProgramId);
     const out: Record<string, ScheduleTrack[]> = {};
     subjects.forEach((s) => {
-      const stored = config.subjectTracks?.[s.id];
-      out[s.id] = stored && stored.length > 0
-        ? stored
-        : [{
-            id: `trk-${s.id}-t1`,
-            subjectId: s.id,
-            name: 'T1',
-            facultyId: config.defaultFaculty[s.id],
-            allottedPeriods: config.subjectTargetPeriods?.[s.id] ?? 0,
-          }];
+      out[s.id] = tracksForSubjectInSlice(s.id, slice);
     });
     return out;
-  }, [subjects, config.subjectTracks, config.subjectTargetPeriods, config.defaultFaculty]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, config.subjectTracks, config.subjectTargetPeriods, config.defaultFaculty, activeSubProgramId, config.subProgramSlices]);
+
+  /** Cross-sub-program lookup: trackId → { subProgram, subject, track } */
+  const trackIndex = useMemo(() => {
+    const idx = new Map<string, { subProgramId?: string; subProgramCode?: string; subjectId: string; track: ScheduleTrack }>();
+    const collect = (subProgramId: string | undefined, subProgramCode: string | undefined) => {
+      const slice = sliceFor(subProgramId);
+      subjects.forEach((s) => {
+        tracksForSubjectInSlice(s.id, slice).forEach((tr) => {
+          idx.set(tr.id, { subProgramId, subProgramCode, subjectId: s.id, track: tr });
+        });
+      });
+    };
+    if (hasSubPrograms) {
+      subPrograms.forEach((sp) => collect(sp.id, sp.code));
+    } else {
+      collect(undefined, undefined);
+    }
+    return idx;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, subPrograms, hasSubPrograms, activeSubProgramId, config.subjectTracks, config.subjectTargetPeriods, config.subProgramSlices, config.defaultFaculty]);
 
   const placedByTrack = useMemo(() => {
     const out: Record<string, number> = {};
     tt.cells.forEach((c) => {
       if (!c.subjectId) return;
-      const trackId = c.trackId ?? tracksBySubject[c.subjectId]?.[0]?.id ?? `trk-${c.subjectId}-t1`;
+      const trackId = c.trackId ?? `trk-${c.subjectId}-t1`;
       out[trackId] = (out[trackId] ?? 0) + 1;
     });
     return out;
-  }, [tt.cells, tracksBySubject]);
+  }, [tt.cells]);
 
-  const allocationOptions = useMemo<AllocationOption[]>(() => subjects.flatMap((s) =>
-    (tracksBySubject[s.id] ?? [])
-      .filter((tr) => tr.enabled !== false)
-      .map((tr) => ({
-        subjectId: s.id,
-        subjectName: s.name,
-        subjectColor: s.color,
-        trackId: tr.id,
-        trackName: tr.name,
-        facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
-        target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
-      })),
-  ), [subjects, tracksBySubject, config.defaultFaculty, config.trackTargetPeriods, config.subjectTargetPeriods]);
+  const allocationOptions = useMemo<AllocationOption[]>(() => {
+    const opts: AllocationOption[] = [];
+    const pushFromSlice = (subProgramId: string | undefined, subProgramCode: string | undefined) => {
+      const slice = sliceFor(subProgramId);
+      subjects.forEach((s) => {
+        tracksForSubjectInSlice(s.id, slice)
+          .filter((tr) => tr.enabled !== false)
+          .forEach((tr) => {
+            opts.push({
+              subjectId: s.id,
+              subjectName: s.name,
+              subjectColor: s.color,
+              trackId: tr.id,
+              trackName: tr.name,
+              facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
+              target: slice.trackTargetPeriods[tr.id] ?? tr.allottedPeriods ?? slice.subjectTargetPeriods[s.id] ?? 0,
+              subProgramId,
+              subProgramCode,
+            });
+          });
+      });
+    };
+    if (hasSubPrograms) {
+      subPrograms.forEach((sp) => pushFromSlice(sp.id, sp.code));
+    } else {
+      pushFromSlice(undefined, undefined);
+    }
+    return opts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, subPrograms, hasSubPrograms, activeSubProgramId, config.subjectTracks, config.subjectTargetPeriods, config.trackTargetPeriods, config.defaultFaculty, config.subProgramSlices]);
 
   /** Map of "weekday#periodIndex" -> cell info for active week. */
   const cellMap = useMemo(() => {
