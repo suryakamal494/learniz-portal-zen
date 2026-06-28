@@ -95,10 +95,12 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
           allocated += p;
         }),
       );
-      const trackTarget = (tracksBySubject[s.id] ?? []).reduce(
-        (sum, tr) => sum + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
-        0,
-      );
+      const trackTarget = (tracksBySubject[s.id] ?? [])
+        .filter(isTrackEnabled)
+        .reduce(
+          (sum, tr) => sum + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
+          0,
+        );
       return {
         subjectId: s.id,
         target: trackTarget || targets[s.id] || 0,
@@ -112,10 +114,12 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
   const totalAllocated = subjectAggs.reduce((a, s) => a + s.allocated, 0);
   const totalTargets = useMemo(
     () => program.subjects.reduce(
-      (sum, s) => sum + (tracksBySubject[s.id] ?? []).reduce(
-        (acc, tr) => acc + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
-        0,
-      ),
+      (sum, s) => sum + (tracksBySubject[s.id] ?? [])
+        .filter(isTrackEnabled)
+        .reduce(
+          (acc, tr) => acc + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
+          0,
+        ),
       0,
     ),
     [program.subjects, tracksBySubject, trackTargets],
