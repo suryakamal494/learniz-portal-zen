@@ -222,12 +222,16 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjects, subPrograms, hasSubPrograms, activeSubProgramId, config.subjectTracks, config.subjectTargetPeriods, config.subProgramSlices, config.defaultFaculty]);
 
+  const optionKey = (subProgramId: string | null | undefined, trackId: string | null | undefined) =>
+    `${subProgramId ?? '_'}::${trackId ?? '_'}`;
+
   const placedByTrack = useMemo(() => {
     const out: Record<string, number> = {};
     tt.cells.forEach((c) => {
       if (!c.subjectId) return;
       const trackId = c.trackId ?? `trk-${c.subjectId}-t1`;
-      out[trackId] = (out[trackId] ?? 0) + 1;
+      const k = optionKey(c.subProgramId ?? null, trackId);
+      out[k] = (out[k] ?? 0) + 1;
     });
     return out;
   }, [tt.cells]);
