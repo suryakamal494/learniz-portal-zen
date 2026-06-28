@@ -201,6 +201,8 @@ export interface InstituteProgram {
   hoursFinalised: boolean;
   schedule?: ScheduleConfig;
   generatedSlots?: ScheduleSlot[];
+  /** Phase F — sub-programs (CBSE, JEE, …) sharing this section's grid. */
+  subPrograms?: SubProgram[];
 }
 
 export interface SubjectRollup {
