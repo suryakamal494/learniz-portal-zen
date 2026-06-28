@@ -86,6 +86,37 @@ const ProgramsListPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Sections banner — entry to the section-scoped 4-step workspace */}
+        {sections.length > 0 && (
+          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm overflow-hidden">
+            <CardContent className="p-0">
+              <div className="flex items-center justify-between gap-4 p-5 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white grid place-items-center shadow-sm">
+                    <Layers className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-indigo-700 font-bold">New · Section-scoped scheduling</div>
+                    <div className="text-base font-bold text-slate-900">Plan multiple programs together</div>
+                    <div className="text-xs text-slate-600 mt-0.5">One section budget · one cell, one allocation · parallel tracks supported</div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {sections.map((s) => (
+                    <Button
+                      key={s.id}
+                      onClick={() => navigate(`/institute/sections/${s.id}/schedule`)}
+                      className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-sm"
+                    >
+                      Open {s.name} <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Filters */}
         <Card className="border-slate-200/70 shadow-sm">
           <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
