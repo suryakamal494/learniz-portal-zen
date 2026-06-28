@@ -1123,6 +1123,112 @@ const FacultyCombobox: React.FC<{
   );
 };
 
+/* Phase A — Section faculty pool multi-select. */
+const FacultyPoolPicker: React.FC<{
+  all: { id: string; name: string; subjectId?: string }[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}> = ({ all, selectedIds, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const selected = all.filter((f) => selectedIds.includes(f.id));
+  const toggle = (id: string) => {
+    onChange(
+      selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id],
+    );
+  };
+  return (
+    <div className="mt-2 space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-full justify-between bg-white font-normal"
+          >
+            <span className="truncate text-left">
+              {selectedIds.length === 0
+                ? 'All faculty available (no pool set)'
+                : `${selectedIds.length} faculty in pool`}
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-2 max-h-72 overflow-auto" align="start">
+          {all.length === 0 ? (
+            <div className="px-2 py-3 text-xs italic text-slate-400">No faculty yet.</div>
+          ) : (
+            <div className="space-y-0.5">
+              {all.map((f) => {
+                const on = selectedIds.includes(f.id);
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggle(f.id)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-sm',
+                      on ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'h-4 w-4 rounded border grid place-items-center shrink-0',
+                        on ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white',
+                      )}
+                    >
+                      {on && <Check className="h-3 w-3" />}
+                    </span>
+                    <span className="flex-1 truncate">{f.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex justify-between gap-1 pt-2 mt-1 border-t border-slate-100">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => onChange([])}
+            >
+              Clear pool
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => onChange(all.map((f) => f.id))}
+            >
+              Select all
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selected.map((f) => (
+            <Badge
+              key={f.id}
+              variant="outline"
+              className="bg-blue-50 text-blue-700 border-blue-200 text-[11px] font-normal pl-2 pr-1 py-0.5"
+            >
+              {f.name}
+              <button
+                type="button"
+                onClick={() => toggle(f.id)}
+                className="ml-1 hover:bg-blue-100 rounded p-0.5"
+                aria-label={`Remove ${f.name}`}
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 /* ──────────────── Coverage cursor display ──────────────── */
 
 const CoverageList: React.FC<{
