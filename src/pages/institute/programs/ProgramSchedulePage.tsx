@@ -2066,8 +2066,10 @@ const Step3TimetableMonthView: React.FC<{
                             const slTracks: any[] = !sl.subProgramId || sl.subProgramId === sched.activeSubProgramId
                               ? sched.subjectTracks?.[sl.subjectId] ?? []
                               : sched.subProgramSlices?.[sl.subProgramId]?.subjectTracks?.[sl.subjectId] ?? [];
-                            const tr = sl.trackId ? slTracks.find((t: any) => t.id === sl.trackId) : null;
-                            const showTr = slTracks.filter((t: any) => t.enabled !== false).length > 1;
+                            const tr = sl.trackId
+                              ? slTracks.find((t: any) => t.id === sl.trackId)
+                              : slTracks[0];
+                            const showTr = !!tr;
                             const label = `${sp ? sp.code + ' ' : ''}${sub?.name ?? ''}${showTr && tr ? ' · ' + tr.name : ''}`;
                             return (
                               <span
