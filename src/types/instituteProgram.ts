@@ -185,6 +185,8 @@ export interface ScheduleSlot {
   endTime: string;          // HH:mm
   subjectId: string;
   trackId?: string;
+  /** Phase F — sub-program (CBSE/JEE) the slot belongs to. */
+  subProgramId?: string | null;
   chapterId: string;
   topicId: string;
   facultyId: string;

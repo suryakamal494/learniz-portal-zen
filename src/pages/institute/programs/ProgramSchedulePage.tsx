@@ -1572,6 +1572,41 @@ const Step3TimetableView: React.FC<{
     onChangeSlots(slots.map((s) => (s.id === id ? { ...s, ...patch, locked: true } : s)));
   };
 
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  const swapByKey = (srcKey: string, dstKey: string) => {
+    if (srcKey === dstKey) return;
+    const src = slotByKey.get(srcKey);
+    const dst = slotByKey.get(dstKey);
+    if (!src && !dst) return;
+    const swappable = (a: ScheduleSlot, b: ScheduleSlot) => ({
+      ...a,
+      subjectId: b.subjectId,
+      trackId: b.trackId,
+      subProgramId: b.subProgramId,
+      chapterId: b.chapterId,
+      topicId: b.topicId,
+      facultyId: b.facultyId,
+    });
+    if (src && dst) {
+      const next = slots.map((s) => {
+        if (s.id === src.id) return { ...swappable(src, dst), locked: true };
+        if (s.id === dst.id) return { ...swappable(dst, src), locked: true };
+        return s;
+      });
+      onChangeSlots(next);
+    } else if (src && !dst) {
+      // Move src into the (empty) dst position
+      const [dDate, dPIdxStr] = dstKey.split('#');
+      const next = slots.map((s) =>
+        s.id === src.id ? { ...s, date: dDate, periodIndex: Number(dPIdxStr), locked: true } : s,
+      );
+      onChangeSlots(next);
+    }
+  };
+
+
   return (
     <div className="space-y-3">
       {/* Week chips */}
@@ -1685,17 +1720,53 @@ const Step3TimetableView: React.FC<{
 
                     {workingDows.map((d) => {
                       const dateIso = dateForWeekday(d.d);
-                      const slot = slotByKey.get(`${dateIso}#${pIdx}`);
+                      const key = `${dateIso}#${pIdx}`;
+                      const slot = slotByKey.get(key);
+                      const isOver = dragOverKey === key && dragKey && dragKey !== key;
                       return (
-                        <td key={d.d} className="px-1.5 py-1.5 align-top border-l border-slate-100">
+                        <td
+                          key={d.d}
+                          className={cn(
+                            'px-1.5 py-1.5 align-top border-l border-slate-100 transition-colors',
+                            isOver && 'bg-blue-50 ring-2 ring-blue-300 ring-inset rounded',
+                          )}
+                          onDragOver={(e) => {
+                            if (!dragKey || !slot) return;
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dragOverKey !== key) setDragOverKey(key);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverKey === key) setDragOverKey(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const src = e.dataTransfer.getData('text/plain') || dragKey;
+                            if (src) swapByKey(src, key);
+                            setDragKey(null);
+                            setDragOverKey(null);
+                          }}
+                        >
                           {slot ? (
-                            <Step3Cell
-                              slot={slot}
-                              program={program}
-                              subjectMap={subjectMap}
-                              faculty={faculty}
-                              onUpdate={(patch) => updateSlot(slot.id, patch)}
-                            />
+                            <div
+                              draggable
+                              onDragStart={(e) => {
+                                setDragKey(key);
+                                e.dataTransfer.setData('text/plain', key);
+                                e.dataTransfer.effectAllowed = 'move';
+                              }}
+                              onDragEnd={() => { setDragKey(null); setDragOverKey(null); }}
+                              className={cn('cursor-grab active:cursor-grabbing', dragKey === key && 'opacity-50')}
+                              title="Drag to swap with another period"
+                            >
+                              <Step3Cell
+                                slot={slot}
+                                program={program}
+                                subjectMap={subjectMap}
+                                faculty={faculty}
+                                onUpdate={(patch) => updateSlot(slot.id, patch)}
+                              />
+                            </div>
                           ) : (
                             <div className="text-[11px] text-slate-300 italic text-center py-3">—</div>
                           )}
@@ -1732,6 +1803,26 @@ const Step3Cell: React.FC<{
   const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === slot.subjectId);
   const currentFaculty = faculty.find((f) => f.id === slot.facultyId);
 
+  // Resolve sub-program + track chips (works across CBSE/JEE slices).
+  const subPrograms: { id: string; code: string; name: string }[] = program.subPrograms ?? [];
+  const hasSubPrograms = subPrograms.length > 1;
+  const subProgram = slot.subProgramId
+    ? subPrograms.find((sp) => sp.id === slot.subProgramId)
+    : null;
+
+  const sched = program.schedule ?? {};
+  const activeSpId = sched.activeSubProgramId;
+  const sliceTracks: any[] = (() => {
+    if (!slot.subProgramId || slot.subProgramId === activeSpId) {
+      return sched.subjectTracks?.[slot.subjectId] ?? [];
+    }
+    return sched.subProgramSlices?.[slot.subProgramId]?.subjectTracks?.[slot.subjectId] ?? [];
+  })();
+  const track = slot.trackId
+    ? sliceTracks.find((t: any) => t.id === slot.trackId) ?? null
+    : null;
+  const showTrackChip = sliceTracks.filter((t: any) => t.enabled !== false).length > 1;
+
   const handleChapter = (chapterId: string) => {
     const newCh = chapters.find((c: any) => c.id === chapterId);
     const firstTopic = newCh?.topics?.[0]?.id ?? '';
@@ -1752,9 +1843,21 @@ const Step3Cell: React.FC<{
 
         >
           <div className="flex items-center justify-between gap-1 mb-1">
-            <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide')}>
-              {sub?.name}
-            </span>
+            <div className="flex items-center gap-1 min-w-0">
+              {hasSubPrograms && subProgram && (
+                <span className="text-[9px] font-bold uppercase tracking-wide px-1 py-0 rounded bg-indigo-100 text-indigo-700 shrink-0">
+                  {subProgram.code}
+                </span>
+              )}
+              <span className={cn('inline-block text-[10px] font-semibold uppercase tracking-wide truncate')}>
+                {sub?.name}
+              </span>
+              {showTrackChip && track && (
+                <span className="text-[9px] font-semibold px-1 py-0 rounded bg-white/70 border border-slate-200 text-slate-700 shrink-0">
+                  {track.name}
+                </span>
+              )}
+            </div>
             {slot.locked && <Lock className="h-2.5 w-2.5 opacity-60 shrink-0" />}
           </div>
           <div className="text-[11px] font-semibold text-slate-800 truncate leading-tight">
@@ -1768,6 +1871,7 @@ const Step3Cell: React.FC<{
             {currentFaculty ? shortFacultyName(currentFaculty.name) : 'Unassigned'}
           </div>
         </button>
+
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3 space-y-3" align="start">
         <div className="space-y-1">
@@ -1954,6 +2058,16 @@ const Step3TimetableMonthView: React.FC<{
                           {list.slice(0, 4).map((sl) => {
                             const sub = subjectMap.get(sl.subjectId);
                             const pal = subjectPalette(sub?.color ?? 'blue');
+                            const sp = sl.subProgramId
+                              ? (program.subPrograms ?? []).find((x: any) => x.id === sl.subProgramId)
+                              : null;
+                            const sched = program.schedule ?? {};
+                            const slTracks: any[] = !sl.subProgramId || sl.subProgramId === sched.activeSubProgramId
+                              ? sched.subjectTracks?.[sl.subjectId] ?? []
+                              : sched.subProgramSlices?.[sl.subProgramId]?.subjectTracks?.[sl.subjectId] ?? [];
+                            const tr = sl.trackId ? slTracks.find((t: any) => t.id === sl.trackId) : null;
+                            const showTr = slTracks.filter((t: any) => t.enabled !== false).length > 1;
+                            const label = `${sp ? sp.code + ' ' : ''}${sub?.name ?? ''}${showTr && tr ? ' · ' + tr.name : ''}`;
                             return (
                               <span
                                 key={sl.id}
@@ -1961,9 +2075,9 @@ const Step3TimetableMonthView: React.FC<{
                                   'text-[10px] px-1.5 py-0.5 rounded border truncate font-medium',
                                   pal.slot,
                                 )}
-                                title={`P${sl.periodIndex + 1} · ${sub?.name ?? ''}`}
+                                title={`P${sl.periodIndex + 1} · ${label}`}
                               >
-                                P{sl.periodIndex + 1} · {sub?.name}
+                                P{sl.periodIndex + 1} · {label}
                               </span>
                             );
                           })}
