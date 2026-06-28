@@ -148,6 +148,9 @@ export interface SubProgram {
   name: string;
   /** Optional accent color name (subject-palette compatible). */
   color?: string;
+}
+
+
 
 /** Phase B — a per-window slice of the schedule. Switching the active window
  *  loads its slice into the flat ScheduleConfig fields. Schedule-level fields
