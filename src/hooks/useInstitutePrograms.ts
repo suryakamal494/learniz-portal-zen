@@ -7,6 +7,7 @@ import {
   InstituteProgram,
   ScheduleConfig,
   ScheduleSlot,
+  SubProgramSlice,
   WeekDay,
 } from '@/types/instituteProgram';
 
