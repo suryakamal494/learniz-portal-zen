@@ -244,6 +244,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
         tracksForSubjectInSlice(s.id, slice)
           .filter((tr) => tr.enabled !== false)
           .forEach((tr) => {
+            const target = slice.trackTargetPeriods[tr.id] ?? tr.allottedPeriods ?? slice.subjectTargetPeriods[s.id] ?? 0;
+            if (target <= 0) return;
             opts.push({
               subjectId: s.id,
               subjectName: s.name,
@@ -251,7 +253,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
               trackId: tr.id,
               trackName: tr.name,
               facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
-              target: slice.trackTargetPeriods[tr.id] ?? tr.allottedPeriods ?? slice.subjectTargetPeriods[s.id] ?? 0,
+              target,
               subProgramId,
               subProgramCode,
             });
