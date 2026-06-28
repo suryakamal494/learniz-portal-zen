@@ -71,6 +71,7 @@ import { cn } from '@/lib/utils';
 import { WeeklyTimetableBuilder } from '@/components/institute/programs/WeeklyTimetableBuilder';
 import { CapacityStrip } from '@/components/institute/programs/CapacityStrip';
 import { PeriodAllocationWorkspace } from '@/components/institute/programs/PeriodAllocationWorkspace';
+import { AcademicWindowSwitcher } from '@/components/institute/programs/AcademicWindowSwitcher';
 
 
 type Step = 'setup' | 'allocation' | 'timetable' | 'preview';
@@ -171,6 +172,9 @@ const ProgramSchedulePage: React.FC = () => {
           <ChevronRight className="h-3.5 w-3.5" />
           <span>Setup &amp; Allocation</span>
         </div>
+
+        {/* Phase B — academic windows switcher (visible on every step) */}
+        <AcademicWindowSwitcher config={config} onChange={persistConfig} />
 
         {/* Stepper */}
         <Card className="border-slate-200/70 shadow-sm">

@@ -1,11 +1,13 @@
 import { useSyncExternalStore } from 'react';
 import { MOCK_FACULTY, MOCK_INSTITUTE_PROGRAMS } from '@/data/mockInstitutePrograms';
 import {
+  AcademicWindow,
   Holiday,
   InstituteFaculty,
   InstituteProgram,
   ScheduleConfig,
   ScheduleSlot,
+  WeekDay,
 } from '@/types/instituteProgram';
 
 /** Session-only in-memory store. Survives navigation, lost on reload. */
@@ -169,4 +171,121 @@ export function setChapterTrack(programId: string, chapterId: string, trackId: s
       chapters: s.chapters.map((c) => (c.id === chapterId ? { ...c, trackId } : c)),
     })),
   }));
+}
+
+/* ─────────── Phase B — Multiple Academic Windows ─────────── */
+
+/** Per-window slice fields. Schedule-level (shared): periodLengthMins,
+ *  dayStartTime, breaks, defaultFaculty, facultyPool, classUrlTemplate. */
+export function sliceFromConfig(c: ScheduleConfig, id: string, label: string): AcademicWindow {
+  return {
+    id,
+    label,
+    startDate: c.startDate,
+    endDate: c.endDate,
+    workingDays: c.workingDays,
+    periodsPerDay: c.periodsPerDay,
+    weeklyTimetable: c.weeklyTimetable,
+    subjectTargetPeriods: c.subjectTargetPeriods,
+    subjectTracks: c.subjectTracks,
+    trackTargetPeriods: c.trackTargetPeriods,
+    subjectLocks: c.subjectLocks,
+    holidayOverrides: c.holidayOverrides,
+  };
+}
+
+export function mergeWindowIntoConfig(c: ScheduleConfig, w: AcademicWindow): ScheduleConfig {
+  return {
+    ...c,
+    startDate: w.startDate,
+    endDate: w.endDate,
+    workingDays: w.workingDays,
+    periodsPerDay: w.periodsPerDay,
+    weeklyTimetable: w.weeklyTimetable,
+    subjectTargetPeriods: w.subjectTargetPeriods,
+    subjectTracks: w.subjectTracks,
+    trackTargetPeriods: w.trackTargetPeriods,
+    subjectLocks: w.subjectLocks,
+    holidayOverrides: w.holidayOverrides,
+    activeWindowId: w.id,
+  };
+}
+
+/** Ensure a config has at least one window. Wraps current flat slice into a
+ *  default "Window 1" if none exists. Pure — returns a new config. */
+export function ensureWindows(c: ScheduleConfig): ScheduleConfig {
+  if (c.windows && c.windows.length > 0 && c.activeWindowId) return c;
+  const id = c.activeWindowId ?? `win-${Date.now()}`;
+  const first = sliceFromConfig(c, id, 'Window 1');
+  return { ...c, windows: [first], activeWindowId: id };
+}
+
+/** Persist the current flat slice back into the active window, then return
+ *  a new config with the chosen window loaded as active. */
+export function switchActiveWindow(c: ScheduleConfig, nextId: string): ScheduleConfig {
+  const base = ensureWindows(c);
+  const windows = (base.windows ?? []).map((w) =>
+    w.id === base.activeWindowId ? sliceFromConfig(base, w.id, w.label) : w,
+  );
+  const next = windows.find((w) => w.id === nextId);
+  if (!next) return base;
+  return mergeWindowIntoConfig({ ...base, windows }, next);
+}
+
+export function addWindow(
+  c: ScheduleConfig,
+  fields: { label: string; startDate: string; endDate?: string; workingDays: WeekDay[]; periodsPerDay: number },
+): ScheduleConfig {
+  const base = ensureWindows(c);
+  const id = `win-${Date.now()}`;
+  // Persist current slice into its window
+  const windows = (base.windows ?? []).map((w) =>
+    w.id === base.activeWindowId ? sliceFromConfig(base, w.id, w.label) : w,
+  );
+  const newWindow: AcademicWindow = {
+    id,
+    label: fields.label,
+    startDate: fields.startDate,
+    endDate: fields.endDate,
+    workingDays: fields.workingDays,
+    periodsPerDay: fields.periodsPerDay,
+    weeklyTimetable: { cells: [] },
+    subjectTargetPeriods: {},
+    subjectTracks: {},
+    trackTargetPeriods: {},
+    subjectLocks: {},
+    holidayOverrides: { removed: [], added: [] },
+  };
+  return mergeWindowIntoConfig({ ...base, windows: [...windows, newWindow] }, newWindow);
+}
+
+export function renameActiveWindow(c: ScheduleConfig, label: string): ScheduleConfig {
+  const base = ensureWindows(c);
+  const windows = (base.windows ?? []).map((w) =>
+    w.id === base.activeWindowId ? { ...w, label } : w,
+  );
+  return { ...base, windows };
+}
+
+/** Update timing fields (dates, working days, periods/day) on the active window. */
+export function updateActiveWindowMeta(
+  c: ScheduleConfig,
+  patch: Partial<Pick<AcademicWindow, 'startDate' | 'endDate' | 'workingDays' | 'periodsPerDay' | 'label'>>,
+): ScheduleConfig {
+  const base = ensureWindows(c);
+  const merged: ScheduleConfig = { ...base, ...patch };
+  const windows = (merged.windows ?? []).map((w) =>
+    w.id === merged.activeWindowId ? { ...sliceFromConfig(merged, w.id, w.label), ...patch } : w,
+  );
+  return { ...merged, windows };
+}
+
+export function deleteWindow(c: ScheduleConfig, id: string): ScheduleConfig {
+  const base = ensureWindows(c);
+  if ((base.windows ?? []).length <= 1) return base;
+  const remaining = (base.windows ?? []).filter((w) => w.id !== id);
+  if (base.activeWindowId === id) {
+    return mergeWindowIntoConfig({ ...base, windows: remaining }, remaining[0]);
+  }
+  return { ...base, windows: remaining };
 }

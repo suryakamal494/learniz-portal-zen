@@ -120,6 +120,29 @@ export interface ScheduleConfig {
   /** Phase C — when a subject is locked, all its targets/tracks/topic-period
    *  inputs are read-only in Step 2. */
   subjectLocks?: Record<string, boolean>;
+  /** Phase B — multiple academic windows. The "active" slice is mirrored into
+   *  the flat fields above for backward-compat with existing UI. */
+  windows?: AcademicWindow[];
+  activeWindowId?: string;
+}
+
+/** Phase B — a per-window slice of the schedule. Switching the active window
+ *  loads its slice into the flat ScheduleConfig fields. Schedule-level fields
+ *  that stay shared across windows: periodLengthMins, dayStartTime, breaks,
+ *  defaultFaculty, facultyPool, classUrlTemplate. */
+export interface AcademicWindow {
+  id: string;
+  label: string;
+  startDate: string;
+  endDate?: string;
+  workingDays: WeekDay[];
+  periodsPerDay: number;
+  weeklyTimetable?: WeeklyTimetable;
+  subjectTargetPeriods?: Record<string, number>;
+  subjectTracks?: Record<string, ScheduleTrack[]>;
+  trackTargetPeriods?: Record<string, number>;
+  subjectLocks?: Record<string, boolean>;
+  holidayOverrides?: HolidayOverrides;
 }
 
 
