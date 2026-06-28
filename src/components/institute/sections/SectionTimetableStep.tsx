@@ -62,6 +62,7 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext 
 
   const placedCounts = useMemo(() => placedByTrack(section), [section]);
   const facultyById = useMemo(() => Object.fromEntries(facultyList.map((f) => [f.id, f])), [facultyList]);
+  const showProgram = section.programs.length > 1;
 
   const cellAt = (weekday: number, periodIndex: number) =>
     section.cells.find((c) =>
@@ -146,7 +147,9 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext 
               <div className="text-[10px] uppercase tracking-wider text-indigo-600 font-semibold">Armed</div>
               <div className="mt-1 flex items-center justify-between gap-2">
                 <div className="text-sm font-semibold text-slate-900 truncate">
-                  {armedLabel.program?.code} · {armedLabel.subject.name} · {armedLabel.track?.name}
+                  {showProgram && <>{armedLabel.program?.code} · </>}
+                  {armedLabel.subject.name}
+                  {armedLabel.subject.tracks.length > 1 && <> · {armedLabel.track?.name}</>}
                 </div>
                 <button
                   onClick={() => setArmed(null)}
@@ -228,6 +231,7 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext 
                               slot={{ weekStartDate: weekStart, weekday: d, periodIndex: p }}
                               onClick={() => handleCellClick(d as number, p)}
                               facultyById={facultyById}
+                              showProgram={showProgram}
                             />
                           </td>
                         );
@@ -359,7 +363,8 @@ const TimetableCell: React.FC<{
   slot: SlotKey;
   onClick: () => void;
   facultyById: Record<string, { id: string; name: string } | undefined>;
-}> = ({ section, cell, armed, slot, onClick, facultyById }) => {
+  showProgram: boolean;
+}> = ({ section, cell, armed, slot, onClick, facultyById, showProgram }) => {
   if (!cell) {
     return (
       <button
@@ -398,10 +403,14 @@ const TimetableCell: React.FC<{
     >
       <div className="flex items-center gap-1.5 mb-1">
         <span className={cn('h-3 w-3 rounded shrink-0', pal.solid)} style={trackPattern(trackIdx)} />
-        <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
-          {program.code}
-        </span>
-        <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
+        {showProgram && (
+          <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
+            {program.code}
+          </span>
+        )}
+        {subject.tracks.length > 1 && (
+          <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
+        )}
       </div>
       <div className="text-xs font-semibold text-slate-900 truncate">{subject.name}</div>
       <div className="text-[10px] text-slate-600 truncate mt-0.5">
@@ -417,8 +426,8 @@ const TimetableCell: React.FC<{
       <PopoverTrigger asChild>{cellButton}</PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="start">
         <div className={cn('px-3 py-2 bg-gradient-to-r text-white', pal.headerGradient)}>
-          <div className="text-[10px] uppercase tracking-wider opacity-80">{program.code}</div>
-          <div className="text-sm font-bold">{subject.name} · {track.name}</div>
+          {showProgram && <div className="text-[10px] uppercase tracking-wider opacity-80">{program.code}</div>}
+          <div className="text-sm font-bold">{subject.name}{subject.tracks.length > 1 ? ` · ${track.name}` : ''}</div>
         </div>
         <div className="p-3 space-y-2">
           <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Faculty</div>
