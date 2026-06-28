@@ -88,11 +88,17 @@ interface AllocationOption {
   trackName: string;
   facultyId?: string;
   target: number;
+  subProgramId?: string;
+  subProgramCode?: string;
 }
 
 interface Props {
   config: ScheduleConfig;
   subjects: Subject[];
+  /** Phase F — sub-programs defined on the parent program. When >1, the
+   *  palette merges tracks across all sub-programs and each painted cell
+   *  carries its `subProgramId`. */
+  subPrograms?: SubProgram[];
   /** Available faculty for per-cell / per-row assignment in Step 3. */
   faculty?: InstituteFaculty[];
   onChange: (tt: WeeklyTimetable) => void;
