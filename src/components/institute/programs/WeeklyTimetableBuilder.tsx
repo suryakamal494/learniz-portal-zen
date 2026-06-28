@@ -828,16 +828,52 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                             return sliceTracks.filter((tr) => tr.enabled !== false).length > 1;
                           })()
                         : false;
+                      const cellKey = `${d.d}#${pIdx}`;
+                      const isDragOver = dragOverKey === cellKey && dragKey && dragKey !== cellKey;
                       return (
-                        <td key={d.d} className="px-1 py-1 align-top">
+                        <td
+                          key={d.d}
+                          className={cn(
+                            'px-1 py-1 align-top transition-colors',
+                            isDragOver && 'bg-blue-50',
+                          )}
+                          onDragOver={(e) => {
+                            if (!dragKey) return;
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dragOverKey !== cellKey) setDragOverKey(cellKey);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverKey === cellKey) setDragOverKey(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const src = e.dataTransfer.getData('text/plain') || dragKey;
+                            if (src) swapCells(src, cellKey);
+                            setDragKey(null);
+                            setDragOverKey(null);
+                          }}
+                        >
                           <button
                             type="button"
+                            draggable={!!subjectId}
+                            onDragStart={(e) => {
+                              if (!subjectId) return;
+                              setDragKey(cellKey);
+                              e.dataTransfer.setData('text/plain', cellKey);
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragEnd={() => { setDragKey(null); setDragOverKey(null); }}
                             onClick={() => armed && placeAllocation(activeWeek, d.d, pIdx, armed)}
                             className={cn(
                               'w-full min-h-[64px] rounded-lg border px-2 py-1.5 text-left transition-all',
                               subjectId && pal ? cn(pal.slot, 'hover:ring-1', pal.ring) : 'border-dashed border-slate-200 bg-white text-slate-300 hover:border-blue-300 hover:bg-blue-50/30',
                               armed && !subjectId && 'ring-1 ring-blue-200',
+                              subjectId && 'cursor-grab active:cursor-grabbing',
+                              dragKey === cellKey && 'opacity-50',
+                              isDragOver && 'ring-2 ring-blue-400',
                             )}
+                            title={subjectId ? 'Drag to swap with another cell' : undefined}
                           >
                             {subjectId && sub ? (
                               <>
