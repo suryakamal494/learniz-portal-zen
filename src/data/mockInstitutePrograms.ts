@@ -1,8 +1,16 @@
-import { InstituteFaculty, InstituteProgram, InstituteSubject } from '@/types/instituteProgram';
+import {
+  AcademicWindow,
+  InstituteFaculty,
+  InstituteProgram,
+  InstituteSubject,
+  ScheduleTrack,
+  WeekDay,
+} from '@/types/instituteProgram';
 import {
   addDays,
   generateFromTimetable,
 } from '@/utils/calendarAutomation';
+
 
 /** Seed data for the institute Programs module.
  *  Class 12 PCM has the full 3 subjects \u00d7 12 chapters \u00d7 5 topics shape
