@@ -706,7 +706,7 @@ const NumberStepper: React.FC<{
       inputMode="numeric"
       value={value}
       onChange={(e) => onChange(Math.max(0, Math.round(Number(e.target.value) || 0)))}
-      className="h-8 w-16 text-center tabular-nums bg-white px-1"
+      className="h-8 w-12 text-center tabular-nums bg-white px-1"
       aria-label={ariaLabel}
       disabled={disabled}
     />
