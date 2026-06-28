@@ -205,7 +205,7 @@ function App() {
           <Route path="insights/schedule-tracking" element={<ScheduleTrackingPage />} />
           <Route path="insights/learning-response" element={<LearningResponsePage />} />
 
-          {/* Programs module */}
+          {/* Sections module */}
           <Route path="programs" element={<ProgramsListPage />} />
           <Route path="programs/holidays" element={<InstituteHolidaysPage />} />
           {/* Legacy: Teaching Hours moved into the Schedule wizard's Step 2. */}
@@ -216,7 +216,7 @@ function App() {
           <Route path="programs/:programId/preview" element={<ProgramPreviewPage />} />
           <Route path="programs/:programId/schedule" element={<ProgramSchedulePage />} />
 
-          {/* Legacy timetable → programs */}
+          {/* Legacy timetable → sections */}
           <Route path="timetable" element={<Navigate to="/institute/programs" replace />} />
 
           {/* Exam module */}
