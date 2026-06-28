@@ -173,15 +173,17 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
   }, [tt.cells, tracksBySubject]);
 
   const allocationOptions = useMemo<AllocationOption[]>(() => subjects.flatMap((s) =>
-    (tracksBySubject[s.id] ?? []).map((tr) => ({
-      subjectId: s.id,
-      subjectName: s.name,
-      subjectColor: s.color,
-      trackId: tr.id,
-      trackName: tr.name,
-      facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
-      target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
-    })),
+    (tracksBySubject[s.id] ?? [])
+      .filter((tr) => tr.enabled !== false)
+      .map((tr) => ({
+        subjectId: s.id,
+        subjectName: s.name,
+        subjectColor: s.color,
+        trackId: tr.id,
+        trackName: tr.name,
+        facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
+        target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
+      })),
   ), [subjects, tracksBySubject, config.defaultFaculty, config.trackTargetPeriods, config.subjectTargetPeriods]);
 
   /** Map of "weekday#periodIndex" -> cell info for active week. */
