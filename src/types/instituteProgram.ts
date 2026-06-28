@@ -80,6 +80,10 @@ export interface WeeklyTimetableCell {
   /** Optional per-cell faculty override. When null/undefined, the default
    *  faculty configured for the subject (config.defaultFaculty) is used. */
   facultyId?: string | null;
+  /** Phase F — which sub-program (CBSE / JEE / …) this cell was painted under.
+   *  When a program has multiple sub-programs, this determines which slice
+   *  the subject/track lookup goes against and drives the sub-program chip. */
+  subProgramId?: string | null;
 }
 
 export interface WeeklyTimetable {
