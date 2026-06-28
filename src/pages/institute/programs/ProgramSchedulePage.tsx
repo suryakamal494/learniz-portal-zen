@@ -111,7 +111,7 @@ const ProgramSchedulePage: React.FC = () => {
   if (!program) {
     return (
       <div className="p-10 text-center text-slate-500">
-        Program not found.{' '}
+        Section not found.{' '}
         <Link to="/institute/programs" className="text-blue-600 underline">
           Back
         </Link>
@@ -323,7 +323,7 @@ const SetupStep: React.FC<{
   const update = <K extends keyof ScheduleConfig>(k: K, v: ScheduleConfig[K]) => onChange({ ...config, [k]: v });
   const instituteHolidays = useInstituteHolidays();
 
-  // Program-only holiday picker state
+  // Section-only holiday picker state
   const [progHolDates, setProgHolDates] = useState<Date[]>([]);
   const [progHolName, setProgHolName] = useState('');
   const [progPickerOpen, setProgPickerOpen] = useState(false);
@@ -818,7 +818,7 @@ const SetupStep: React.FC<{
                 <CalendarDays className="h-4 w-4 text-blue-600" /> Holidays &amp; non-teaching days
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Institute-wide holidays apply automatically. Skip individual ones or add program-only dates below.
+                Institute-wide holidays apply automatically. Skip individual ones or add section-only dates below.
               </p>
             </div>
             <Link
@@ -862,7 +862,7 @@ const SetupStep: React.FC<{
                         className="h-7 text-xs"
                         onClick={() => toggleInstituteSkip(h.date)}
                       >
-                        {skipped ? 'Restore' : 'Skip for this program'}
+                        {skipped ? 'Restore' : 'Skip for this section'}
                       </Button>
                     </div>
                   );
@@ -871,10 +871,10 @@ const SetupStep: React.FC<{
             )}
           </div>
 
-          {/* Program-only adds */}
+          {/* Section-only adds */}
           <div>
             <Label className="text-xs uppercase tracking-wider text-slate-500">
-              Program-only dates ({overrides.added.length})
+              Section-only dates ({overrides.added.length})
             </Label>
             <div className="flex flex-col sm:flex-row gap-2 mt-2">
               <Popover open={progPickerOpen} onOpenChange={setProgPickerOpen}>
