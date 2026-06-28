@@ -616,7 +616,7 @@ export function generateFromTimetable(
   }
 
   // Build per-week cell lookup: weekStart -> weekday -> periodIndex -> { subjectId, trackId, facultyId }.
-  type CellInfo = { subjectId: string | null; trackId?: string | null; facultyId?: string | null };
+  type CellInfo = { subjectId: string | null; trackId?: string | null; facultyId?: string | null; subProgramId?: string | null };
   const byWeek = new Map<string, Map<number, Map<number, CellInfo>>>();
   tt.cells.forEach((c) => {
     let week = byWeek.get(c.weekStartDate);
@@ -629,7 +629,7 @@ export function generateFromTimetable(
       day = new Map();
       week.set(c.weekday, day);
     }
-    day.set(c.periodIndex, { subjectId: c.subjectId, trackId: c.trackId ?? null, facultyId: c.facultyId ?? null });
+    day.set(c.periodIndex, { subjectId: c.subjectId, trackId: c.trackId ?? null, facultyId: c.facultyId ?? null, subProgramId: c.subProgramId ?? null });
   });
 
   // For any week not explicitly authored, fall back to the *latest* authored
