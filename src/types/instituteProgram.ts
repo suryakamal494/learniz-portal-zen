@@ -114,6 +114,12 @@ export interface ScheduleConfig {
   subjectTracks?: Record<string, ScheduleTrack[]>;
   /** Step 2 — per-track period budget (track.id → periods to allot). */
   trackTargetPeriods?: Record<string, number>;
+  /** Phase A — section-level faculty pool. When set & non-empty, faculty
+   *  dropdowns in Step 1 (default) & Step 2 (per track) filter to this list. */
+  facultyPool?: string[];
+  /** Phase C — when a subject is locked, all its targets/tracks/topic-period
+   *  inputs are read-only in Step 2. */
+  subjectLocks?: Record<string, boolean>;
 }
 
 
