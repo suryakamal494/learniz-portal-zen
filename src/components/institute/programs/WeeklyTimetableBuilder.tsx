@@ -449,6 +449,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
       weekday,
       periodIndex: pIdx,
       subjectId: sid,
+      subProgramId: activeSubProgramId ?? null,
     }));
     const dayName = DOW_FULL.find((d) => d.d === weekday)?.long ?? '';
     snapshotAndWrite([...others, ...added], `Planned ${assignments.size} period(s) for ${dayName}`);
