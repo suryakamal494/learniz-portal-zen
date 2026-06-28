@@ -1342,13 +1342,15 @@ const TimetableStep: React.FC<{
   onGenerate: () => void;
 }> = ({ program, config, faculty, blockers, onChange, onBack, onGenerate }) => {
   const subjects = program.subjects.map((s) => ({ id: s.id, name: s.name, color: s.color }));
+  const pool = config.facultyPool ?? [];
+  const pooledFaculty = pool.length === 0 ? faculty : faculty.filter((f) => pool.includes(f.id));
 
   return (
     <div className="space-y-5">
       <WeeklyTimetableBuilder
         config={config}
         subjects={subjects}
-        faculty={faculty}
+        faculty={pooledFaculty}
         onChange={(tt: WeeklyTimetable) => onChange({ ...config, weeklyTimetable: tt })}
       />
 
