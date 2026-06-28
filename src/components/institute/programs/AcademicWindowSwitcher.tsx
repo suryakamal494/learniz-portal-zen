@@ -162,8 +162,15 @@ export const AcademicWindowSwitcher: React.FC<Props> = ({ config, onChange }) =>
 
   const handleSwitch = (id: string) => {
     if (id === activeId) return;
+    const target = windows.find((w) => w.id === id);
     onChange(switchActiveWindow(ensured, id));
+    if (target) {
+      setLastSwitch({ label: target.label, at: new Date() });
+      setPulseId(id);
+      window.setTimeout(() => setPulseId((cur) => (cur === id ? null : cur)), 600);
+    }
   };
+
 
   const wdCount = active ? workingDayCount(active.startDate, active.endDate, active.workingDays) : 0;
 
