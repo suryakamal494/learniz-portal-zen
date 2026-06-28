@@ -769,10 +769,11 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
 
 const RowFillMenu: React.FC<{
   subjects: Subject[];
+  allocationOptions: AllocationOption[];
   faculty: InstituteFaculty[];
   defaultFaculty: Record<string, string>;
-  onFill: (subjectId: string | null, facultyId: string | null) => void;
-}> = ({ subjects, faculty, defaultFaculty, onFill }) => {
+  onFill: (subjectId: string | null, facultyId: string | null, trackId?: string | null) => void;
+}> = ({ subjects, allocationOptions, faculty, defaultFaculty, onFill }) => {
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const [facultyId, setFacultyId] = useState<string>('__default__');
@@ -784,7 +785,8 @@ const RowFillMenu: React.FC<{
     if (!picked) return;
     const fid =
       facultyId === '__default__' ? (defaultFaculty[picked] ?? null) : facultyId;
-    onFill(picked, fid || null);
+    const opt = allocationOptions.find((o) => o.trackId === picked);
+    onFill(opt?.subjectId ?? picked, fid || opt?.facultyId || null, opt?.trackId ?? null);
     setOpen(false);
     setPicked(null);
     setFacultyId('__default__');
@@ -805,7 +807,7 @@ const RowFillMenu: React.FC<{
         <div>
           <div className="text-sm font-semibold text-slate-900">Fill this period</div>
           <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
-            Pick the subject and (optionally) the faculty for every working day of this period.
+            Pick the subject track for every empty working-day cell in this period. Occupied cells are skipped.
           </p>
         </div>
 
@@ -816,9 +818,9 @@ const RowFillMenu: React.FC<{
               <SelectValue placeholder="Pick subject" />
             </SelectTrigger>
             <SelectContent>
-              {subjects.map((s) => (
-                <SelectItem key={s.id} value={s.id} className="text-xs">
-                  {s.name}
+              {allocationOptions.map((s) => (
+                <SelectItem key={s.trackId} value={s.trackId} className="text-xs">
+                  {s.subjectName} · {s.trackName}
                 </SelectItem>
               ))}
             </SelectContent>
