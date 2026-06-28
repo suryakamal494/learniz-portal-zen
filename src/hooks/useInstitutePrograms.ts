@@ -184,7 +184,6 @@ export function sliceFromSubProgramConfig(c: ScheduleConfig): SubProgramSlice {
     subjectTracks: c.subjectTracks ?? {},
     trackTargetPeriods: c.trackTargetPeriods ?? {},
     subjectLocks: c.subjectLocks ?? {},
-    weeklyTimetable: c.weeklyTimetable ?? { cells: [] },
   };
 }
 
@@ -193,11 +192,11 @@ const emptySlice: SubProgramSlice = {
   subjectTracks: {},
   trackTargetPeriods: {},
   subjectLocks: {},
-  weeklyTimetable: { cells: [] },
 };
 
 /** Persist the current flat slice into the outgoing sub-program, then load
- *  the next sub-program's slice into the flat ScheduleConfig fields. Pure. */
+ *  the next sub-program's allocation into the flat ScheduleConfig fields.
+ *  The weekly timetable is shared across sub-programs and is NOT swapped. */
 export function switchSubProgram(c: ScheduleConfig, nextId: string): ScheduleConfig {
   const slices = { ...(c.subProgramSlices ?? {}) };
   const currentId = c.activeSubProgramId;
@@ -213,7 +212,6 @@ export function switchSubProgram(c: ScheduleConfig, nextId: string): ScheduleCon
     subjectTracks: incoming.subjectTracks,
     trackTargetPeriods: incoming.trackTargetPeriods,
     subjectLocks: incoming.subjectLocks,
-    weeklyTimetable: incoming.weeklyTimetable,
   };
 }
 
