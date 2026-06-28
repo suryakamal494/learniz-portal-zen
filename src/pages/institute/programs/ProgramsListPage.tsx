@@ -8,12 +8,14 @@ import {
   Plus,
   Search,
   Users,
+  Layers,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useInstitutePrograms } from '@/hooks/useInstitutePrograms';
+import { useSections } from '@/hooks/useSection';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +41,7 @@ function gradientFor(colors: string[]): string {
 const ProgramsListPage: React.FC = () => {
   const navigate = useNavigate();
   const programs = useInstitutePrograms();
+  const sections = useSections();
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
 
