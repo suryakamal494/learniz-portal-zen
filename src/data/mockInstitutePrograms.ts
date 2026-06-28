@@ -353,4 +353,257 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
   }
 })();
 
+/* ---------- Phase B — seed multiple Academic Windows per program ----------
+   Each program gets 3 windows with visibly different working days, periods/day,
+   allocations, tracks and timetables — so switching windows in the
+   AcademicWindowSwitcher produces clearly different content on all 3 steps.
+*/
+(() => {
+  type WinSeed = {
+    id: string;
+    label: string;
+    startDate: string;
+    endDate: string;
+    workingDays: WeekDay[];
+    periodsPerDay: number;
+    /** subjectId -> target periods */
+    targets: Record<string, number>;
+    /** subjectId -> tracks (omit for single default track) */
+    tracks?: Record<string, ScheduleTrack[]>;
+    /** trackId -> target periods */
+    trackTargets?: Record<string, number>;
+    /** fraction (0..1) of weekly grid to fill from base pattern */
+    fillRatio: number;
+    holidayAdds?: { date: string; name?: string }[];
+    holidayRemoves?: string[];
+  };
+
+  const buildTimetableCells = (
+    weekStart: string,
+    pattern: Record<number, string[]>,
+    weekdays: WeekDay[],
+    periodsPerDay: number,
+    fillRatio: number,
+  ) => {
+    const cells: { weekStartDate: string; weekday: WeekDay; periodIndex: number; subjectId: string | null }[] = [];
+    const totalSlots = weekdays.length * periodsPerDay;
+    let filled = 0;
+    const target = Math.floor(totalSlots * fillRatio);
+    for (let p = 0; p < periodsPerDay; p++) {
+      const row = pattern[p];
+      if (!row) continue;
+      weekdays.forEach((wd, col) => {
+        if (filled >= target) return;
+        const subj = row[col % row.length];
+        if (!subj) return;
+        cells.push({ weekStartDate: weekStart, weekday: wd, periodIndex: p, subjectId: subj });
+        filled++;
+      });
+    }
+    return cells;
+  };
+
+  const seedProgram = (programId: string, seeds: WinSeed[]) => {
+    const prog = MOCK_INSTITUTE_PROGRAMS.find((p) => p.id === programId);
+    if (!prog || !prog.schedule) return;
+
+    const wdsByPeriod: Record<number, string[]> = {};
+    prog.subjects.forEach((s, i) => {
+      // round-robin a base pattern from the program's own subjects
+      for (let p = 0; p < 8; p++) {
+        wdsByPeriod[p] = wdsByPeriod[p] ?? [];
+        wdsByPeriod[p].push(prog.subjects[(p + i) % prog.subjects.length].id);
+      }
+    });
+
+    const windows: AcademicWindow[] = seeds.map((s, idx) => {
+      const cells = buildTimetableCells(
+        s.startDate,
+        wdsByPeriod,
+        s.workingDays,
+        s.periodsPerDay,
+        s.fillRatio,
+      );
+      // For the first window, prefer the program's existing fully-built timetable
+      // so the demo opens with the rich seeded grid.
+      const weeklyTimetable =
+        idx === 0 && prog.schedule?.weeklyTimetable
+          ? prog.schedule.weeklyTimetable
+          : { cells };
+      return {
+        id: s.id,
+        label: s.label,
+        startDate: s.startDate,
+        endDate: s.endDate,
+        workingDays: s.workingDays,
+        periodsPerDay: s.periodsPerDay,
+        weeklyTimetable,
+        subjectTargetPeriods: s.targets,
+        subjectTracks: s.tracks ?? {},
+        trackTargetPeriods: s.trackTargets ?? {},
+        subjectLocks: {},
+        holidayOverrides: {
+          removed: s.holidayRemoves ?? [],
+          added: s.holidayAdds ?? [],
+        },
+      };
+    });
+
+    // Mirror the first window's slice into the flat ScheduleConfig fields so
+    // the page opens consistent with the active window.
+    const first = windows[0];
+    prog.schedule = {
+      ...prog.schedule,
+      windows,
+      activeWindowId: first.id,
+      startDate: first.startDate,
+      endDate: first.endDate,
+      workingDays: first.workingDays,
+      periodsPerDay: first.periodsPerDay,
+      weeklyTimetable: first.weeklyTimetable,
+      subjectTargetPeriods: first.subjectTargetPeriods,
+      subjectTracks: first.subjectTracks,
+      trackTargetPeriods: first.trackTargetPeriods,
+      subjectLocks: first.subjectLocks,
+      holidayOverrides: first.holidayOverrides,
+    };
+  };
+
+  // ── prog-1: Class 12 PCM ───────────────────────────────────────────────
+  seedProgram('prog-1', [
+    {
+      id: 'win-pcm-t1',
+      label: 'Term 1 · Foundation',
+      startDate: '2025-04-14',
+      endDate: '2025-08-30',
+      workingDays: [1, 2, 3, 4, 5, 6],
+      periodsPerDay: 6,
+      targets: {
+        'subj-phy-12': 40, 'subj-chem-12': 35, 'subj-math-12': 50,
+        'subj-bio-12': 30, 'subj-eng-12': 20, 'subj-hin-12': 18, 'subj-soc-12': 18,
+      },
+      tracks: {
+        'subj-math-12': [
+          { id: 'trk-math-t1-a', subjectId: 'subj-math-12', name: 'Algebra', facultyId: 'fac-5', allottedPeriods: 28, enabled: true },
+          { id: 'trk-math-t1-b', subjectId: 'subj-math-12', name: 'Calculus', facultyId: 'fac-6', allottedPeriods: 22, enabled: true },
+        ],
+      },
+      trackTargets: { 'trk-math-t1-a': 28, 'trk-math-t1-b': 22 },
+      fillRatio: 1,
+      holidayAdds: [{ date: '2025-08-15', name: 'Independence Day (program note)' }],
+    },
+    {
+      id: 'win-pcm-t2',
+      label: 'Term 2 · Board Prep',
+      startDate: '2025-09-01',
+      endDate: '2025-12-20',
+      workingDays: [1, 2, 3, 4, 5, 6],
+      periodsPerDay: 8,
+      targets: {
+        'subj-phy-12': 55, 'subj-chem-12': 50, 'subj-math-12': 60,
+        'subj-bio-12': 40, 'subj-eng-12': 22, 'subj-hin-12': 20, 'subj-soc-12': 20,
+      },
+      tracks: {
+        'subj-phy-12': [
+          { id: 'trk-phy-t2-a', subjectId: 'subj-phy-12', name: 'Mechanics', facultyId: 'fac-1', allottedPeriods: 30, enabled: true },
+          { id: 'trk-phy-t2-b', subjectId: 'subj-phy-12', name: 'Optics & Modern', facultyId: 'fac-2', allottedPeriods: 25, enabled: true },
+        ],
+      },
+      trackTargets: { 'trk-phy-t2-a': 30, 'trk-phy-t2-b': 25 },
+      fillRatio: 1,
+      holidayAdds: [{ date: '2025-11-01', name: 'Diwali' }],
+      holidayRemoves: ['2025-10-02'],
+    },
+    {
+      id: 'win-pcm-t3',
+      label: 'Term 3 · Revision Sprint',
+      startDate: '2026-01-05',
+      endDate: '2026-03-15',
+      workingDays: [1, 2, 3, 4, 5],
+      periodsPerDay: 5,
+      targets: {
+        'subj-phy-12': 30, 'subj-chem-12': 30, 'subj-math-12': 35,
+        'subj-bio-12': 25, 'subj-eng-12': 12, 'subj-hin-12': 10, 'subj-soc-12': 10,
+      },
+      fillRatio: 0.55,
+    },
+  ]);
+
+  // ── prog-2: Class 11 PCM Foundation ────────────────────────────────────
+  seedProgram('prog-2', [
+    {
+      id: 'win-11-s1',
+      label: 'Semester 1',
+      startDate: '2025-06-02',
+      endDate: '2025-10-31',
+      workingDays: [1, 2, 3, 4, 5, 6],
+      periodsPerDay: 6,
+      targets: { 'subj-phy-11': 35, 'subj-chem-11': 30, 'subj-math-11': 45 },
+      fillRatio: 0.85,
+    },
+    {
+      id: 'win-11-s2',
+      label: 'Semester 2',
+      startDate: '2025-11-03',
+      endDate: '2026-02-28',
+      workingDays: [1, 2, 3, 4, 5, 6],
+      periodsPerDay: 7,
+      targets: { 'subj-phy-11': 45, 'subj-chem-11': 40, 'subj-math-11': 50 },
+      tracks: {
+        'subj-math-11': [
+          { id: 'trk-math11-s2-a', subjectId: 'subj-math-11', name: 'Algebra & Trig', facultyId: 'fac-5', allottedPeriods: 28, enabled: true },
+          { id: 'trk-math11-s2-b', subjectId: 'subj-math-11', name: 'Coordinate & Calc', facultyId: 'fac-6', allottedPeriods: 22, enabled: true },
+        ],
+      },
+      trackTargets: { 'trk-math11-s2-a': 28, 'trk-math11-s2-b': 22 },
+      fillRatio: 0.7,
+    },
+    {
+      id: 'win-11-rev',
+      label: 'Revision',
+      startDate: '2026-03-02',
+      endDate: '2026-03-28',
+      workingDays: [1, 2, 3, 4, 5],
+      periodsPerDay: 4,
+      targets: { 'subj-phy-11': 12, 'subj-chem-11': 10, 'subj-math-11': 15 },
+      fillRatio: 0.4,
+    },
+  ]);
+
+  // ── prog-3: Class 10 CBSE Core ─────────────────────────────────────────
+  seedProgram('prog-3', [
+    {
+      id: 'win-10-q1',
+      label: 'Quarter 1',
+      startDate: '2025-04-21',
+      endDate: '2025-07-31',
+      workingDays: [1, 2, 3, 4, 5, 6],
+      periodsPerDay: 5,
+      targets: { 'subj-math-10': 40 },
+      fillRatio: 0.8,
+    },
+    {
+      id: 'win-10-q2',
+      label: 'Quarter 2',
+      startDate: '2025-08-04',
+      endDate: '2025-11-15',
+      workingDays: [1, 2, 3, 4, 5],
+      periodsPerDay: 6,
+      targets: { 'subj-math-10': 50 },
+      fillRatio: 0.65,
+    },
+    {
+      id: 'win-10-boards',
+      label: 'Pre-Board Sprint',
+      startDate: '2026-01-12',
+      endDate: '2026-03-10',
+      workingDays: [1, 2, 3, 4, 5, 6],
+      periodsPerDay: 7,
+      targets: { 'subj-math-10': 35 },
+      fillRatio: 0.5,
+    },
+  ]);
+})();
+
+
 
