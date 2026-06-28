@@ -1572,6 +1572,41 @@ const Step3TimetableView: React.FC<{
     onChangeSlots(slots.map((s) => (s.id === id ? { ...s, ...patch, locked: true } : s)));
   };
 
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  const swapByKey = (srcKey: string, dstKey: string) => {
+    if (srcKey === dstKey) return;
+    const src = slotByKey.get(srcKey);
+    const dst = slotByKey.get(dstKey);
+    if (!src && !dst) return;
+    const swappable = (a: ScheduleSlot, b: ScheduleSlot) => ({
+      ...a,
+      subjectId: b.subjectId,
+      trackId: b.trackId,
+      subProgramId: b.subProgramId,
+      chapterId: b.chapterId,
+      topicId: b.topicId,
+      facultyId: b.facultyId,
+    });
+    if (src && dst) {
+      const next = slots.map((s) => {
+        if (s.id === src.id) return { ...swappable(src, dst), locked: true };
+        if (s.id === dst.id) return { ...swappable(dst, src), locked: true };
+        return s;
+      });
+      onChangeSlots(next);
+    } else if (src && !dst) {
+      // Move src into the (empty) dst position
+      const [dDate, dPIdxStr] = dstKey.split('#');
+      const next = slots.map((s) =>
+        s.id === src.id ? { ...s, date: dDate, periodIndex: Number(dPIdxStr), locked: true } : s,
+      );
+      onChangeSlots(next);
+    }
+  };
+
+
   return (
     <div className="space-y-3">
       {/* Week chips */}
