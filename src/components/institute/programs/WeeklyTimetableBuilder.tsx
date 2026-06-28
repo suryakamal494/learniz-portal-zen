@@ -311,6 +311,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
     subjectId: string | null,
     trackId?: string | null,
     facultyIdOverride?: string | null,
+    subProgramId?: string | null,
   ) => {
     writeNoSnapshot((cells) => {
       const existing = cells.find(
@@ -319,14 +320,24 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
       const others = cells.filter(
         (c) => !(c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex),
       );
-      // Reset faculty override when subject is cleared or changed.
       const facultyId =
         facultyIdOverride !== undefined
           ? facultyIdOverride
           : subjectId && existing?.subjectId === subjectId && existing?.trackId === trackId
             ? existing?.facultyId ?? null
             : null;
-      return [...others, { weekStartDate: weekStart, weekday, periodIndex, subjectId, trackId: subjectId ? trackId ?? null : null, facultyId }];
+      const resolvedSubProgramId = subjectId
+        ? subProgramId ?? (trackId ? trackIndex.get(trackId)?.subProgramId : undefined) ?? activeSubProgramId ?? null
+        : null;
+      return [...others, {
+        weekStartDate: weekStart,
+        weekday,
+        periodIndex,
+        subjectId,
+        trackId: subjectId ? trackId ?? null : null,
+        facultyId,
+        subProgramId: resolvedSubProgramId,
+      }];
     });
   };
 
@@ -340,7 +351,10 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
     const existing = tt.cells.find(
       (c) => c.weekStartDate === weekStart && c.weekday === weekday && c.periodIndex === periodIndex,
     );
-    const same = existing?.subjectId === option.subjectId && (existing.trackId ?? tracksBySubject[option.subjectId]?.[0]?.id) === option.trackId;
+    const same =
+      existing?.subjectId === option.subjectId &&
+      existing?.trackId === option.trackId &&
+      (existing?.subProgramId ?? null) === (option.subProgramId ?? null);
     if (existing?.subjectId && !opts.force && !same) {
       setReplaceIntent({ weekStart, weekday, periodIndex, next: option, existing });
       return;
