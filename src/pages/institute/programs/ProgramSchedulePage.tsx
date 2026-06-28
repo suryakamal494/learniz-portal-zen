@@ -551,12 +551,36 @@ const SetupStep: React.FC<{
       <Card className="border-slate-200/70 shadow-sm">
         <CardContent className="p-5 space-y-4">
           <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-blue-600" /> Default faculty per subject
+            <Sparkles className="h-4 w-4 text-blue-600" /> Faculty for this section
           </h3>
-          <div className="space-y-3">
+
+          {/* Pool multiselect */}
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-slate-500">
+              Section faculty pool
+              <span className="text-slate-400 normal-case ml-1">
+                (only these appear in track dropdowns)
+              </span>
+            </Label>
+            <FacultyPoolPicker
+              all={faculty}
+              selectedIds={config.facultyPool ?? []}
+              onChange={(ids) => update('facultyPool', ids)}
+            />
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-slate-500">
+              Default faculty per subject
+            </Label>
+            <div className="space-y-3 mt-2">
             {program.subjects.map((s) => {
               const pal = subjectPalette(s.color);
-              const subjectFaculty = faculty.filter((f) => !f.subjectId || f.subjectId === s.id);
+              const pool = config.facultyPool ?? [];
+              const inPool = pool.length === 0 ? faculty : faculty.filter((f) => pool.includes(f.id));
+              const subjectFaculty = inPool.filter((f) => !f.subjectId || f.subjectId === s.id);
               return (
                 <div key={s.id} className="flex items-center gap-3 min-w-0">
                   <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
@@ -574,6 +598,7 @@ const SetupStep: React.FC<{
                 </div>
               );
             })}
+            </div>
           </div>
         </CardContent>
       </Card>
