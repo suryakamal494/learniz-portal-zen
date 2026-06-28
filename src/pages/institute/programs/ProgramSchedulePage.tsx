@@ -1987,6 +1987,16 @@ const Step3TimetableMonthView: React.FC<{
                           {list.slice(0, 4).map((sl) => {
                             const sub = subjectMap.get(sl.subjectId);
                             const pal = subjectPalette(sub?.color ?? 'blue');
+                            const sp = sl.subProgramId
+                              ? (program.subPrograms ?? []).find((x: any) => x.id === sl.subProgramId)
+                              : null;
+                            const sched = program.schedule ?? {};
+                            const slTracks: any[] = !sl.subProgramId || sl.subProgramId === sched.activeSubProgramId
+                              ? sched.subjectTracks?.[sl.subjectId] ?? []
+                              : sched.subProgramSlices?.[sl.subProgramId]?.subjectTracks?.[sl.subjectId] ?? [];
+                            const tr = sl.trackId ? slTracks.find((t: any) => t.id === sl.trackId) : null;
+                            const showTr = slTracks.filter((t: any) => t.enabled !== false).length > 1;
+                            const label = `${sp ? sp.code + ' ' : ''}${sub?.name ?? ''}${showTr && tr ? ' · ' + tr.name : ''}`;
                             return (
                               <span
                                 key={sl.id}
@@ -1994,9 +2004,9 @@ const Step3TimetableMonthView: React.FC<{
                                   'text-[10px] px-1.5 py-0.5 rounded border truncate font-medium',
                                   pal.slot,
                                 )}
-                                title={`P${sl.periodIndex + 1} · ${sub?.name ?? ''}`}
+                                title={`P${sl.periodIndex + 1} · ${label}`}
                               >
-                                P{sl.periodIndex + 1} · {sub?.name}
+                                P{sl.periodIndex + 1} · {label}
                               </span>
                             );
                           })}
