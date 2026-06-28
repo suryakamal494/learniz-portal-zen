@@ -359,7 +359,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
       setReplaceIntent({ weekStart, weekday, periodIndex, next: option, existing });
       return;
     }
-    setCellSubject(weekStart, weekday, periodIndex, option.subjectId, option.trackId, option.facultyId ?? null);
+    setCellSubject(weekStart, weekday, periodIndex, option.subjectId, option.trackId, option.facultyId ?? null, option.subProgramId ?? null);
   };
 
   const setCellFaculty = (
