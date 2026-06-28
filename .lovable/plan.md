@@ -100,3 +100,41 @@ For **Phase B (multiple academic windows)** — when you switch from Window 1 �
 - **(b)** allocations are *shared*, the window only changes the date range the calendar lays them onto?
 
 Pick one and I'll start with Phase A immediately after, holding E until you confirm.
+
+---
+
+## Build status (live)
+
+| Phase | Status |
+|---|---|
+| A — Faculty pool in Setup | ✅ Shipped |
+| C — Track enable/disable + Subject lock | ✅ Shipped |
+| C+ — Chapter→Track grouping in Step 2 | ✅ Shipped |
+| D — Conditional cell display (single program scope) | ✅ Shipped |
+| B — Multiple academic windows (separate per window) | ⏳ Next |
+| E — Multiple programs per section | ⏳ After B |
+| F — Responsive polish | ⏳ After E |
+
+### What landed this turn
+
+**Phase A — Faculty pool**
+- `ScheduleConfig.facultyPool?: string[]` on type.
+- New `FacultyPoolPicker` multi-select inside Step 1 → Faculty card (above per-subject defaults).
+- Per-subject default-faculty dropdowns and Step 3 cell-faculty selects now filter to the pool when set.
+
+**Phase C — Track enable + Subject lock**
+- `ScheduleTrack.enabled?: boolean` + `ScheduleConfig.subjectLocks?: Record<string, boolean>`.
+- Eye / EyeOff toggle on every track row in Step 2.
+- Lock / Unlock icon on every subject header in Step 2.
+- Disabled tracks are excluded from capacity totals and from the Step 3 palette.
+- Locked subjects: targets, faculty, add/remove track, chapter→track assignment and topic period inputs all become read-only.
+
+**Phase C+ — Chapter→Track grouping**
+- `InstituteChapter.trackId?: string | null`.
+- `setChapterTrack()` store helper.
+- When a subject has ≥2 tracks, every chapter row in Step 2 shows an "Assign track" dropdown (Unassigned / T1 / T2…). Unassigned chapters are visually flagged with a dashed amber border.
+
+**Phase D — Conditional cell display**
+- Step 3 cell now hides the track badge when the subject has only one enabled track.
+- Faculty line is hidden when no faculty is set for the cell (instead of showing the "Faculty" placeholder text).
+

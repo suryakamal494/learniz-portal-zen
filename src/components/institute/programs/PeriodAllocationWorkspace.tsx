@@ -9,6 +9,10 @@ import {
   Wand2,
   AlertTriangle,
   GraduationCap,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +24,7 @@ import { computeCapacity, topicPeriods } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { useFaculty } from '@/hooks/useInstitutePrograms';
+import { useFaculty, setChapterTrack } from '@/hooks/useInstitutePrograms';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
@@ -51,7 +55,15 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
   const capacity = useMemo(() => computeCapacity(config), [config]);
   const targets = config.subjectTargetPeriods ?? {};
   const trackTargets = config.trackTargetPeriods ?? {};
-  const faculty = useFaculty();
+  const allFaculty = useFaculty();
+  const pool = config.facultyPool ?? [];
+  const faculty = useMemo(
+    () => (pool.length === 0 ? allFaculty : allFaculty.filter((f) => pool.includes(f.id))),
+    [allFaculty, pool],
+  );
+  const subjectLocks = config.subjectLocks ?? {};
+  const isSubjectLocked = (subjectId: string) => !!subjectLocks[subjectId];
+  const isTrackEnabled = (tr: ScheduleTrack) => tr.enabled !== false;
 
   const tracksBySubject = useMemo(() => {
     const out: Record<string, ScheduleTrack[]> = {};
@@ -83,10 +95,12 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
           allocated += p;
         }),
       );
-      const trackTarget = (tracksBySubject[s.id] ?? []).reduce(
-        (sum, tr) => sum + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
-        0,
-      );
+      const trackTarget = (tracksBySubject[s.id] ?? [])
+        .filter(isTrackEnabled)
+        .reduce(
+          (sum, tr) => sum + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
+          0,
+        );
       return {
         subjectId: s.id,
         target: trackTarget || targets[s.id] || 0,
@@ -100,10 +114,12 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
   const totalAllocated = subjectAggs.reduce((a, s) => a + s.allocated, 0);
   const totalTargets = useMemo(
     () => program.subjects.reduce(
-      (sum, s) => sum + (tracksBySubject[s.id] ?? []).reduce(
-        (acc, tr) => acc + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
-        0,
-      ),
+      (sum, s) => sum + (tracksBySubject[s.id] ?? [])
+        .filter(isTrackEnabled)
+        .reduce(
+          (acc, tr) => acc + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
+          0,
+        ),
       0,
     ),
     [program.subjects, tracksBySubject, trackTargets],
@@ -184,6 +200,18 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
       trackTargetPeriods: nextTrackTargets,
       subjectTargetPeriods: { ...targets, [subjectId]: subjectTotal },
     });
+  };
+
+  const toggleTrackEnabled = (subjectId: string, trackId: string) => {
+    const tracks = (tracksBySubject[subjectId] ?? []).map((tr) =>
+      tr.id === trackId ? { ...tr, enabled: tr.enabled === false ? true : false } : tr,
+    );
+    onConfigChange({ ...config, subjectTracks: { ...config.subjectTracks, [subjectId]: tracks } });
+  };
+
+  const toggleSubjectLock = (subjectId: string) => {
+    const next = { ...subjectLocks, [subjectId]: !subjectLocks[subjectId] };
+    onConfigChange({ ...config, subjectLocks: next });
   };
 
   const distributeTargetsEvenly = () => {
@@ -285,40 +313,107 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
             {program.subjects.map((s) => {
               const agg = subjectAggs.find((a) => a.subjectId === s.id)!;
               const pal = subjectPalette(s.color);
+              const locked = isSubjectLocked(s.id);
               return (
-                <div key={s.id} className={cn('rounded-lg border bg-white p-3 space-y-2 min-w-0', pal.border)}>
+                <div
+                  key={s.id}
+                  className={cn(
+                    'rounded-lg border bg-white p-3 space-y-2 min-w-0 transition-opacity',
+                    pal.border,
+                    locked && 'opacity-80 ring-1 ring-amber-200',
+                  )}
+                >
                   <div className="flex items-center gap-2">
                     <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
                     <div className={cn('flex-1 min-w-0 font-medium text-sm truncate', pal.text)}>{s.name}</div>
                     <div className="text-xs font-semibold tabular-nums text-slate-600">{agg.target}</div>
+                    <button
+                      type="button"
+                      onClick={() => toggleSubjectLock(s.id)}
+                      className={cn(
+                        'h-6 w-6 rounded grid place-items-center transition-colors',
+                        locked
+                          ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
+                          : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100',
+                      )}
+                      title={locked ? 'Subject is locked — click to unlock' : 'Lock this subject'}
+                    >
+                      {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                   <div className="space-y-1.5">
                     {(tracksBySubject[s.id] ?? []).map((tr) => {
                       const trackVal = trackTargets[tr.id] ?? tr.allottedPeriods ?? 0;
                       const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === s.id);
+                      const enabled = isTrackEnabled(tr);
+                      const rowDisabled = locked || !enabled;
                       return (
-                        <div key={tr.id} className="grid grid-cols-[42px_1fr_112px] gap-1.5 items-center">
+                        <div
+                          key={tr.id}
+                          className={cn(
+                            'grid grid-cols-[42px_1fr_112px_28px] gap-1.5 items-center transition-opacity',
+                            !enabled && 'opacity-50',
+                          )}
+                        >
                           <Badge variant="outline" className="justify-center h-8 bg-slate-50">{tr.name}</Badge>
-                          <Select value={tr.facultyId ?? config.defaultFaculty[s.id] ?? ''} onValueChange={(v) => setTrackFaculty(s.id, tr.id, v)}>
+                          <Select
+                            value={tr.facultyId ?? config.defaultFaculty[s.id] ?? ''}
+                            onValueChange={(v) => setTrackFaculty(s.id, tr.id, v)}
+                            disabled={rowDisabled}
+                          >
                             <SelectTrigger className="h-8 text-xs bg-white min-w-0"><SelectValue placeholder="Faculty" /></SelectTrigger>
                             <SelectContent>
                               {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
-                          <NumberStepper value={trackVal} onChange={(v) => setTrackTarget(s.id, tr.id, v)} ariaLabel={`Periods for ${s.name} ${tr.name}`} />
+                          <NumberStepper
+                            value={trackVal}
+                            onChange={(v) => setTrackTarget(s.id, tr.id, v)}
+                            ariaLabel={`Periods for ${s.name} ${tr.name}`}
+                            disabled={rowDisabled}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggleTrackEnabled(s.id, tr.id)}
+                            disabled={locked}
+                            className={cn(
+                              'h-7 w-7 rounded grid place-items-center transition-colors',
+                              enabled
+                                ? 'text-emerald-600 hover:bg-emerald-50'
+                                : 'text-slate-400 hover:bg-slate-100',
+                              locked && 'opacity-40 cursor-not-allowed',
+                            )}
+                            title={enabled ? 'Track enabled — click to disable' : 'Track disabled — click to enable'}
+                          >
+                            {enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                          </button>
                         </div>
                       );
                     })}
                     <div className="flex items-center justify-between gap-2">
-                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => addTrack(s.id)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => addTrack(s.id)}
+                        disabled={locked}
+                      >
                         <Plus className="h-3 w-3 mr-1" /> Add track
                       </Button>
                       {(tracksBySubject[s.id] ?? []).length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-rose-600" onClick={() => {
-                          const tracks = tracksBySubject[s.id] ?? [];
-                          const last = tracks[tracks.length - 1];
-                          if (last) removeTrack(s.id, last.id);
-                        }}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-rose-600"
+                          disabled={locked}
+                          onClick={() => {
+                            const tracks = tracksBySubject[s.id] ?? [];
+                            const last = tracks[tracks.length - 1];
+                            if (last) removeTrack(s.id, last.id);
+                          }}
+                        >
                           Remove last
                         </Button>
                       )}
@@ -444,46 +539,95 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {s.chapters.map((c) => {
-                    const chOpen = openChapters[c.id] ?? false;
-                    const chAlloc = c.topics.reduce((a, t) => a + topicPeriods(t), 0);
-                    return (
-                      <div key={c.id} className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setOpenChapters((e) => ({ ...e, [c.id]: !e[c.id] }))}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
-                        >
-                          {chOpen ? (
-                            <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  {(() => {
+                    const subjTracks = tracksBySubject[s.id] ?? [];
+                    const multiTrack = subjTracks.length >= 2;
+                    const locked = isSubjectLocked(s.id);
+                    return s.chapters.map((c) => {
+                      const chOpen = openChapters[c.id] ?? false;
+                      const chAlloc = c.topics.reduce((a, t) => a + topicPeriods(t), 0);
+                      const assignedTrack = multiTrack ? subjTracks.find((tr) => tr.id === c.trackId) : null;
+                      const palAssigned = assignedTrack ? pal : null;
+                      return (
+                        <div
+                          key={c.id}
+                          className={cn(
+                            'rounded-lg border bg-white overflow-hidden',
+                            multiTrack && !assignedTrack
+                              ? 'border-dashed border-amber-300'
+                              : 'border-slate-200',
                           )}
-                          <span className="font-medium text-sm text-slate-800 flex-1 truncate">{c.name}</span>
-                          <span className="text-xs text-slate-500 tabular-nums">
-                            {c.topics.length} topics · <span className="font-semibold text-slate-700">{chAlloc}</span> periods
-                          </span>
-                        </button>
-                        {chOpen && (
-                          <div className="border-t border-slate-100 divide-y divide-slate-100">
-                            {c.topics.map((t) => (
-                              <div key={t.id} className="flex items-center gap-2 px-3 py-2 min-w-0">
-                                <span className="text-sm text-slate-700 flex-1 min-w-0 truncate">{t.name}</span>
-                                <NumberStepper
-                                  value={topicPeriods(t)}
-                                  onChange={(v) => onTopicPeriodsChange(t.id, v)}
-                                  ariaLabel={`Periods for ${t.name}`}
-                                />
-                              </div>
-                            ))}
-                            {c.topics.length === 0 && (
-                              <div className="px-3 py-3 text-xs text-slate-400 italic">No topics yet.</div>
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setOpenChapters((e) => ({ ...e, [c.id]: !e[c.id] }))}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                          >
+                            {chOpen ? (
+                              <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
                             )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                            <span className="font-medium text-sm text-slate-800 flex-1 truncate">{c.name}</span>
+                            {multiTrack && (
+                              <span
+                                className="shrink-0"
+                                onClick={(ev) => ev.stopPropagation()}
+                                role="presentation"
+                              >
+                                <Select
+                                  value={assignedTrack?.id ?? '__none__'}
+                                  onValueChange={(v) =>
+                                    setChapterTrack(program.id, c.id, v === '__none__' ? null : v)
+                                  }
+                                  disabled={locked}
+                                >
+                                  <SelectTrigger className={cn(
+                                    'h-7 text-[11px] w-[120px] bg-white',
+                                    !assignedTrack && 'border-amber-300 text-amber-700',
+                                  )}>
+                                    <SelectValue placeholder="Assign track" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__" className="text-xs italic text-slate-500">
+                                      Unassigned
+                                    </SelectItem>
+                                    {subjTracks.map((tr) => (
+                                      <SelectItem key={tr.id} value={tr.id} className="text-xs">
+                                        {tr.name}
+                                        {tr.enabled === false ? ' (disabled)' : ''}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-500 tabular-nums shrink-0">
+                              {c.topics.length} topics · <span className="font-semibold text-slate-700">{chAlloc}</span> periods
+                            </span>
+                          </button>
+                          {chOpen && (
+                            <div className="border-t border-slate-100 divide-y divide-slate-100">
+                              {c.topics.map((t) => (
+                                <div key={t.id} className="flex items-center gap-2 px-3 py-2 min-w-0">
+                                  <span className="text-sm text-slate-700 flex-1 min-w-0 truncate">{t.name}</span>
+                                  <NumberStepper
+                                    value={topicPeriods(t)}
+                                    onChange={(v) => onTopicPeriodsChange(t.id, v)}
+                                    ariaLabel={`Periods for ${t.name}`}
+                                    disabled={locked}
+                                  />
+                                </div>
+                              ))}
+                              {c.topics.length === 0 && (
+                                <div className="px-3 py-3 text-xs text-slate-400 italic">No topics yet.</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </Card>
@@ -521,7 +665,8 @@ const NumberStepper: React.FC<{
   value: number;
   onChange: (v: number) => void;
   ariaLabel?: string;
-}> = ({ value, onChange, ariaLabel }) => (
+  disabled?: boolean;
+}> = ({ value, onChange, ariaLabel, disabled }) => (
   <div className="flex items-center gap-1 shrink-0">
     <Button
       type="button"
@@ -530,6 +675,7 @@ const NumberStepper: React.FC<{
       className="h-8 w-8"
       onClick={() => onChange(Math.max(0, value - 1))}
       aria-label="Decrease"
+      disabled={disabled}
     >
       <Minus className="h-3.5 w-3.5" />
     </Button>
@@ -541,6 +687,7 @@ const NumberStepper: React.FC<{
       onChange={(e) => onChange(Math.max(0, Math.round(Number(e.target.value) || 0)))}
       className="h-8 w-16 text-center tabular-nums bg-white px-1"
       aria-label={ariaLabel}
+      disabled={disabled}
     />
     <Button
       type="button"
@@ -549,6 +696,7 @@ const NumberStepper: React.FC<{
       className="h-8 w-8"
       onClick={() => onChange(value + 1)}
       aria-label="Increase"
+      disabled={disabled}
     >
       <Plus className="h-3.5 w-3.5" />
     </Button>

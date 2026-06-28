@@ -14,6 +14,9 @@ export interface InstituteChapter {
   id: string;
   name: string;
   topics: InstituteTopic[];
+  /** Phase C+ — when the parent subject has ≥2 tracks, the chapter belongs to one track.
+   *  null / undefined means "unassigned". */
+  trackId?: string | null;
 }
 
 export interface InstituteSubject {
@@ -30,6 +33,9 @@ export interface ScheduleTrack {
   name: string;
   facultyId?: string;
   allottedPeriods: number;
+  /** Phase C — disabled tracks keep their config but don't appear in Step 3 palette
+   *  and are excluded from capacity totals & generation. Undefined = enabled. */
+  enabled?: boolean;
 }
 
 export interface InstituteFaculty {
@@ -108,6 +114,12 @@ export interface ScheduleConfig {
   subjectTracks?: Record<string, ScheduleTrack[]>;
   /** Step 2 — per-track period budget (track.id → periods to allot). */
   trackTargetPeriods?: Record<string, number>;
+  /** Phase A — section-level faculty pool. When set & non-empty, faculty
+   *  dropdowns in Step 1 (default) & Step 2 (per track) filter to this list. */
+  facultyPool?: string[];
+  /** Phase C — when a subject is locked, all its targets/tracks/topic-period
+   *  inputs are read-only in Step 2. */
+  subjectLocks?: Record<string, boolean>;
 }
 
 

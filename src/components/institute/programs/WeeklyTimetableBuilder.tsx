@@ -173,15 +173,17 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
   }, [tt.cells, tracksBySubject]);
 
   const allocationOptions = useMemo<AllocationOption[]>(() => subjects.flatMap((s) =>
-    (tracksBySubject[s.id] ?? []).map((tr) => ({
-      subjectId: s.id,
-      subjectName: s.name,
-      subjectColor: s.color,
-      trackId: tr.id,
-      trackName: tr.name,
-      facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
-      target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
-    })),
+    (tracksBySubject[s.id] ?? [])
+      .filter((tr) => tr.enabled !== false)
+      .map((tr) => ({
+        subjectId: s.id,
+        subjectName: s.name,
+        subjectColor: s.color,
+        trackId: tr.id,
+        trackName: tr.name,
+        facultyId: tr.facultyId ?? config.defaultFaculty[s.id],
+        target: config.trackTargetPeriods?.[tr.id] ?? tr.allottedPeriods ?? config.subjectTargetPeriods?.[s.id] ?? 0,
+      })),
   ), [subjects, tracksBySubject, config.defaultFaculty, config.trackTargetPeriods, config.subjectTargetPeriods]);
 
   /** Map of "weekday#periodIndex" -> cell info for active week. */
@@ -693,9 +695,18 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, facu
                               <>
                                 <div className="flex items-center justify-between gap-1">
                                   <span className="text-[11px] font-bold truncate">{sub.name}</span>
-                                  <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
+                                  {(() => {
+                                    const enabledTracks = (tracksBySubject[subjectId] ?? []).filter((tr) => tr.enabled !== false);
+                                    return enabledTracks.length > 1 ? (
+                                      <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
+                                    ) : null;
+                                  })()}
                                 </div>
-                                <div className="text-[10px] text-slate-600 truncate mt-1">{fac ? fac.name.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '') : 'Faculty'}</div>
+                                {fac && (
+                                  <div className="text-[10px] text-slate-600 truncate mt-1">
+                                    {fac.name.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '')}
+                                  </div>
+                                )}
                               </>
                             ) : (
                               <div className="h-full grid place-items-center text-lg">＋</div>
