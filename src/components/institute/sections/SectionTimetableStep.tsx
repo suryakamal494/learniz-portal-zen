@@ -426,8 +426,8 @@ const TimetableCell: React.FC<{
       <PopoverTrigger asChild>{cellButton}</PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="start">
         <div className={cn('px-3 py-2 bg-gradient-to-r text-white', pal.headerGradient)}>
-          <div className="text-[10px] uppercase tracking-wider opacity-80">{program.code}</div>
-          <div className="text-sm font-bold">{subject.name} · {track.name}</div>
+          {showProgram && <div className="text-[10px] uppercase tracking-wider opacity-80">{program.code}</div>}
+          <div className="text-sm font-bold">{subject.name}{subject.tracks.length > 1 ? ` · ${track.name}` : ''}</div>
         </div>
         <div className="p-3 space-y-2">
           <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Faculty</div>
