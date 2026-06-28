@@ -180,7 +180,7 @@ const ProgramSchedulePage: React.FC = () => {
                 const active = s.id === step;
                 const done = i < stepIdx;
                 return (
-                  <React.Fragment key={s.id}>
+                  <div key={s.id} className="contents">
                     <button
                       type="button"
                       onClick={() => setStep(s.id)}
@@ -204,7 +204,7 @@ const ProgramSchedulePage: React.FC = () => {
                       {s.label}
                     </button>
                     {i < steps.length - 1 && <div className="h-px flex-1 bg-slate-200 min-w-[1rem]" />}
-                  </React.Fragment>
+                  </div>
                 );
               })}
             </div>
