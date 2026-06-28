@@ -539,46 +539,95 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {s.chapters.map((c) => {
-                    const chOpen = openChapters[c.id] ?? false;
-                    const chAlloc = c.topics.reduce((a, t) => a + topicPeriods(t), 0);
-                    return (
-                      <div key={c.id} className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setOpenChapters((e) => ({ ...e, [c.id]: !e[c.id] }))}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
-                        >
-                          {chOpen ? (
-                            <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+                  {(() => {
+                    const subjTracks = tracksBySubject[s.id] ?? [];
+                    const multiTrack = subjTracks.length >= 2;
+                    const locked = isSubjectLocked(s.id);
+                    return s.chapters.map((c) => {
+                      const chOpen = openChapters[c.id] ?? false;
+                      const chAlloc = c.topics.reduce((a, t) => a + topicPeriods(t), 0);
+                      const assignedTrack = multiTrack ? subjTracks.find((tr) => tr.id === c.trackId) : null;
+                      const palAssigned = assignedTrack ? pal : null;
+                      return (
+                        <div
+                          key={c.id}
+                          className={cn(
+                            'rounded-lg border bg-white overflow-hidden',
+                            multiTrack && !assignedTrack
+                              ? 'border-dashed border-amber-300'
+                              : 'border-slate-200',
                           )}
-                          <span className="font-medium text-sm text-slate-800 flex-1 truncate">{c.name}</span>
-                          <span className="text-xs text-slate-500 tabular-nums">
-                            {c.topics.length} topics · <span className="font-semibold text-slate-700">{chAlloc}</span> periods
-                          </span>
-                        </button>
-                        {chOpen && (
-                          <div className="border-t border-slate-100 divide-y divide-slate-100">
-                            {c.topics.map((t) => (
-                              <div key={t.id} className="flex items-center gap-2 px-3 py-2 min-w-0">
-                                <span className="text-sm text-slate-700 flex-1 min-w-0 truncate">{t.name}</span>
-                                <NumberStepper
-                                  value={topicPeriods(t)}
-                                  onChange={(v) => onTopicPeriodsChange(t.id, v)}
-                                  ariaLabel={`Periods for ${t.name}`}
-                                />
-                              </div>
-                            ))}
-                            {c.topics.length === 0 && (
-                              <div className="px-3 py-3 text-xs text-slate-400 italic">No topics yet.</div>
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setOpenChapters((e) => ({ ...e, [c.id]: !e[c.id] }))}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                          >
+                            {chOpen ? (
+                              <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
                             )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                            <span className="font-medium text-sm text-slate-800 flex-1 truncate">{c.name}</span>
+                            {multiTrack && (
+                              <span
+                                className="shrink-0"
+                                onClick={(ev) => ev.stopPropagation()}
+                                role="presentation"
+                              >
+                                <Select
+                                  value={assignedTrack?.id ?? '__none__'}
+                                  onValueChange={(v) =>
+                                    setChapterTrack(program.id, c.id, v === '__none__' ? null : v)
+                                  }
+                                  disabled={locked}
+                                >
+                                  <SelectTrigger className={cn(
+                                    'h-7 text-[11px] w-[120px] bg-white',
+                                    !assignedTrack && 'border-amber-300 text-amber-700',
+                                  )}>
+                                    <SelectValue placeholder="Assign track" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__" className="text-xs italic text-slate-500">
+                                      Unassigned
+                                    </SelectItem>
+                                    {subjTracks.map((tr) => (
+                                      <SelectItem key={tr.id} value={tr.id} className="text-xs">
+                                        {tr.name}
+                                        {tr.enabled === false ? ' (disabled)' : ''}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-500 tabular-nums shrink-0">
+                              {c.topics.length} topics · <span className="font-semibold text-slate-700">{chAlloc}</span> periods
+                            </span>
+                          </button>
+                          {chOpen && (
+                            <div className="border-t border-slate-100 divide-y divide-slate-100">
+                              {c.topics.map((t) => (
+                                <div key={t.id} className="flex items-center gap-2 px-3 py-2 min-w-0">
+                                  <span className="text-sm text-slate-700 flex-1 min-w-0 truncate">{t.name}</span>
+                                  <NumberStepper
+                                    value={topicPeriods(t)}
+                                    onChange={(v) => onTopicPeriodsChange(t.id, v)}
+                                    ariaLabel={`Periods for ${t.name}`}
+                                    disabled={locked}
+                                  />
+                                </div>
+                              ))}
+                              {c.topics.length === 0 && (
+                                <div className="px-3 py-3 text-xs text-slate-400 italic">No topics yet.</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </Card>
