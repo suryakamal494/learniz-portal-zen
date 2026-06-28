@@ -111,7 +111,7 @@ const ProgramSchedulePage: React.FC = () => {
   if (!program) {
     return (
       <div className="p-10 text-center text-slate-500">
-        Program not found.{' '}
+        Section not found.{' '}
         <Link to="/institute/programs" className="text-blue-600 underline">
           Back
         </Link>
@@ -164,12 +164,12 @@ const ProgramSchedulePage: React.FC = () => {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Link to="/institute/programs" className="hover:text-slate-900 inline-flex items-center gap-1">
-            <ArrowLeft className="h-3.5 w-3.5" /> Programs
+            <ArrowLeft className="h-3.5 w-3.5" /> Sections
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-slate-900 font-medium truncate">{program.name}</span>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span>Schedule</span>
+          <span>Setup &amp; Allocation</span>
         </div>
 
         {/* Stepper */}
@@ -180,7 +180,7 @@ const ProgramSchedulePage: React.FC = () => {
                 const active = s.id === step;
                 const done = i < stepIdx;
                 return (
-                  <React.Fragment key={s.id}>
+                  <div key={s.id} className="contents">
                     <button
                       type="button"
                       onClick={() => setStep(s.id)}
@@ -204,7 +204,7 @@ const ProgramSchedulePage: React.FC = () => {
                       {s.label}
                     </button>
                     {i < steps.length - 1 && <div className="h-px flex-1 bg-slate-200 min-w-[1rem]" />}
-                  </React.Fragment>
+                  </div>
                 );
               })}
             </div>
@@ -323,7 +323,7 @@ const SetupStep: React.FC<{
   const update = <K extends keyof ScheduleConfig>(k: K, v: ScheduleConfig[K]) => onChange({ ...config, [k]: v });
   const instituteHolidays = useInstituteHolidays();
 
-  // Program-only holiday picker state
+  // Section-only holiday picker state
   const [progHolDates, setProgHolDates] = useState<Date[]>([]);
   const [progHolName, setProgHolName] = useState('');
   const [progPickerOpen, setProgPickerOpen] = useState(false);
@@ -818,7 +818,7 @@ const SetupStep: React.FC<{
                 <CalendarDays className="h-4 w-4 text-blue-600" /> Holidays &amp; non-teaching days
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Institute-wide holidays apply automatically. Skip individual ones or add program-only dates below.
+                Institute-wide holidays apply automatically. Skip individual ones or add section-only dates below.
               </p>
             </div>
             <Link
@@ -862,7 +862,7 @@ const SetupStep: React.FC<{
                         className="h-7 text-xs"
                         onClick={() => toggleInstituteSkip(h.date)}
                       >
-                        {skipped ? 'Restore' : 'Skip for this program'}
+                        {skipped ? 'Restore' : 'Skip for this section'}
                       </Button>
                     </div>
                   );
@@ -871,10 +871,10 @@ const SetupStep: React.FC<{
             )}
           </div>
 
-          {/* Program-only adds */}
+          {/* Section-only adds */}
           <div>
             <Label className="text-xs uppercase tracking-wider text-slate-500">
-              Program-only dates ({overrides.added.length})
+              Section-only dates ({overrides.added.length})
             </Label>
             <div className="flex flex-col sm:flex-row gap-2 mt-2">
               <Popover open={progPickerOpen} onOpenChange={setProgPickerOpen}>

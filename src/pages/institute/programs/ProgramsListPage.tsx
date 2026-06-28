@@ -8,14 +8,12 @@ import {
   Plus,
   Search,
   Users,
-  Layers,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useInstitutePrograms } from '@/hooks/useInstitutePrograms';
-import { useSections } from '@/hooks/useSection';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +39,6 @@ function gradientFor(colors: string[]): string {
 const ProgramsListPage: React.FC = () => {
   const navigate = useNavigate();
   const programs = useInstitutePrograms();
-  const sections = useSections();
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
 
@@ -64,11 +61,11 @@ const ProgramsListPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-1 text-xs font-semibold text-blue-600 uppercase tracking-wider">
               <CalendarRange className="h-3.5 w-3.5" />
-              Programs &amp; Calendar Automation
+              Sections &amp; Calendar Automation
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Programs</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Sections</h1>
             <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-              Allocate class periods per subject, build the weekly timetable, then auto-generate the academic
+              Allocate class periods per section, build the weekly timetable, then auto-generate the academic
               calendar that powers the teacher schedule.
             </p>
           </div>
@@ -81,41 +78,10 @@ const ProgramsListPage: React.FC = () => {
               <CalendarOff className="h-4 w-4" /> Holiday setup
             </Button>
             <Button className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700" disabled title="Coming soon">
-              <Plus className="h-4 w-4" /> New Program
+              <Plus className="h-4 w-4" /> New Section
             </Button>
           </div>
         </div>
-
-        {/* Sections banner — entry to the section-scoped 4-step workspace */}
-        {sections.length > 0 && (
-          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-blue-50 shadow-sm overflow-hidden">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-between gap-4 p-5 flex-wrap">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white grid place-items-center shadow-sm">
-                    <Layers className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-wider text-indigo-700 font-bold">New · Section-scoped scheduling</div>
-                    <div className="text-base font-bold text-slate-900">Plan multiple programs together</div>
-                    <div className="text-xs text-slate-600 mt-0.5">One section budget · one cell, one allocation · parallel tracks supported</div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {sections.map((s) => (
-                    <Button
-                      key={s.id}
-                      onClick={() => navigate(`/institute/sections/${s.id}/schedule`)}
-                      className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-sm"
-                    >
-                      Open {s.name} <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Filters */}
         <Card className="border-slate-200/70 shadow-sm">
@@ -125,7 +91,7 @@ const ProgramsListPage: React.FC = () => {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search programs..."
+                placeholder="Search sections..."
                 className="pl-9 bg-white"
               />
             </div>
@@ -148,7 +114,7 @@ const ProgramsListPage: React.FC = () => {
         {/* Cards grid */}
         {filtered.length === 0 ? (
           <Card className="p-12 text-center border-dashed">
-            <p className="text-slate-500">No programs match your filters.</p>
+              <p className="text-slate-500">No sections match your filters.</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">

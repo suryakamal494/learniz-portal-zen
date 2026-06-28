@@ -15,11 +15,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CapacityStrip } from './CapacityStrip';
-import { InstituteProgram, ScheduleConfig } from '@/types/instituteProgram';
+import { InstituteProgram, ScheduleConfig, ScheduleTrack } from '@/types/instituteProgram';
 import { computeCapacity, topicPeriods } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useFaculty } from '@/hooks/useInstitutePrograms';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
   program: InstituteProgram;
@@ -48,6 +50,25 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
 }) => {
   const capacity = useMemo(() => computeCapacity(config), [config]);
   const targets = config.subjectTargetPeriods ?? {};
+  const trackTargets = config.trackTargetPeriods ?? {};
+  const faculty = useFaculty();
+
+  const tracksBySubject = useMemo(() => {
+    const out: Record<string, ScheduleTrack[]> = {};
+    program.subjects.forEach((s) => {
+      const stored = config.subjectTracks?.[s.id];
+      out[s.id] = stored && stored.length > 0
+        ? stored
+        : [{
+            id: `trk-${s.id}-t1`,
+            subjectId: s.id,
+            name: 'T1',
+            facultyId: config.defaultFaculty[s.id],
+            allottedPeriods: targets[s.id] ?? 0,
+          }];
+    });
+    return out;
+  }, [config.subjectTracks, config.defaultFaculty, program.subjects, targets]);
 
   const subjectAggs = useMemo<SubjectAgg[]>(() => {
     return program.subjects.map((s) => {
@@ -62,24 +83,36 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
           allocated += p;
         }),
       );
+      const trackTarget = (tracksBySubject[s.id] ?? []).reduce(
+        (sum, tr) => sum + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
+        0,
+      );
       return {
         subjectId: s.id,
-        target: targets[s.id] ?? 0,
+        target: trackTarget || targets[s.id] || 0,
         allocated,
         topicsConfigured: configured,
         topicsTotal: total,
       };
     });
-  }, [program.subjects, targets]);
+  }, [program.subjects, targets, tracksBySubject, trackTargets]);
 
   const totalAllocated = subjectAggs.reduce((a, s) => a + s.allocated, 0);
-  const totalTargets = subjectAggs.reduce((a, s) => a + s.target, 0);
+  const totalTargets = useMemo(
+    () => program.subjects.reduce(
+      (sum, s) => sum + (tracksBySubject[s.id] ?? []).reduce(
+        (acc, tr) => acc + (trackTargets[tr.id] ?? tr.allottedPeriods ?? 0),
+        0,
+      ),
+      0,
+    ),
+    [program.subjects, tracksBySubject, trackTargets],
+  );
   const targetSurplus = capacity.periodsAvailable - totalTargets;
-  const allSubjectsHit = subjectAggs.every((s) => s.target > 0 && s.allocated === s.target);
   const canContinue =
     capacity.periodsAvailable > 0 &&
-    totalTargets === capacity.periodsAvailable &&
-    allSubjectsHit;
+    totalTargets <= capacity.periodsAvailable &&
+    totalTargets > 0;
 
   const [openSubjects, setOpenSubjects] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
@@ -90,9 +123,66 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
 
   const setSubjectTarget = (subjectId: string, value: number) => {
     const v = Math.max(0, Math.round(value || 0));
+    const tracks = tracksBySubject[subjectId] ?? [];
+    const first = tracks[0];
     onConfigChange({
       ...config,
       subjectTargetPeriods: { ...targets, [subjectId]: v },
+      subjectTracks: { ...config.subjectTracks, [subjectId]: tracks },
+      trackTargetPeriods: first ? { ...trackTargets, [first.id]: v } : trackTargets,
+    });
+  };
+
+  const setTrackTarget = (subjectId: string, trackId: string, value: number) => {
+    const v = Math.max(0, Math.round(value || 0));
+    const tracks = (tracksBySubject[subjectId] ?? []).map((tr) =>
+      tr.id === trackId ? { ...tr, allottedPeriods: v } : tr,
+    );
+    const nextTrackTargets = { ...trackTargets, [trackId]: v };
+    const subjectTotal = tracks.reduce((sum, tr) => sum + (nextTrackTargets[tr.id] ?? tr.allottedPeriods ?? 0), 0);
+    onConfigChange({
+      ...config,
+      subjectTracks: { ...config.subjectTracks, [subjectId]: tracks },
+      trackTargetPeriods: nextTrackTargets,
+      subjectTargetPeriods: { ...targets, [subjectId]: subjectTotal },
+    });
+  };
+
+  const setTrackFaculty = (subjectId: string, trackId: string, facultyId: string) => {
+    const tracks = (tracksBySubject[subjectId] ?? []).map((tr) =>
+      tr.id === trackId ? { ...tr, facultyId } : tr,
+    );
+    onConfigChange({ ...config, subjectTracks: { ...config.subjectTracks, [subjectId]: tracks } });
+  };
+
+  const addTrack = (subjectId: string) => {
+    const tracks = tracksBySubject[subjectId] ?? [];
+    const next: ScheduleTrack = {
+      id: `trk-${subjectId}-${Date.now()}`,
+      subjectId,
+      name: `T${tracks.length + 1}`,
+      facultyId: config.defaultFaculty[subjectId] ?? faculty[0]?.id,
+      allottedPeriods: 0,
+    };
+    onConfigChange({
+      ...config,
+      subjectTracks: { ...config.subjectTracks, [subjectId]: [...tracks, next] },
+      trackTargetPeriods: { ...trackTargets, [next.id]: 0 },
+    });
+    toast({ title: 'Track added', description: `${next.name} is now available for timetable placement.` });
+  };
+
+  const removeTrack = (subjectId: string, trackId: string) => {
+    const tracks = (tracksBySubject[subjectId] ?? []).filter((tr) => tr.id !== trackId);
+    if (tracks.length === 0) return;
+    const nextTrackTargets = { ...trackTargets };
+    delete nextTrackTargets[trackId];
+    const subjectTotal = tracks.reduce((sum, tr) => sum + (nextTrackTargets[tr.id] ?? tr.allottedPeriods ?? 0), 0);
+    onConfigChange({
+      ...config,
+      subjectTracks: { ...config.subjectTracks, [subjectId]: tracks },
+      trackTargetPeriods: nextTrackTargets,
+      subjectTargetPeriods: { ...targets, [subjectId]: subjectTotal },
     });
   };
 
@@ -105,7 +195,16 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
     program.subjects.forEach((s, i) => {
       next[s.id] = base + (i < rem ? 1 : 0);
     });
-    onConfigChange({ ...config, subjectTargetPeriods: next });
+    const nextTracks: Record<string, ScheduleTrack[]> = { ...(config.subjectTracks ?? {}) };
+    const nextTrackTargets: Record<string, number> = { ...trackTargets };
+    program.subjects.forEach((s) => {
+      const tracks = tracksBySubject[s.id] ?? [];
+      if (tracks[0]) {
+        nextTracks[s.id] = tracks;
+        nextTrackTargets[tracks[0].id] = next[s.id];
+      }
+    });
+    onConfigChange({ ...config, subjectTargetPeriods: next, subjectTracks: nextTracks, trackTargetPeriods: nextTrackTargets });
     toast({ title: 'Targets distributed', description: `${capacity.periodsAvailable} periods split across ${n} subjects.` });
   };
 
@@ -135,14 +234,14 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
       reasons.push('Configure working days, periods/day and the academic window in Step 1.');
       return reasons;
     }
-    if (totalTargets < capacity.periodsAvailable) {
-      reasons.push(`Allocate ${capacity.periodsAvailable - totalTargets} more periods to subjects (top-level targets).`);
-    } else if (totalTargets > capacity.periodsAvailable) {
-      reasons.push(`Subject targets exceed available periods by ${totalTargets - capacity.periodsAvailable}.`);
+    if (totalTargets > capacity.periodsAvailable) {
+      reasons.push(`Track allocations exceed available periods by ${totalTargets - capacity.periodsAvailable}.`);
+    } else if (totalTargets === 0) {
+      reasons.push('Allocate at least one period to a subject track.');
     }
     subjectAggs.forEach((s) => {
       const subjectName = program.subjects.find((x) => x.id === s.subjectId)?.name ?? '';
-      if (s.target === 0) reasons.push(`Set a target for ${subjectName}.`);
+      if (s.target === 0) reasons.push(`${subjectName} has 0 allocated periods. You can continue, but it will not appear in the timetable palette.`);
       else if (s.allocated < s.target) reasons.push(`${subjectName}: ${s.target - s.allocated} more period(s) to allot to topics.`);
       else if (s.allocated > s.target) reasons.push(`${subjectName}: over target by ${s.allocated - s.target} period(s).`);
     });
@@ -154,7 +253,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
       <CapacityStrip
         workingDays={capacity.workingDays}
         periodsAvailable={capacity.periodsAvailable}
-        allocated={totalAllocated}
+        allocated={totalTargets}
         showRemaining
       />
 
@@ -168,7 +267,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 First, decide how many of the {capacity.periodsAvailable.toLocaleString()} available periods each
-                subject gets. Then expand a subject below to split its budget across chapters and topics.
+                subject track gets. Then expand a subject below to split the subject budget across chapters and topics.
               </p>
             </div>
             <Button
@@ -187,22 +286,44 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
               const agg = subjectAggs.find((a) => a.subjectId === s.id)!;
               const pal = subjectPalette(s.color);
               return (
-                <div
-                  key={s.id}
-                  className={cn(
-                    'rounded-lg border bg-white px-3 py-2 flex items-center gap-2 min-w-0',
-                    pal.border,
-                  )}
-                >
-                  <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
-                  <div className={cn('flex-1 min-w-0 font-medium text-sm truncate', pal.text)}>
-                    {s.name}
+                <div key={s.id} className={cn('rounded-lg border bg-white p-3 space-y-2 min-w-0', pal.border)}>
+                  <div className="flex items-center gap-2">
+                    <span className={cn('h-2 w-2 rounded-full shrink-0', pal.dot)} />
+                    <div className={cn('flex-1 min-w-0 font-medium text-sm truncate', pal.text)}>{s.name}</div>
+                    <div className="text-xs font-semibold tabular-nums text-slate-600">{agg.target}</div>
                   </div>
-                  <NumberStepper
-                    value={agg.target}
-                    onChange={(v) => setSubjectTarget(s.id, v)}
-                    ariaLabel={`Target periods for ${s.name}`}
-                  />
+                  <div className="space-y-1.5">
+                    {(tracksBySubject[s.id] ?? []).map((tr) => {
+                      const trackVal = trackTargets[tr.id] ?? tr.allottedPeriods ?? 0;
+                      const facultyOptions = faculty.filter((f) => !f.subjectId || f.subjectId === s.id);
+                      return (
+                        <div key={tr.id} className="grid grid-cols-[42px_1fr_112px] gap-1.5 items-center">
+                          <Badge variant="outline" className="justify-center h-8 bg-slate-50">{tr.name}</Badge>
+                          <Select value={tr.facultyId ?? config.defaultFaculty[s.id] ?? ''} onValueChange={(v) => setTrackFaculty(s.id, tr.id, v)}>
+                            <SelectTrigger className="h-8 text-xs bg-white min-w-0"><SelectValue placeholder="Faculty" /></SelectTrigger>
+                            <SelectContent>
+                              {facultyOptions.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <NumberStepper value={trackVal} onChange={(v) => setTrackTarget(s.id, tr.id, v)} ariaLabel={`Periods for ${s.name} ${tr.name}`} />
+                        </div>
+                      );
+                    })}
+                    <div className="flex items-center justify-between gap-2">
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => addTrack(s.id)}>
+                        <Plus className="h-3 w-3 mr-1" /> Add track
+                      </Button>
+                      {(tracksBySubject[s.id] ?? []).length > 1 && (
+                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-rose-600" onClick={() => {
+                          const tracks = tracksBySubject[s.id] ?? [];
+                          const last = tracks[tracks.length - 1];
+                          if (last) removeTrack(s.id, last.id);
+                        }}>
+                          Remove last
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -227,7 +348,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
               )}
             >
               {targetSurplus > 0
-                ? `${targetSurplus} to allot`
+                ? `${targetSurplus} unused capacity`
                 : targetSurplus < 0
                   ? `${Math.abs(targetSurplus)} over`
                   : 'Fully distributed ✓'}
@@ -373,7 +494,7 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
       {!canContinue && targetBlockerMsg.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-800">
           <div className="font-semibold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5" /> Allocate all periods before continuing
+            <AlertTriangle className="h-3.5 w-3.5" /> Allocation review
           </div>
           <ul className="list-disc list-inside space-y-0.5">
             {targetBlockerMsg.slice(0, 5).map((m, i) => (

@@ -94,7 +94,6 @@ import ProgramsListPage from './pages/institute/programs/ProgramsListPage';
 import ProgramPreviewPage from './pages/institute/programs/ProgramPreviewPage';
 import ProgramSchedulePage from './pages/institute/programs/ProgramSchedulePage';
 import InstituteHolidaysPage from './pages/institute/programs/InstituteHolidaysPage';
-import SectionSchedulePage from './pages/institute/sections/SectionSchedulePage';
 
 
 function TeacherLayoutWrapper() {
@@ -206,7 +205,7 @@ function App() {
           <Route path="insights/schedule-tracking" element={<ScheduleTrackingPage />} />
           <Route path="insights/learning-response" element={<LearningResponsePage />} />
 
-          {/* Programs module */}
+          {/* Sections module */}
           <Route path="programs" element={<ProgramsListPage />} />
           <Route path="programs/holidays" element={<InstituteHolidaysPage />} />
           {/* Legacy: Teaching Hours moved into the Schedule wizard's Step 2. */}
@@ -217,11 +216,7 @@ function App() {
           <Route path="programs/:programId/preview" element={<ProgramPreviewPage />} />
           <Route path="programs/:programId/schedule" element={<ProgramSchedulePage />} />
 
-          {/* Section-scoped 4-step scheduling workspace */}
-          <Route path="sections/:sectionId/schedule" element={<SectionSchedulePage />} />
-
-
-          {/* Legacy timetable → programs */}
+          {/* Legacy timetable → sections */}
           <Route path="timetable" element={<Navigate to="/institute/programs" replace />} />
 
           {/* Exam module */}

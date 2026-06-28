@@ -1,236 +1,347 @@
-# Section-Scoped Scheduling — Phase-Wise Implementation Plan
+## Audit conclusion
 
-## Locked rules (from prior turns)
-- **One cell = one allocation.** A `(weekStartDate, weekday, periodIndex)` holds exactly one `{programId, subjectId, trackId}`. No stacking, ever.
-- **Section period budget is fixed.** `workingDays × periodsPerDay × weeks` is the single pool shared across all programs/subjects/tracks.
-- **Tracks of same subject occupy different cells.** Parallel = two distinct cells.
-- **Cell conflict** → Confirm & Replace dialog. **Row fill** → skip occupied. **Faculty conflict detection** → out of scope.
-- 4-stepper stays: Setup → Period Allocation → Weekly Timetable → Preview.
+Yes — I understand the blunder.
 
----
+I incorrectly created a separate **Section-scoped scheduling workspace** and added a new banner/card saying **“Plan multiple programs together.”** That was not your intended flow.
 
-## Visual System (applies to all four steps)
-
-**Color tokens per subject** (HSL, defined in `index.css`, mapped to Tailwind):
-```
-Physics    → 217 91% 60% (blue)     surface 217 91% 96%
-Chemistry  → 142 71% 45% (emerald)  surface 142 71% 95%
-Math       → 262 83% 58% (violet)   surface 262 83% 96%
-Biology    → 25  95% 53% (orange)   surface 25  95% 95%
-English    → 340 82% 52% (rose)     surface 340 82% 96%
-+ fallback palette of 6 more, auto-assigned by subject index
-```
-Track variants: T1 = solid swatch, T2 = swatch with diagonal pattern, T3 = swatch with dot pattern. Same hue family, different texture — readable at a glance without reading labels.
-
-**Header chrome (all steps):**
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Section: Class 11 Morning · Aug 2026 → Oct 2026             [Window ▾]    │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  ◉─── Setup ───◉─── Allocation ───◉─── Timetable ───○ Preview              │
-│                                                                             │
-│  Budget 1,104p   Allocated 1,104p   Remaining 0p   ████████████████ 100%   │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-Sticky on scroll. Budget strip stays visible across Steps 2–4 so the user always knows where they stand.
-
-**Typography:** Display = `Sora` (already in repo via Tailwind), body = `Inter`. Subject names in cells use `font-medium`, period counts in `font-mono tabular-nums`.
-
-**Cards:** 16px radius, `shadow-[0_2px_8px_rgba(15,23,42,0.04)]`, 1px border `border-slate-200/70`. Hover lift = `translate-y-[-1px]` + shadow bump. No purple-on-white gradients.
-
----
-
-## Phase A — Data Model & Store (no UI yet)
-
-**Files**
-- `src/types/section.ts` *(new)* — `Section`, `AcademicWindow`, `Track`, `CellAllocation`.
-- `src/types/instituteProgram.ts` — `WeeklyTimetableCell` becomes `{ slot: SlotKey, allocation: CellAllocation | null }`.
-- `src/hooks/useSection.ts` *(new)* — store mirroring `useInstitutePrograms`, with `setCellAllocation(slot, allocation, { force })` that throws `CellOccupiedError` when force=false.
-- `src/data/mockSections.ts` *(new)* — one section with 2 programs (CBSE + JEE), 3 subjects each, 1–2 tracks per subject.
-- `src/utils/calendarAutomation.ts` — `computeSectionCapacity(window, config)`; `generateFromTimetable` keyed by `(programId, subjectId, trackId)`.
-
-**Acceptance:** unit-level — `setCellAllocation` rejects occupied slot unless forced; capacity math returns expected integer for a 12-week window.
-
----
-
-## Phase B — Step 1: Section Setup
-
-**Layout (desktop ≥1280):** two-column. Left 60% = form. Right 40% = sticky live `CapacityStrip` + a mini calendar preview showing working days highlighted across the window.
+Your intended requirement was:
 
 ```text
-┌─────────────────────────── Setup ────────────────────────────┐
-│ Section name      [ Class 11 Morning      ]                  │
-│ Academic window   [ 01 Aug 26 ] → [ 10 Oct 26 ]   71 days    │
-│                                                              │
-│ Working days      [M][T][W][T][F][S] · Sun off               │
-│ Periods / day     6     Period length 50m   [+ Per-period…]  │
-│ Day starts        08:00                                      │
-│ Breaks            ☕ 10:30 (15m) · 🍱 13:00 (40m)             │
-│ Holidays          3 institute · +0 program · −0 skipped      │
-│ Faculty pool      12 selected from 34 → [ Manage pool ]      │
-│                                                              │
-│ Auto-saved · just now                  [ Continue → ]        │
-└──────────────────────────────────────────────────────────────┘
-```
-Right pane:
-```text
-┌─ Capacity preview ─────┐
-│  Working days   61     │
-│  Periods/day     6     │
-│  ─────────────────     │
-│  Total budget  366 p   │
-└────────────────────────┘
-┌─ Window calendar ──────┐
-│  Aug  ███░███░███░███░ │
-│  Sep  ███░███░███░███░ │  (working = filled, off = ░,
-│  Oct  ███░███░          holiday = red dot)
-└────────────────────────┘
+Institute sidebar
+  → Sections
+    → existing cards currently shown under Programs
+      → Setup & Allocation button
+        → existing 4-step flow:
+           1. Setup
+           2. Period Allocation
+           3. Weekly Timetable
+           4. Preview
 ```
 
-**Components**
-- `SectionSetupStep.tsx`, `FacultyPoolPicker.tsx` *(new)*, reuse `CapacityStrip.tsx`, new `WindowCalendarPreview.tsx`.
+You wanted all the new scheduling rules added inside the existing **Setup & Allocation** flow, not as a parallel UI or separate route.
 
-**Mobile:** single column, calendar preview collapses to a one-line "61 working days · 366 periods" chip.
+## What was implemented vs what you asked
 
----
+### 1. Existing flow location
 
-## Phase C — Step 2: Period Allocation
+**Asked:** Use the existing `Programs → Setup & Allocation → 4-stepper` flow.
 
-**Layout (desktop ≥1280):** three-column.
-- Left 22% — **Program/Subject/Track tree** (sticky). Each node shows colored dot + `allocated/target` pill.
-- Center 56% — **Editing panel** for the selected node.
-- Right 22% — **Live budget panel**: shared section budget + per-program donut + per-subject mini-bars, all reacting on each keystroke.
+**Current implementation:**
+- Existing route still exists: `/institute/programs/:programId/schedule`.
+- But I also added a new route: `/institute/sections/:sectionId/schedule`.
+- I added a new banner on the Programs page: **“New · Section-scoped scheduling / Plan multiple programs together.”**
 
-```text
-TREE                    EDITING                              BUDGET
-─────────────           ────────────────────────             ──────────────
-▾ CBSE  420/450         Physics · Track 1                    Section
-  ▾ Physics 200/220       Faculty: A. Rao                    1,104 / 1,104
-    ● T1   120/120        Periods to allot: [ 120 ]          ████████ 100%
-    ● T2    80/100        Topics                             
-  ▸ Chem    ...            Vectors        [ 8 ]              CBSE  ●●●●○ 78%
-  ▸ Math    ...            Kinematics    [ 12 ]              JEE   ●●●○○ 62%
-▾ JEE   620/654            Newton's laws [ 18 ]              
-  ▸ Physics 300/320        + Add topic                       Physics ████░ 87%
-  ▸ Chem    ...           [ Split evenly ] [ Match target ]  Chem    ███░░ 60%
-                                                              Math    ██░░░ 40%
-```
+**Audit result:** Not correct. The new separate section workspace should be removed/parked, and the existing flow should become the single source of truth.
 
-**Track UX:** "Add track" inside any subject opens a small modal — name, faculty from pool, chapter checklist. Tracks render as sibling pills under the subject with their texture variant.
+### 2. Programs vs Sections terminology
 
-**Validation gate to Step 3:**
-- `Σ allocations ≤ section budget` (hard block on over-allocation, red banner).
-- Every subject `allocated > 0` (soft warn, can proceed).
-- Inline blocker reason shown on the disabled Continue button.
+**Asked:** Rename **Programs** as **Sections**. The existing cards are effectively batch/section cards.
 
-**Components**
-- Refactor `PeriodAllocationWorkspace.tsx` from program-scoped to section-scoped.
-- `AllocationTree.tsx`, `AllocationEditor.tsx`, `TrackEditorModal.tsx`, `BudgetSidebar.tsx` *(all new)*.
+**Current implementation:**
+- Sidebar still says **Programs**.
+- Page title still says **Programs**.
+- CTA still says **New Program**.
+- Breadcrumb still says **Programs**.
+- Card data still renders from `useInstitutePrograms()`.
 
-**Mobile:** tree collapses to a top-of-page accordion. Editor stacks. Budget panel becomes a sticky bottom sheet (peek 56px → drag up).
+**Audit result:** Not implemented correctly. Terminology must be corrected in the existing module.
 
----
+### 3. “Setup” and “Period Allocation” relationship
 
-## Phase D — Step 3: Weekly Timetable
-
-This is the centerpiece. Single-allocation enforcement lives here.
-
-**Layout (desktop ≥1280):** two-column.
-- Left 18% — **Subject/Track palette**: collapsible groups by program, each track shown with its color chip + remaining periods (`80/120 placed`). Click to "arm" — the cursor now paints that allocation.
-- Right 82% — **Grid**, full width, no horizontal scroll up to 6 weekdays × 8 periods. Beyond that, only the grid scrolls horizontally (header stays).
+They are not the same thing, but they are part of the same existing Setup & Allocation wizard.
 
 ```text
-PALETTE              MON       TUE       WED       THU       FRI       SAT
-─────────         ┌────────────────────────────────────────────────────────┐
-CBSE              │P1│CBSE·Phy │JEE·Math │CBSE·Chm│CBSE·Phy │JEE·Phy  │ —  │
- ◆ Phy T1 80/120  │  │  T1 Rao │  T1 Sen │  T1 Iyer│  T2 Das │  T1 Rao │    │
- ◇ Phy T2 40/100  ├──┼─────────┼─────────┼─────────┼─────────┼─────────┼────┤
- ◆ Chm T1         │P2│  free   │CBSE·Phy │ ...                              │
- ◆ Math T1        │  │  ＋     │  T1 Rao │
-JEE               ├──┼─────────┼─────────┼ ...
- ◆ Phy T1         │P3│ ...
- ◇ Phy T2         
- ◆ Chm T1         
+Setup = defines the section capacity and operating rules
+- academic window
+- working days
+- periods per day
+- period length
+- day start time
+- breaks
+- holidays
+- default/faculty selection where needed
+
+Period Allocation = spends that fixed capacity
+- subject-wise allocation
+- track-wise allocation
+- chapter/topic allocation
+- capacity validation
 ```
 
-**Cell anatomy:**
+So your understanding is right: both belong inside the same **Setup & Allocation** workflow. They should not be split into a separate “section scheduling” product surface.
+
+### 4. Multiple programs together
+
+My thinking was: one physical section may have multiple academic programs such as CBSE + JEE, and since the timetable has one cell per period, those programs must share the same section period budget.
+
+But the UI I built expressed this incorrectly. I exposed it as a new separate concept: **“Plan multiple programs together.”** That created confusion.
+
+Correct interpretation:
+- The user should not see a separate “multiple programs together” banner.
+- If a section/batch contains multiple academic tracks/programs, that should be handled inside the existing Setup & Allocation flow as data, not as a separate entry point.
+- The visible module should still feel like: **open a section card → configure setup/allocation**.
+
+### 5. One cell, one allocation rule
+
+**Asked:** One cell only one subject/track/allocation. If CBSE Physics T1 is allocated in a slot, JEE Physics T1 cannot occupy that same slot. Another track must use another cell.
+
+**Current implementation:**
+- Implemented in the new section store/workspace.
+- Not implemented inside the existing `ProgramSchedulePage` / existing `WeeklyTimetableBuilder` flow.
+
+**Audit result:** Business rule was implemented in the wrong place.
+
+### 6. Conflict UX
+
+**Asked:** Occupied cell click should show **Confirm & Replace**.
+
+**Current implementation:**
+- Implemented in the new section timetable step.
+- Existing weekly timetable still uses direct subject selection/popovers and does not enforce the same allocation object model.
+
+**Audit result:** Implemented in the wrong place.
+
+### 7. Row/bulk fill behavior
+
+**Asked:** Row/bulk fill should skip occupied cells.
+
+**Current implementation:**
+- Implemented in the new section workspace.
+- Existing `WeeklyTimetableBuilder` row fill currently replaces the whole row.
+
+**Audit result:** Existing flow still needs correction.
+
+### 8. Capacity counter scope
+
+**Asked:** Capacity is fixed for a specific section/batch. It does not change whether the section has 1 subject, 10 subjects, 1 program, or 10 programs.
+
+**Current implementation:**
+- Existing program flow computes capacity per program schedule.
+- New section flow computes section capacity correctly, but in the wrong UI.
+
+**Audit result:** Logic direction was right, placement was wrong. Capacity must be shown and enforced in the existing Setup & Allocation flow after renaming it to Sections.
+
+### 9. UI/UX polish
+
+**Asked:** Modern, professional, easy to understand, subject colors, headers, desktop overview visible properly.
+
+**Current implementation:**
+- Some polish exists in both old and new flows.
+- Subject colors exist.
+- But the new banner and separate route make the UX confusing.
+- Desktop overview is split across two competing scheduling experiences.
+
+**Audit result:** Visual work exists, but product structure is wrong.
+
+## Corrective implementation plan
+
+### Phase 0 — Park the mistaken work safely
+
+Do not delete the useful logic immediately. First, park it so the useful pieces can be reused.
+
+**Keep for reuse:**
+- one-cell-one-allocation model
+- conflict replacement logic
+- skip-occupied row fill logic
+- track color/pattern ideas
+- section capacity helper logic
+
+**Remove from visible product UI:**
+- “New · Section-scoped scheduling” banner
+- “Plan multiple programs together” CTA
+- `/institute/sections/:sectionId/schedule` as a visible entry point
+
+**Update internal plan note:**
+- Mark previous phase plan as parked.
+- Add corrected direction: implement into existing Setup & Allocation flow.
+
+### Phase 1 — Rename Programs module to Sections
+
+Change visible terminology only, without changing the user journey.
+
+```text
+Before                         After
+Programs                       Sections
+New Program                    New Section / disabled if still coming soon
+Programs & Calendar Automation Sections & Calendar Automation
+Setup & Allocation             Setup & Allocation
+View curriculum                View curriculum / Preview, based on current behavior
 ```
-┌─────────────────┐
-│ CBSE · Phy T1   │  ← top line (subject color background, 12px text)
-│ A. Rao          │  ← faculty (10px, opacity 70%)
-└─────────────────┘
+
+Sidebar:
+```text
+Programs group → Sections group
+Programs item  → Sections item
+/institute/programs can remain as the route internally for now
 ```
-Empty cell = dashed border + faint `＋` in muted color. Hover on empty cell shows armed-allocation preview (50% opacity).
 
-**Conflict flow:**
-1. User has Physics T1 armed.
-2. Clicks cell holding `JEE · Chm T1`.
-3. **AlertDialog**:
-   ```
-   Replace allocation?
-   ─────────────────────
-   This slot currently holds  JEE · Chemistry · T1.
-   Replacing will free that slot for Chemistry and assign
-   CBSE · Physics · T1 here.
-   
-   [ Cancel ]   [ Replace ]
-   ```
-4. On replace: old allocation's "placed" counter decrements, new one increments, both palette entries animate the change.
+Important: keep the existing card grid. These are the cards the user already understands.
 
-**Row fill:**
-- Right-click row label → "Fill row with armed allocation".
-- Iterates left→right, skips occupied cells.
-- Bottom toast: `Filled 4 of 6 in Monday · 2 slots already taken`.
+### Phase 2 — Treat existing cards as section/batch cards
 
-**Per-cell faculty override:** click faculty line → small popover with track's default + other pool members. Override marker = tiny dot under faculty name.
+The existing cards remain the entry point.
 
-**Components**
-- Rewrite `WeeklyTimetableBuilder.tsx`.
-- `SubjectTrackPalette.tsx`, `TimetableCell.tsx`, `ReplaceAllocationDialog.tsx`, `RowFillMenu.tsx`, `CellFacultyPopover.tsx` *(new)*.
+Card meaning becomes:
+```text
+Card = one section / batch planning unit
+```
 
-**Mobile:** palette becomes a bottom sheet (tap "Add allocation"); grid scrolls horizontally; cells enlarge to 56px min-height. Long-press = open replace dialog.
+Display should make that clear:
+- Class/batch name prominent, e.g. `Class 12 PCM — Excellence`
+- Section labels shown clearly, e.g. `Sections A, B`
+- Subject chips remain visible
+- CTA remains **Setup & Allocation**
 
----
+No extra “multiple programs together” banner.
 
-## Phase E — Step 4: Preview & Status
+### Phase 3 — Extend the existing data model, not the separate section model
 
-**Layout:** full-width calendar (month view), top tabs `[Calendar] [List] [By Subject]`.
+Add the missing scheduling parameters into the existing `InstituteProgram` / schedule model.
 
-- Each dated slot inherits its cell's color + allocation label.
-- Drag-swap two slots: topic flow recomputes only for the affected `(program, subject, track)` lanes. Confirm modal shows the topic shift before committing.
-- **Per-subject status bar** above the calendar:
-  ```
-  CBSE · Physics  ● Draft   →  [ Lock ]
-  CBSE · Chem     ● Locked  →  [ Publish ] [ Unlock ]
-  JEE  · Physics  ● Published
-  ```
-- Status colors: Draft = slate, Locked = amber, Published = emerald.
+Needed additions:
+- academic window remains in `schedule.startDate` / `schedule.endDate`
+- fixed section capacity remains derived from setup fields
+- subject/track allocation support inside existing schedule data
+- cell allocation model for timetable cells
 
-**Components**
-- `SectionPreviewStep.tsx`, `SubjectStatusRail.tsx`, reuse `CurriculumCalendarView.tsx` (extend for swap).
+Correct cell model concept:
+```ts
+cell = {
+  weekStartDate,
+  weekday,
+  periodIndex,
+  allocation: {
+    subjectId,
+    trackId,
+    facultyId?
+  } | null
+}
+```
 
----
+If future data includes multiple academic programs within one section, the allocation can include `programId`, but it should not become a separate visible UI concept unless needed.
 
-## Phase F — Routing, terminology, cleanup
-- New route `/institute/sections/:sectionId/schedule` (4-stepper entry).
-- Old `/institute/programs/:id/schedule` redirects to the parent section's schedule.
-- Cards/list pages updated to read from section store; "Teaching hours" labels → "Periods".
-- Delete legacy `ProgramHoursPage.tsx` (already done) and any program-scoped capacity helpers.
+### Phase 4 — Fix Step 1: Setup inside existing wizard
 
----
+Improve the existing Setup step, not the separate Section Setup page.
 
-## Phase G — Polish & QA
-1. Responsive QA: 360 / 768 / 1024 / 1280 / 1440.
-2. Empty/loading/error states for every step (skeleton in tree, empty palette, save-failure toast).
-3. Keyboard nav: stepper Tab order, arrow keys move grid focus, Enter places armed allocation, Esc cancels.
-4. Animations: framer-motion fades on step transitions (180ms), cell paint = scale 0.96→1 + opacity 0→1 (140ms), replace dialog = slide-up.
-5. Tabular numerals everywhere a count is shown (budgets, palette pills, status rail).
-6. Accessibility: every color chip paired with text label; AA contrast verified on subject palette.
+Setup must show:
+- academic start and end date
+- working days
+- periods/day
+- period length
+- day start time
+- breaks
+- holidays
+- capacity preview
+- faculty/default teacher configuration where needed
 
----
+Capacity language must be section/batch-first:
+```text
+Section capacity = working days × periods/day across this academic window.
+This number stays fixed no matter how periods are distributed across subjects or tracks.
+```
 
-## Out of scope (deferred, per user)
-- Faculty double-booking detection across cells.
-- Per-subject academic window overrides.
-- "Share with faculty for review" status.
-- Student-facing rendering rules when only some subjects are published.
+Desktop layout:
+```text
+Left: Setup form
+Right: sticky capacity summary + day timeline + holiday summary
+```
+
+### Phase 5 — Fix Step 2: Period Allocation inside existing wizard
+
+Refactor existing `PeriodAllocationWorkspace` to support tracks and the fixed section capacity rule.
+
+Required behavior:
+- subject-level colored headers
+- track rows under each subject: T1, T2, etc.
+- add track action inside a subject
+- faculty per track if required
+- period allocation per track
+- chapter/topic allocation below track/subject
+- total allocation cannot exceed section capacity
+
+Validation:
+```text
+Hard block: total allocated > section capacity
+Soft warning: subject has 0 allocation
+Allowed: total allocated less than capacity if user intentionally leaves free periods
+```
+
+This matters because you said the section period count is fixed, but all periods may or may not be assigned immediately depending on planning stage.
+
+### Phase 6 — Fix Step 3: Weekly Timetable inside existing wizard
+
+Rewrite the existing `WeeklyTimetableBuilder` behavior to use allocation chips instead of plain subject-only cells.
+
+Required behavior:
+- left palette: subject/track options with remaining count
+- cell accepts only one allocation
+- clicking occupied cell opens Confirm & Replace
+- row fill skips occupied cells
+- different tracks always require different cells
+- cell shows subject color, track name, faculty line
+- no faculty conflict detection for now
+
+Conflict modal:
+```text
+Replace allocation?
+This slot currently has Physics · T1.
+Replacing will remove that allocation from this cell and place Chemistry · T1 here.
+
+Cancel | Replace
+```
+
+Row fill:
+```text
+Filled 4 cells · skipped 2 occupied cells
+```
+
+### Phase 7 — Fix Step 4: Preview inside existing wizard
+
+Keep the existing preview/generation flow, but make it understand track allocations.
+
+Preview should show:
+- dated classes generated from the weekly timetable
+- subject colors
+- track labels where relevant
+- chapter/topic mapping
+- draft/locked/published status only if already needed; otherwise keep it parked
+
+Do not introduce a new preview surface.
+
+### Phase 8 — Cleanup and guardrails
+
+Remove or hide the mistaken visible additions:
+- remove section banner from the list page
+- remove section route from visible navigation
+- avoid exposing `MOCK_SECTIONS` in the product UI
+
+Keep reusable code only if it is folded back into the existing flow.
+
+### Phase 9 — Responsive and professional UX pass
+
+After the corrected behavior is in the existing flow:
+- test desktop overview at 1024, 1280, 1440
+- test mobile at 360 and 768
+- make subject headers readable
+- ensure no text overlap in timetable cells
+- ensure touch targets are at least 44px
+- keep subject colors consistent
+- keep counters as whole numbers only
+- use time format like `6h 42m`, never decimal hours
+
+## Final corrected product direction
+
+The final product should feel like this:
+
+```text
+Sections
+  └─ Section / batch card
+      └─ Setup & Allocation
+          ├─ Setup: define capacity
+          ├─ Period Allocation: distribute capacity across subjects/tracks/topics
+          ├─ Weekly Timetable: place one allocation per cell
+          └─ Preview: generate dated teaching plan
+```
+
+No separate “new section scoped scheduling” workspace. No confusing “Plan multiple programs together” banner. The rules you gave should live inside the existing Setup & Allocation flow.

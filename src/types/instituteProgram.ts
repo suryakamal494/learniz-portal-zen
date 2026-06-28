@@ -24,6 +24,14 @@ export interface InstituteSubject {
   chapters: InstituteChapter[];
 }
 
+export interface ScheduleTrack {
+  id: string;
+  subjectId: string;
+  name: string;
+  facultyId?: string;
+  allottedPeriods: number;
+}
+
 export interface InstituteFaculty {
   id: string;
   name: string;
@@ -61,6 +69,8 @@ export interface WeeklyTimetableCell {
   periodIndex: number;
   /** Selected subject for this slot. Null means "free / no class". */
   subjectId: string | null;
+  /** Selected parallel track for this subject. Null/undefined means default T1. */
+  trackId?: string | null;
   /** Optional per-cell faculty override. When null/undefined, the default
    *  faculty configured for the subject (config.defaultFaculty) is used. */
   facultyId?: string | null;
@@ -94,6 +104,10 @@ export interface ScheduleConfig {
   weeklyTimetable?: WeeklyTimetable;
   /** Step 2 — per-subject period budget (subject.id → periods to allot). */
   subjectTargetPeriods?: Record<string, number>;
+  /** Step 2 — tracks under each subject. Empty/undefined means each subject has one default T1 track. */
+  subjectTracks?: Record<string, ScheduleTrack[]>;
+  /** Step 2 — per-track period budget (track.id → periods to allot). */
+  trackTargetPeriods?: Record<string, number>;
 }
 
 
@@ -104,6 +118,7 @@ export interface ScheduleSlot {
   startTime: string;        // HH:mm
   endTime: string;          // HH:mm
   subjectId: string;
+  trackId?: string;
   chapterId: string;
   topicId: string;
   facultyId: string;
