@@ -138,6 +138,8 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
   const [activeIdx, setActiveIdx] = useState(0);
   const activeWeek = weekStarts[activeIdx] ?? weekStarts[0];
   const [armed, setArmed] = useState<AllocationOption | null>(null);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [replaceIntent, setReplaceIntent] = useState<{
     weekStart: string;
     weekday: WeekDay;
