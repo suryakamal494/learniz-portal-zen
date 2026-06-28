@@ -119,7 +119,7 @@ function weeksInWindow(startIso: string, endIso: string): string[] {
 
 type CopyMode = 'next' | 'next4' | 'remaining' | 'all';
 
-export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, faculty = [], onChange }) => {
+export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subPrograms = [], faculty = [], onChange }) => {
   const layout = useMemo(() => computeDayLayout(config), [config]);
   const periodRows = useMemo(() => layout.filter((r) => r.kind === 'period'), [layout]);
 
