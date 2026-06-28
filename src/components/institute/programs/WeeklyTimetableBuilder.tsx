@@ -671,12 +671,13 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             {allocationOptions.map((opt) => {
               const pal = subjectPalette(opt.subjectColor);
-              const placed = placedByTrack[opt.trackId] ?? 0;
-              const isArmed = armed?.trackId === opt.trackId;
+              const k = optionKey(opt.subProgramId ?? null, opt.trackId);
+              const placed = placedByTrack[k] ?? 0;
+              const isArmed = armed ? optionKey(armed.subProgramId ?? null, armed.trackId) === k : false;
               return (
                 <button
                   type="button"
-                  key={opt.trackId}
+                  key={k}
                   onClick={() => setArmed(opt)}
                   className={cn(
                     'min-h-12 rounded-lg border px-3 py-2 text-left transition-all bg-white',
