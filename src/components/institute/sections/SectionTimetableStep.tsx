@@ -403,10 +403,14 @@ const TimetableCell: React.FC<{
     >
       <div className="flex items-center gap-1.5 mb-1">
         <span className={cn('h-3 w-3 rounded shrink-0', pal.solid)} style={trackPattern(trackIdx)} />
-        <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
-          {program.code}
-        </span>
-        <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
+        {showProgram && (
+          <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
+            {program.code}
+          </span>
+        )}
+        {subject.tracks.length > 1 && (
+          <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
+        )}
       </div>
       <div className="text-xs font-semibold text-slate-900 truncate">{subject.name}</div>
       <div className="text-[10px] text-slate-600 truncate mt-0.5">
