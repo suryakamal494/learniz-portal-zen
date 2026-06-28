@@ -681,7 +681,14 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-sm truncate">{opt.subjectName}</span>
-                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-white/70">{opt.trackName}</Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {hasSubPrograms && opt.subProgramCode && (
+                        <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-indigo-50 border-indigo-200 text-indigo-700">
+                          {opt.subProgramCode}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="h-5 px-1.5 text-[10px] bg-white/70">{opt.trackName}</Badge>
+                    </div>
                   </div>
                   <div className="text-[11px] text-slate-600 tabular-nums mt-0.5">
                     {placed} / {opt.target || '—'} placed
