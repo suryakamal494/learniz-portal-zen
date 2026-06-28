@@ -1,94 +1,73 @@
-## You're right — Phase B (multi-window UI) hasn't been built yet
+## Seed multiple Academic Windows in mock data
 
-So far only Phases A, C, C+, D shipped (faculty pool, track/subject locks, chapter→track grouping, conditional cell display). The Academic Window section in Step 1 still holds only **one** window (start/end/working days/periods-per-day), and there is no window switcher anywhere on the page. That's why you don't see it.
+Right now every program in `mockInstitutePrograms.ts` ships with at most one flat schedule (one window). The Phase B switcher works, but on first load each program shows only "Window 1", so there is nothing to traverse between — devs can't see the window-swap behaviour without manually clicking "+ Add" and re-entering data.
 
-Here is the concrete plan for **Phase B — Multiple Academic Windows (separate storage per window)**.
+This plan seeds **2–3 realistic academic windows per program** so the switcher is immediately demonstrable, and adds a small dev-facing affordance to make the traversal behaviour obvious.
 
 ---
 
-### 1. Data model (`src/types/instituteProgram.ts`)
+### 1. Mock data — `src/data/mockInstitutePrograms.ts`
 
-Introduce `AcademicWindow` as a first-class entity on the schedule:
+For each existing program with a `schedule`, populate `schedule.windows` and `schedule.activeWindowId` with **three pre-built windows** that share the schedule-level fields (faculty pool, day start, breaks, period length) but differ on per-window slices:
 
 ```text
-ScheduleConfig
-├── facultyPool: string[]          (already added)
-├── windows: AcademicWindow[]      (NEW)
-└── activeWindowId: string         (NEW)
+Window 1 — "Term 1 · Foundation"
+  Jun 1 → Sep 30 · Mon–Sat · 7 periods/day
+  Allocation:   Physics 40, Chemistry 35, Maths 50, Biology 30
+  Tracks:       Maths split into T1 (Algebra) + T2 (Calculus)
+  Weekly grid:  fully filled (so timetable step is non-empty)
+  Holidays:     adds Aug 15 override note
 
-AcademicWindow
-├── id, label (e.g. "Term 1", "Term 2")
-├── startDate, endDate
-├── workingDays: Weekday[]
-├── periodsPerDay
-├── allocation: SubjectAllocation[]   ← per-window
-├── weeklyTimetable: TimetableCell[]  ← per-window
-└── holidays: HolidayOverride[]       ← per-window
+Window 2 — "Term 2 · Board Prep"
+  Oct 1 → Dec 20 · Mon–Sat · 8 periods/day
+  Allocation:   Physics 55, Chemistry 50, Maths 60, Biology 40
+  Tracks:       Physics split into T1 (Mechanics) + T2 (Optics)
+  Weekly grid:  fully filled, different subject mix than Term 1
+  Holidays:     adds Diwali, removes one institute holiday
+
+Window 3 — "Term 3 · Revision Sprint"
+  Jan 5 → Mar 15 · Mon–Fri · 6 periods/day
+  Allocation:   lighter — Physics 30, Chemistry 30, Maths 35, Biology 25
+  Tracks:       single track per subject (reset)
+  Weekly grid:  partially filled (shows in-progress state)
+  Holidays:     none
 ```
 
-Migration shim: on load, if an old program has the flat fields, wrap them into a single auto-created window called "Window 1" and set it active. No data loss.
+Set `activeWindowId = "win-term-1"` so the program lands on Term 1.
 
-### 2. Top-of-page Window Switcher (new component)
+Key intent: each window has **visibly different** working days, periods/day, allocation totals, track configuration, and timetable density — so switching tabs in the `AcademicWindowSwitcher` produces obviously different content on all three steps (Setup, Allocation, Timetable).
 
-A pill bar pinned to the top of `ProgramSchedulePage.tsx`, visible on **all three steps** (Setup, Allocation, Timetable):
+### 2. Dev-visible traversal cue — `AcademicWindowSwitcher.tsx`
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ Academic Window:  [● Term 1  Jun 1 – Sep 30] [ Term 2 ] [ + Add ] │
-│                   42 working days · 7 periods/day  · [Edit] [Delete] │
-└──────────────────────────────────────────────────────────────┘
-```
+Small additions so devs can see the swap happening:
 
-- Clicking a pill switches `activeWindowId`; all downstream UI (capacity totals, allocations, weekly grid, holidays) re-reads from that window.
-- "+ Add" opens a small dialog: label, start, end, working days, periods/day → creates an empty window.
-- "Edit" reopens the same dialog for the active window.
-- "Delete" allowed only when ≥2 windows exist; confirms before removing window data.
-- Active window shown with primary-color ring; inactive windows muted.
+- Show a **"Last switched: <window label> · <timestamp>"** debug line under the pill bar (only when `import.meta.env.DEV` is true). Updates every time `switchActiveWindow` runs.
+- Animate the active pill with a brief ring pulse on switch (200ms) so the swap is visually obvious.
+- Add tooltip on each pill: `"Click to load this window's allocation & timetable"`.
 
-### 3. Step 1 (Setup) changes
+### 3. Capacity strip & timetable header
 
-- The existing "Academic Window" card becomes the **editor for the active window** (same fields, but it edits `windows[activeWindowId]` instead of the flat config).
-- Faculty Pool stays at schedule-level (shared across windows).
-- Add a small helper line: "Each window keeps its own allocation, weekly timetable, and holidays. Switch windows from the bar above."
+`CapacityStrip.tsx` already reads from the flat config (which mirrors active window). No code change needed — it will automatically show different totals per window once the seed data exists. Verify visually after step 1.
 
-### 4. Step 2 (Period Allocation) changes
+### 4. No type or hook changes
 
-- `PeriodAllocationWorkspace` reads `workingDays`, `periodsPerDay`, `allocation`, `subjectLocks` from the active window.
-- Capacity header shows: `Term 1 · 42 days × 7 = 294 periods · Allotted 180 · Remaining 114`.
-- All edits (targets, faculty, tracks, chapter→track, topic periods) write to the active window only.
-
-### 5. Step 3 (Weekly Timetable) changes
-
-- `WeeklyTimetableBuilder` reads `workingDays`, `periodsPerDay`, `weeklyTimetable` from the active window.
-- Palette is built from that window's allocation.
-- Switching the window swaps the grid in place.
-
-### 6. Holidays page (`InstituteHolidaysPage.tsx`)
-
-- Add the same window switcher at the top.
-- Holiday overrides scope to the active window's date range.
-
-### 7. Calendar generator (`src/utils/calendarAutomation.ts`)
-
-- Update `generateCalendar` to iterate **all windows**, lay each window's weekly timetable onto its own date range, subtract that window's holidays, and concat the results into one final calendar feed.
-- Detect overlapping window date ranges and surface a validation toast ("Term 1 and Term 2 overlap on Sep 28 – Sep 30").
-
-### 8. Programs list page
-
-Show window count on each program row: `2 windows · 86 working days total`.
+`useInstitutePrograms.ts` already has `switchActiveWindow`, `ensureWindows`, `addWindow`, `deleteWindow`. `ScheduleConfig.windows[]` and `AcademicWindow` types are already in place. This plan is **data-only + one cosmetic UI tweak**.
 
 ---
 
-### Out of scope (still pending after Phase B)
+### Files touched
 
-- **Phase E** — Section wraps multiple Programs with a shared period pool. Will tackle right after you sign off on B.
+- `src/data/mockInstitutePrograms.ts` — add `windows[]` + `activeWindowId` per program
+- `src/components/institute/programs/AcademicWindowSwitcher.tsx` — dev-only switch indicator, pulse animation, pill tooltips
+
+### Out of scope
+
+- No changes to allocation/timetable/holidays logic
+- No changes to Section workspace (Phase E already shipped)
+- No calendar-generator changes (still pending — separate plan)
 
 ---
 
-### One quick confirmation before I build
+### One confirmation
 
-For a brand-new program (no windows yet), should the page:
-- **(a)** Auto-create an empty "Window 1" so the user lands straight on Step 1 fields, or
-- **(b)** Show an empty state with a single "Create your first academic window" button?
-
-I'll proceed with **(a)** unless you say otherwise.
+For the mock seed, should all programs get the **same three terms** (Term 1 / Term 2 / Term 3) for consistency, or should I vary them per program (e.g. JEE program gets "Phase 1 / Phase 2 / Test Series", NEET gets "Pre-Board / Board / Revision")? I'll go with **varied per program** unless you say otherwise — it makes the demo richer.
