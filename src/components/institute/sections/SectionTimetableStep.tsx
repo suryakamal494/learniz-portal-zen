@@ -62,6 +62,7 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext 
 
   const placedCounts = useMemo(() => placedByTrack(section), [section]);
   const facultyById = useMemo(() => Object.fromEntries(facultyList.map((f) => [f.id, f])), [facultyList]);
+  const showProgram = section.programs.length > 1;
 
   const cellAt = (weekday: number, periodIndex: number) =>
     section.cells.find((c) =>
