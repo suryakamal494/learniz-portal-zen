@@ -39,7 +39,7 @@ function gradientFor(colors: string[]): string {
 const ProgramsListPage: React.FC = () => {
   const navigate = useNavigate();
   const programs = useInstitutePrograms();
-  const multiProgramSections = useSections();
+  
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
 
