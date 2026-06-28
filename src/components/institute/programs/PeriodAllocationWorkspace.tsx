@@ -9,6 +9,10 @@ import {
   Wand2,
   AlertTriangle,
   GraduationCap,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +24,7 @@ import { computeCapacity, topicPeriods } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { useFaculty } from '@/hooks/useInstitutePrograms';
+import { useFaculty, setChapterTrack } from '@/hooks/useInstitutePrograms';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
