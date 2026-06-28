@@ -159,3 +159,14 @@ export function setChapterTopicsHours(programId: string, chapterId: string, hour
 export function finaliseHours(programId: string, value: boolean) {
   updateProgram(programId, (p) => ({ ...p, hoursFinalised: value }));
 }
+
+/** Phase C+ — assign a chapter to a specific track (or clear with null). */
+export function setChapterTrack(programId: string, chapterId: string, trackId: string | null) {
+  updateProgram(programId, (p) => ({
+    ...p,
+    subjects: p.subjects.map((s) => ({
+      ...s,
+      chapters: s.chapters.map((c) => (c.id === chapterId ? { ...c, trackId } : c)),
+    })),
+  }));
+}
