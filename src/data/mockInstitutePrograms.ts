@@ -347,6 +347,15 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
       defaultFaculty: PCM_DEFAULT_FACULTY,
       weeklyTimetable: PCM_WEEKLY_TIMETABLE,
       activeSubProgramId: 'sp-cbse',
+      // CBSE slice mirrored into flat fields (active sub-program).
+      subjectTracks: PCM_CBSE_SLICE.subjectTracks,
+      subjectTargetPeriods: PCM_CBSE_SLICE.subjectTargetPeriods,
+      trackTargetPeriods: PCM_CBSE_SLICE.trackTargetPeriods,
+      subjectLocks: PCM_CBSE_SLICE.subjectLocks,
+      subProgramSlices: {
+        'sp-cbse': PCM_CBSE_SLICE,
+        'sp-jee': PCM_JEE_SLICE,
+      },
     },
     subPrograms: [
       { id: 'sp-cbse', code: 'CBSE', name: 'CBSE Class 12',     color: 'blue'   },
