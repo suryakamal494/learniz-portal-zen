@@ -33,6 +33,9 @@ export interface ScheduleTrack {
   name: string;
   facultyId?: string;
   allottedPeriods: number;
+  /** Phase C — disabled tracks keep their config but don't appear in Step 3 palette
+   *  and are excluded from capacity totals & generation. Undefined = enabled. */
+  enabled?: boolean;
 }
 
 export interface InstituteFaculty {
