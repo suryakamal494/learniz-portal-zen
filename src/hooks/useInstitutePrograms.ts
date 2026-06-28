@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { MOCK_FACULTY, MOCK_INSTITUTE_PROGRAMS } from '@/data/mockInstitutePrograms';
 import {
+  AcademicWindow,
   Holiday,
   InstituteFaculty,
   InstituteProgram,
