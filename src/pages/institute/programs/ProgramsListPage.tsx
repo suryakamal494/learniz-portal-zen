@@ -14,8 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useInstitutePrograms } from '@/hooks/useInstitutePrograms';
-import { useSections } from '@/hooks/useSection';
-import { Layers } from 'lucide-react';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +39,7 @@ function gradientFor(colors: string[]): string {
 const ProgramsListPage: React.FC = () => {
   const navigate = useNavigate();
   const programs = useInstitutePrograms();
-  const multiProgramSections = useSections();
+  
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
 
@@ -86,56 +84,8 @@ const ProgramsListPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Multi-program Section workspaces (Phase E — one shared period pool across programs) */}
-        {multiProgramSections.length > 0 && (
-          <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-blue-50 shadow-sm">
-            <CardContent className="p-4 md:p-5">
-              <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider text-indigo-700 font-bold inline-flex items-center gap-1.5">
-                    <Layers className="h-3 w-3" /> Section workspace · shared period pool
-                  </div>
-                  <div className="text-sm font-bold text-slate-900 mt-0.5">
-                    Run multiple programs inside one section
-                  </div>
-                  <div className="text-xs text-slate-600 max-w-2xl">
-                    A section holds several programs (e.g. CBSE + JEE) that share one weekly grid, one faculty pool and one period budget. Open a section to allocate, build the timetable and lock subjects.
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                {multiProgramSections.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => navigate(`/institute/sections/${s.id}/schedule`)}
-                    className="text-left rounded-lg border border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md transition-all p-3 group"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">{s.className}</div>
-                        <div className="text-sm font-bold text-slate-900 truncate">{s.name}</div>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {s.programs.map((p) => (
-                        <span key={p.id} className="inline-flex items-center rounded-full bg-slate-900 text-white text-[9px] font-bold px-2 py-0.5">
-                          {p.code}
-                        </span>
-                      ))}
-                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-semibold px-2 py-0.5">
-                        {s.windows.length} window{s.windows.length === 1 ? '' : 's'}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-semibold px-2 py-0.5">
-                        {s.facultyPool.length} faculty
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
+
 
         {/* Filters */}
         <Card className="border-slate-200/70 shadow-sm">

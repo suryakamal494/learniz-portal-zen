@@ -124,7 +124,33 @@ export interface ScheduleConfig {
    *  the flat fields above for backward-compat with existing UI. */
   windows?: AcademicWindow[];
   activeWindowId?: string;
+  /** Phase F — sub-programs (e.g. CBSE, JEE) sharing this section's grid.
+   *  When >1, the Period Allocation step exposes a switcher. Each slice
+   *  stores its own targets/tracks/locks AND its own weeklyTimetable. */
+  subProgramSlices?: Record<string, SubProgramSlice>;
+  activeSubProgramId?: string;
 }
+
+/** Phase F — per-sub-program slice. Schedule-level fields (window, working
+ *  days, periods/day, breaks, faculty pool, dayStartTime) stay shared. */
+export interface SubProgramSlice {
+  subjectTargetPeriods: Record<string, number>;
+  subjectTracks: Record<string, ScheduleTrack[]>;
+  trackTargetPeriods: Record<string, number>;
+  subjectLocks: Record<string, boolean>;
+  weeklyTimetable: WeeklyTimetable;
+}
+
+/** Phase F — sub-program metadata (CBSE / JEE / NEET …). */
+export interface SubProgram {
+  id: string;
+  code: string;
+  name: string;
+  /** Optional accent color name (subject-palette compatible). */
+  color?: string;
+}
+
+
 
 /** Phase B — a per-window slice of the schedule. Switching the active window
  *  loads its slice into the flat ScheduleConfig fields. Schedule-level fields
@@ -175,6 +201,8 @@ export interface InstituteProgram {
   hoursFinalised: boolean;
   schedule?: ScheduleConfig;
   generatedSlots?: ScheduleSlot[];
+  /** Phase F — sub-programs (CBSE, JEE, …) sharing this section's grid. */
+  subPrograms?: SubProgram[];
 }
 
 export interface SubjectRollup {

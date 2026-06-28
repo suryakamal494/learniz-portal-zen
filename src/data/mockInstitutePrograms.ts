@@ -249,7 +249,12 @@ export const MOCK_INSTITUTE_PROGRAMS: InstituteProgram[] = [
       endDate: PCM_END_DATE,
       defaultFaculty: PCM_DEFAULT_FACULTY,
       weeklyTimetable: PCM_WEEKLY_TIMETABLE,
+      activeSubProgramId: 'sp-cbse',
     },
+    subPrograms: [
+      { id: 'sp-cbse', code: 'CBSE', name: 'CBSE Class 12',     color: 'blue'   },
+      { id: 'sp-jee',  code: 'JEE',  name: 'JEE Advanced',      color: 'violet' },
+    ],
   },
   {
     id: 'prog-2',
