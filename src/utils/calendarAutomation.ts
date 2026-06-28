@@ -700,6 +700,7 @@ export function generateFromTimetable(
         endTime: t?.endTime ?? '09:40',
         subjectId: need.subjectId,
         trackId: cell?.trackId ?? undefined,
+        subProgramId: cell?.subProgramId ?? null,
         chapterId: need.chapterId,
         topicId: need.topicId,
         facultyId,
