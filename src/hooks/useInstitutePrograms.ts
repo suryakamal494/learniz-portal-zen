@@ -289,5 +289,3 @@ export function deleteWindow(c: ScheduleConfig, id: string): ScheduleConfig {
   }
   return { ...base, windows: remaining };
 }
-
-import type { WeekDay } from '@/types/instituteProgram';
