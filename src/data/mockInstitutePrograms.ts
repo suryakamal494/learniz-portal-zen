@@ -191,17 +191,70 @@ export const MOCK_FACULTY: InstituteFaculty[] = [
 ];
 
 /* ---------- Seeded weekly timetable for Class 12 PCM (W1) ----------
-   Layout (P1..P6 × Mon..Sat) — mixes all 7 subjects realistically.
+   Mixes CBSE (T1/T2) and JEE Advanced (T1) so the multi-track + multi-
+   sub-program UI is visible in Step 3 & Step 4 out of the box.
 */
 const PCM_W1_START = '2025-04-14'; // Monday
-const PCM_TT_PATTERN: Record<number, string[]> = {
+
+// trackId helpers (must match track ids seeded in PCM_CBSE_TRACKS / PCM_JEE_TRACKS below)
+const TT = (sp: 'cbse' | 'jee', sid: string, t: string) => ({
+  subjectId: sid,
+  trackId: `trk-${sp}-${sid}-${t}`,
+  subProgramId: sp === 'cbse' ? 'sp-cbse' : 'sp-jee',
+});
+
+type SlotSeed = { subjectId: string; trackId: string; subProgramId: string };
+
+const PCM_TT_PATTERN: Record<number, SlotSeed[]> = {
   // periodIndex -> [Mon, Tue, Wed, Thu, Fri, Sat]
-  0: ['subj-phy-12',  'subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-chem-12', 'subj-math-12'],
-  1: ['subj-math-12', 'subj-phy-12',  'subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-chem-12'],
-  2: ['subj-bio-12',  'subj-eng-12',  'subj-hin-12',  'subj-soc-12',  'subj-bio-12',  'subj-eng-12'],
-  3: ['subj-hin-12',  'subj-soc-12',  'subj-bio-12',  'subj-eng-12',  'subj-hin-12',  'subj-soc-12'],
-  4: ['subj-chem-12', 'subj-math-12', 'subj-phy-12',  'subj-bio-12',  'subj-math-12', 'subj-phy-12'],
-  5: ['subj-eng-12',  'subj-bio-12',  'subj-soc-12',  'subj-hin-12',  'subj-soc-12',  'subj-bio-12'],
+  0: [
+    TT('cbse', 'subj-phy-12', 't1'),
+    TT('cbse', 'subj-chem-12', 't1'),
+    TT('cbse', 'subj-math-12', 'alg'),
+    TT('jee',  'subj-phy-12', 't1'),
+    TT('cbse', 'subj-chem-12', 't1'),
+    TT('jee',  'subj-math-12', 't1'),
+  ],
+  1: [
+    TT('cbse', 'subj-math-12', 'cal'),
+    TT('jee',  'subj-phy-12', 't1'),
+    TT('cbse', 'subj-chem-12', 't1'),
+    TT('cbse', 'subj-math-12', 'alg'),
+    TT('cbse', 'subj-phy-12', 't2'),
+    TT('cbse', 'subj-chem-12', 't1'),
+  ],
+  2: [
+    TT('cbse', 'subj-bio-12', 't1'),
+    TT('cbse', 'subj-eng-12', 't1'),
+    TT('cbse', 'subj-hin-12', 't1'),
+    TT('cbse', 'subj-soc-12', 't1'),
+    TT('cbse', 'subj-bio-12', 't1'),
+    TT('cbse', 'subj-eng-12', 't1'),
+  ],
+  3: [
+    TT('cbse', 'subj-hin-12', 't1'),
+    TT('cbse', 'subj-soc-12', 't1'),
+    TT('cbse', 'subj-bio-12', 't1'),
+    TT('cbse', 'subj-eng-12', 't1'),
+    TT('cbse', 'subj-hin-12', 't1'),
+    TT('cbse', 'subj-soc-12', 't1'),
+  ],
+  4: [
+    TT('cbse', 'subj-phy-12', 't2'),
+    TT('cbse', 'subj-math-12', 'cal'),
+    TT('jee',  'subj-phy-12', 't1'),
+    TT('cbse', 'subj-bio-12', 't1'),
+    TT('jee',  'subj-math-12', 't1'),
+    TT('cbse', 'subj-phy-12', 't1'),
+  ],
+  5: [
+    TT('cbse', 'subj-eng-12', 't1'),
+    TT('cbse', 'subj-bio-12', 't1'),
+    TT('cbse', 'subj-soc-12', 't1'),
+    TT('cbse', 'subj-hin-12', 't1'),
+    TT('cbse', 'subj-soc-12', 't1'),
+    TT('cbse', 'subj-bio-12', 't1'),
+  ],
 };
 const PCM_WEEKDAYS: (1 | 2 | 3 | 4 | 5 | 6)[] = [1, 2, 3, 4, 5, 6];
 const PCM_WEEKLY_TIMETABLE = {
@@ -210,10 +263,54 @@ const PCM_WEEKLY_TIMETABLE = {
       weekStartDate: PCM_W1_START,
       weekday: wd as 0 | 1 | 2 | 3 | 4 | 5 | 6,
       periodIndex: Number(pIdxStr),
-      subjectId: row[dayCol],
+      subjectId: row[dayCol].subjectId,
+      trackId: row[dayCol].trackId,
+      subProgramId: row[dayCol].subProgramId,
     })),
   ),
 };
+
+// Track + target seeds for CBSE (mirrored into flat config — sp-cbse is active)
+const PCM_CBSE_TRACKS: Record<string, { id: string; name: string; periods: number; facultyId?: string }[]> = {
+  'subj-phy-12':  [
+    { id: 'trk-cbse-subj-phy-12-t1', name: 'T1', periods: 70, facultyId: 'fac-1' },
+    { id: 'trk-cbse-subj-phy-12-t2', name: 'T2', periods: 50, facultyId: 'fac-2' },
+  ],
+  'subj-chem-12': [{ id: 'trk-cbse-subj-chem-12-t1', name: 'T1', periods: 100, facultyId: 'fac-3' }],
+  'subj-math-12': [
+    { id: 'trk-cbse-subj-math-12-alg', name: 'Algebra',  periods: 60, facultyId: 'fac-5' },
+    { id: 'trk-cbse-subj-math-12-cal', name: 'Calculus', periods: 60, facultyId: 'fac-6' },
+  ],
+  'subj-bio-12': [{ id: 'trk-cbse-subj-bio-12-t1', name: 'T1', periods: 80, facultyId: 'fac-7' }],
+  'subj-eng-12': [{ id: 'trk-cbse-subj-eng-12-t1', name: 'T1', periods: 60, facultyId: 'fac-9' }],
+  'subj-hin-12': [{ id: 'trk-cbse-subj-hin-12-t1', name: 'T1', periods: 40, facultyId: 'fac-11' }],
+  'subj-soc-12': [{ id: 'trk-cbse-subj-soc-12-t1', name: 'T1', periods: 40, facultyId: 'fac-13' }],
+};
+
+const PCM_JEE_TRACKS: Record<string, { id: string; name: string; periods: number; facultyId?: string }[]> = {
+  'subj-phy-12':  [{ id: 'trk-jee-subj-phy-12-t1', name: 'T1', periods: 60, facultyId: 'fac-2' }],
+  'subj-math-12': [{ id: 'trk-jee-subj-math-12-t1', name: 'T1', periods: 60, facultyId: 'fac-6' }],
+};
+
+const buildSliceFromTracks = (
+  trackMap: Record<string, { id: string; name: string; periods: number; facultyId?: string }[]>,
+) => {
+  const subjectTracks: Record<string, any[]> = {};
+  const trackTargetPeriods: Record<string, number> = {};
+  const subjectTargetPeriods: Record<string, number> = {};
+  Object.entries(trackMap).forEach(([sid, tracks]) => {
+    subjectTracks[sid] = tracks.map((t) => ({
+      id: t.id, subjectId: sid, name: t.name, allottedPeriods: t.periods, facultyId: t.facultyId, enabled: true,
+    }));
+    let total = 0;
+    tracks.forEach((t) => { trackTargetPeriods[t.id] = t.periods; total += t.periods; });
+    subjectTargetPeriods[sid] = total;
+  });
+  return { subjectTracks, trackTargetPeriods, subjectTargetPeriods, subjectLocks: {} as Record<string, boolean> };
+};
+
+const PCM_CBSE_SLICE = buildSliceFromTracks(PCM_CBSE_TRACKS);
+const PCM_JEE_SLICE = buildSliceFromTracks(PCM_JEE_TRACKS);
 
 const PCM_DEFAULT_FACULTY: Record<string, string> = {
   'subj-phy-12': 'fac-1',
