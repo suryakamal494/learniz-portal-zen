@@ -26,7 +26,7 @@ import { computeCapacity, topicPeriods } from '@/utils/calendarAutomation';
 import { subjectPalette } from '@/lib/subjectColors';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { useFaculty, setChapterTrack } from '@/hooks/useInstitutePrograms';
+import { useFaculty, setChapterTrack, switchSubProgram } from '@/hooks/useInstitutePrograms';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
