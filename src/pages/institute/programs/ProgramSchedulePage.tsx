@@ -1820,8 +1820,9 @@ const Step3Cell: React.FC<{
   })();
   const track = slot.trackId
     ? sliceTracks.find((t: any) => t.id === slot.trackId) ?? null
-    : null;
-  const showTrackChip = sliceTracks.filter((t: any) => t.enabled !== false).length > 1;
+    : sliceTracks[0] ?? null;
+  // Always show track chip when we have any track for the subject.
+  const showTrackChip = !!track;
 
   const handleChapter = (chapterId: string) => {
     const newCh = chapters.find((c: any) => c.id === chapterId);
@@ -1853,7 +1854,7 @@ const Step3Cell: React.FC<{
                 {sub?.name}
               </span>
               {showTrackChip && track && (
-                <span className="text-[9px] font-semibold px-1 py-0 rounded bg-white/70 border border-slate-200 text-slate-700 shrink-0">
+                <span className="text-[9px] font-bold px-1 py-0 rounded bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
                   {track.name}
                 </span>
               )}
@@ -2065,8 +2066,10 @@ const Step3TimetableMonthView: React.FC<{
                             const slTracks: any[] = !sl.subProgramId || sl.subProgramId === sched.activeSubProgramId
                               ? sched.subjectTracks?.[sl.subjectId] ?? []
                               : sched.subProgramSlices?.[sl.subProgramId]?.subjectTracks?.[sl.subjectId] ?? [];
-                            const tr = sl.trackId ? slTracks.find((t: any) => t.id === sl.trackId) : null;
-                            const showTr = slTracks.filter((t: any) => t.enabled !== false).length > 1;
+                            const tr = sl.trackId
+                              ? slTracks.find((t: any) => t.id === sl.trackId)
+                              : slTracks[0];
+                            const showTr = !!tr;
                             const label = `${sp ? sp.code + ' ' : ''}${sub?.name ?? ''}${showTr && tr ? ' · ' + tr.name : ''}`;
                             return (
                               <span

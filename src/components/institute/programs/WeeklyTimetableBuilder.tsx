@@ -822,12 +822,7 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                       const facultyOptions = faculty.filter(
                         (f) => !f.subjectId || f.subjectId === subjectId,
                       );
-                      const showTrackChip = subjectId
-                        ? (() => {
-                            const sliceTracks = tracksForSubjectInSlice(subjectId, sliceFor(cellSubProgramId ?? trackInfo?.subProgramId));
-                            return sliceTracks.filter((tr) => tr.enabled !== false).length > 1;
-                          })()
-                        : false;
+                      const showTrackChip = !!track;
                       const cellKey = `${d.d}#${pIdx}`;
                       const isDragOver = dragOverKey === cellKey && dragKey && dragKey !== cellKey;
                       return (
@@ -887,7 +882,9 @@ export const WeeklyTimetableBuilder: React.FC<Props> = ({ config, subjects, subP
                                 <div className="flex items-center justify-between gap-1">
                                   <span className="text-[11px] font-bold truncate">{sub.name}</span>
                                   {showTrackChip && (
-                                    <span className="text-[10px] font-semibold shrink-0">{track?.name ?? 'T1'}</span>
+                                    <span className="text-[9px] font-bold px-1 py-0 rounded bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                                      {track?.name ?? 'T1'}
+                                    </span>
                                   )}
                                 </div>
                                 {fac && (
