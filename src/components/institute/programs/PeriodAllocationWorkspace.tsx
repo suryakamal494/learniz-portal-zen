@@ -314,7 +314,11 @@ export const PeriodAllocationWorkspace: React.FC<Props> = ({
                         <Plus className="h-3 w-3 mr-1" /> Add track
                       </Button>
                       {(tracksBySubject[s.id] ?? []).length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-rose-600" onClick={() => removeTrack(s.id, (tracksBySubject[s.id] ?? []).at(-1)!.id)}>
+                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-rose-600" onClick={() => {
+                          const tracks = tracksBySubject[s.id] ?? [];
+                          const last = tracks[tracks.length - 1];
+                          if (last) removeTrack(s.id, last.id);
+                        }}>
                           Remove last
                         </Button>
                       )}
