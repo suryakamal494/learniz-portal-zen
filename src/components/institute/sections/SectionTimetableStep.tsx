@@ -363,7 +363,8 @@ const TimetableCell: React.FC<{
   slot: SlotKey;
   onClick: () => void;
   facultyById: Record<string, { id: string; name: string } | undefined>;
-}> = ({ section, cell, armed, slot, onClick, facultyById }) => {
+  showProgram: boolean;
+}> = ({ section, cell, armed, slot, onClick, facultyById, showProgram }) => {
   if (!cell) {
     return (
       <button
