@@ -332,3 +332,59 @@ export function setWindowStatus(sectionId: string, windowId: string, status: Win
   else unpublishWindow(sectionId, windowId);
 }
 
+/* ──────────────── Bulk timetable ops ──────────────── */
+
+/** Swap two cells (or move if one is empty). */
+export function swapCells(sectionId: string, a: SlotKey, b: SlotKey): void {
+  updateSection(sectionId, (s) => {
+    const cellA = s.cells.find((c) => slotKeyEq(c, a));
+    const cellB = s.cells.find((c) => slotKeyEq(c, b));
+    const others = s.cells.filter((c) => !slotKeyEq(c, a) && !slotKeyEq(c, b));
+    const next = [...others];
+    if (cellA) next.push({ ...b, allocation: cellA.allocation });
+    if (cellB) next.push({ ...a, allocation: cellB.allocation });
+    return { ...s, cells: next };
+  });
+}
+
+/** Wipe every cell inside a specific week. */
+export function clearWeek(sectionId: string, weekStart: string): number {
+  const sec = sections.find((s) => s.id === sectionId);
+  if (!sec) return 0;
+  const count = sec.cells.filter((c) => c.weekStartDate === weekStart).length;
+  updateSection(sectionId, (s) => ({
+    ...s,
+    cells: s.cells.filter((c) => c.weekStartDate !== weekStart),
+  }));
+  return count;
+}
+
+/** Copy the source-week cell pattern into each destination week, overwriting. */
+export function copyWeekTo(sectionId: string, srcWeek: string, dstWeeks: string[]): number {
+  const sec = sections.find((s) => s.id === sectionId);
+  if (!sec) return 0;
+  const template = sec.cells.filter((c) => c.weekStartDate === srcWeek);
+  if (template.length === 0 || dstWeeks.length === 0) return 0;
+  const destSet = new Set(dstWeeks);
+  const kept = sec.cells.filter((c) => !destSet.has(c.weekStartDate));
+  const added = dstWeeks.flatMap((ws) =>
+    template.map((c) => ({ ...c, weekStartDate: ws })),
+  );
+  updateSection(sectionId, (s) => ({ ...s, cells: [...kept, ...added] }));
+  return added.length;
+}
+
+/** Snapshot/restore for undo of bulk actions. */
+export function restoreCells(
+  sectionId: string,
+  cells: Section['cells'],
+): void {
+  updateSection(sectionId, (s) => ({ ...s, cells }));
+}
+
+export function getCellsSnapshot(sectionId: string): Section['cells'] {
+  const sec = sections.find((s) => s.id === sectionId);
+  return sec ? [...sec.cells] : [];
+}
+
+
