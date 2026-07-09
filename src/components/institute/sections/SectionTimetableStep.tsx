@@ -31,15 +31,18 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   section: Section;
-  onBack: () => void;
-  onNext: () => void;
+  onBack?: () => void;
+  onNext?: () => void;
+  /** Hide the built-in back/continue footer when embedded inside the workspace. */
+  hideFooter?: boolean;
 }
 
-export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext }) => {
+export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext, hideFooter }) => {
   const facultyList = useFaculty();
   const weekStarts = useMemo(() => listWeekStarts(section.windows[section.windows.length - 1]), [section.windows]);
   const [weekIdx, setWeekIdx] = useState(0);
   const weekStart = weekStarts[weekIdx] ?? weekStarts[0];
+
 
   // Currently "armed" allocation — clicking a cell paints this in.
   const [armed, setArmed] = useState<CellAllocation | null>(null);
