@@ -128,7 +128,45 @@ const PCM_SEED_TEMPLATE: Array<Omit<SectionCell, 'weekStartDate'>> = [
   { weekday: 4, periodIndex: 6, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-cbse-mth-alg' } },
 ];
 
-const PCM_SEED: SectionCell[] = PCM_SEED_TEMPLATE.map((c) => ({ ...c, weekStartDate: PCM_WEEK }));
+// Compute Monday-anchored week starts by adding 7·N days to PCM_WEEK.
+const addDays = (iso: string, days: number) => {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+const PCM_WEEK_2 = addDays(PCM_WEEK, 7);
+const PCM_WEEK_3 = addDays(PCM_WEEK, 14);
+const PCM_WEEK_4 = addDays(PCM_WEEK, 21);
+const PCM_WEEK_5 = addDays(PCM_WEEK, 28);
+const PCM_WEEK_6 = addDays(PCM_WEEK, 35);
+
+// Variant for W2–W4: swap CBSE Physics T1 ↔ T2 and rotate JEE tracks so it
+// visibly differs from W1 but stays ~90% filled.
+const rotateTrack = (trackId: string): string => {
+  switch (trackId) {
+    case 'tr-cbse-phy-1': return 'tr-cbse-phy-2';
+    case 'tr-cbse-phy-2': return 'tr-cbse-phy-1';
+    case 'tr-cbse-mth-alg': return 'tr-cbse-mth-cal';
+    case 'tr-cbse-mth-cal': return 'tr-cbse-mth-alg';
+    default: return trackId;
+  }
+};
+const variantTemplate = (drop: number): Array<Omit<SectionCell, 'weekStartDate'>> =>
+  PCM_SEED_TEMPLATE.slice(0, PCM_SEED_TEMPLATE.length - drop).map((c) => ({
+    ...c,
+    allocation: { ...c.allocation, trackId: rotateTrack(c.allocation.trackId) },
+  }));
+
+const PCM_SEED: SectionCell[] = [
+  ...PCM_SEED_TEMPLATE.map((c) => ({ ...c, weekStartDate: PCM_WEEK })),
+  // W2–W4: rotated tracks, ~all filled
+  ...variantTemplate(4).map((c) => ({ ...c, weekStartDate: PCM_WEEK_2 })),
+  ...PCM_SEED_TEMPLATE.slice(0, PCM_SEED_TEMPLATE.length - 3).map((c) => ({ ...c, weekStartDate: PCM_WEEK_3 })),
+  ...variantTemplate(5).map((c) => ({ ...c, weekStartDate: PCM_WEEK_4 })),
+  // W5–W6: ~60% filled to show partial-progress demo
+  ...PCM_SEED_TEMPLATE.slice(0, 26).map((c) => ({ ...c, weekStartDate: PCM_WEEK_5 })),
+  ...variantTemplate(18).map((c) => ({ ...c, weekStartDate: PCM_WEEK_6 })),
+];
 
 const nowIso = new Date().toISOString();
 const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
