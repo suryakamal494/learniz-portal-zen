@@ -68,13 +68,43 @@ export interface SectionProgram {
   subjects: SectionSubject[];
 }
 
+export type WindowStatus = 'draft' | 'published';
+
+export type ChangeLogType =
+  | 'cell.paint'
+  | 'cell.delete'
+  | 'cell.swap'
+  | 'track.disable'
+  | 'allocation.change';
+
+export interface ChangeLogEntry {
+  id: string;
+  at: string;            // ISO datetime
+  actor: string;         // display name — mock only
+  type: ChangeLogType;
+  summary: string;       // human string, e.g. "Mon P2 · Physics T1 removed"
+  affectedDates?: string[]; // ISO dates in generated schedule potentially affected
+  acknowledged?: boolean;
+}
+
 export interface AcademicWindow {
   id: string;
+  /** Human label, e.g. "Term 1 · Foundation". Optional — falls back to date range. */
+  label?: string;
   startDate: string; // YYYY-MM-DD
   endDate: string;   // YYYY-MM-DD
   /** Past windows become read-only. */
   locked?: boolean;
+  /** Draft = timetable in progress, not yet feeding academic schedule. Published = live. */
+  status?: WindowStatus;
+  /** ISO datetime of the most recent publish. */
+  publishedAt?: string;
+  /** ISO datetime of the most recent academic schedule generation. */
+  lastGeneratedAt?: string;
+  /** Post-publish change history — feeds the Academic Schedule change-notice panel. */
+  changeLog?: ChangeLogEntry[];
 }
+
 
 export interface SectionConfig {
   workingDays: WeekDay[];

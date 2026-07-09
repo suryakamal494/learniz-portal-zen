@@ -1,116 +1,114 @@
-## Goal
 
-Create a single, comprehensive markdown documentation file for the **Institute → Sections** scheduling workspace (the 4-step flow: Setup → Period Allocation → Weekly Timetable → Preview). It will be shareable with the development team and cover behavior, data model, calculations, edge cases, and resolutions.
+# Sections UI — Split Workflow & Shared Workspace
 
-## Deliverable
+Splits the current 4-step section flow into two surfaces:
+- **Inside the Section card:** Step 1 Setup + Step 2 Period Allocation only.
+- **New top-level workspace** at `/institute/schedule-workspace` with two tabs: **Weekly Timetable** and **Academic Schedule**, each with a Section picker and an Academic Window picker.
 
-**New file:** `docs/SECTIONS_UI.md` (~1,200–1,800 lines of structured Markdown, no code changes anywhere else).
+Draft/Publish gates whether a timetable feeds the Academic Schedule. Full-term completeness gates Academic Schedule generation per window. Dev Notes are exposed via an info icon and never ship to production. A Compare mode allows side-by-side viewing of two sections' timetables.
 
-I'll source content directly from the live implementation:
-- `src/pages/institute/sections/SectionSchedulePage.tsx` (shell + stepper + budget strip)
-- `src/components/institute/sections/SectionSetupStep.tsx`
-- `src/components/institute/sections/SectionAllocationStep.tsx`
-- `src/components/institute/sections/SectionTimetableStep.tsx`
-- `src/components/institute/sections/SectionPreviewStep.tsx`
-- `src/hooks/useSection.ts` (store + mutations + invariants)
-- `src/types/section.ts` (data model, `CellOccupiedError`, slot uniqueness rule)
-- `src/utils/sectionUtils.ts` + `src/utils/calendarAutomation.ts` (capacity & working-day math)
-- `src/pages/institute/programs/InstituteHolidaysPage.tsx` + `useInstituteHolidays` (holiday source-of-truth)
+---
 
-## Documentation Outline
+## Phase 1 — Split the Section card (Steps 1 + 2 only)
 
-### 1. Overview
-- What a "Section" is, terminology mapping (Programs vs Sections vs Sub-programs CBSE/JEE, Tracks T1/T2).
-- The 4-step flow at a glance; **free navigation** — any step is clickable, no enforced order.
-- Where the page lives (`/institute/sections/:sectionId/schedule`).
+- Remove Steps 3 & 4 from `SectionSchedulePage.tsx`. Keep the stepper as **Setup → Period Allocation**.
+- After Step 2, replace "Next" with two CTAs:
+  - **Open Weekly Timetable** → navigates to workspace with this section + active window preselected.
+  - **Open Academic Schedule** → same, jumps to schedule tab.
+- Preserve all Step 1/2 behaviour: faculty pool, academic windows switcher, sub-programs, tracks, locks, chapter→track grouping.
+- Add a subtle banner: "Timetable & Academic Schedule now live in the shared workspace."
 
-### 2. Shared chrome
-- Sticky stepper (Setup → Allocation → Timetable → Preview); active/done/pending states.
-- Section title + `formatRange(activeWindow)` badge.
-- **Budget strip** (visible from Step 2 onward): Budget vs Allocated vs Remaining/Over + % bar; color rules (rose over, emerald exact, indigo under).
-- Auto-save indicator.
+## Phase 2 — Shared Workspace shell
 
-### 3. Data model (single source of truth)
-- `Section`, `SectionProgram`, `SectionSubject`, `SectionTrack`, `SectionChapter`, `SectionTopic`.
-- `AcademicWindow[]` — last entry is the editable one; older = `locked`.
-- `SectionConfig` (workingDays, periodsPerDay, periodLengthMins, periodOverrides, dayStartTime, breaks, holidays).
-- `SectionCell` keyed by `(weekStartDate, weekday, periodIndex)` — **uniqueness invariant**.
-- `subjectStatus: 'draft' | 'locked' | 'published'`.
+New route `/institute/schedule-workspace` with:
+- **Section picker** (searchable dropdown, groups by class). Default = last visited section (persisted in `localStorage`); falls back to first available.
+- **Academic Window picker** — driven by the selected section's `windows[]`. Default = active window.
+- **Tabs:** `Weekly Timetable` | `Academic Schedule`.
+- Deep-link support: `?sectionId=…&windowId=…&tab=timetable|schedule`.
+- Nav entry in `InstituteSidebar` under Programs: "Schedule Workspace".
 
-### 4. Step 1 — Setup
-For each control: what it does → how it's stored → edge cases → resolution.
-- **Section name** — free text; empty string allowed in store but warned in UI.
-- **Academic start / end** — writes to `activeWindow`; if `end < start`, capacity = 0 days (handled by `buildWorkingDays`). Resolution: inline warning + disable Next.
-- **Working days** — M/T/W/T/F/S/S toggles; at least one required (edge: zero days → capacity 0).
-- **Periods/day** (1–12), **Period length** (15–120m), **Day starts** (HH:mm).
-- **Faculty pool** — drawn from institute roster; selections persist as `section.facultyPool`; downstream filters Step 2 dropdowns.
-- **Capacity panel** (right rail): Working days, Periods/day, Total budget = `workingDays × periodsPerDay`. Programs list and Breaks summary.
-- **Edge cases**: end < start, all working days unchecked, periodsPerDay = 0, breaks overlap, faculty pool empty.
+## Phase 3 — Weekly Timetable tab (Step 3 relocated)
 
-### 5. Where holidays come from
-- **Institute-wide holidays** live in `/institute/programs/holidays` (`InstituteHolidaysPage`), surfaced via `useInstituteHolidays()`.
-- **Section-only holidays** live in `section.config.holidays`.
-- `computeSectionCapacity` merges both sets via `holidaySet`.
-- Resolution rules when an institute holiday is later removed/added (capacity recomputes; placed cells on that date become "off-day" overlays in Preview).
+- Reuse `SectionTimetableStep` / `WeeklyTimetableBuilder` verbatim; feed it `(section, window)` from workspace state.
+- Keep drag-to-swap, palette, sub-program chips, track chips.
+- Add a **status pill** in the header per window: `Draft` (amber) or `Published` (emerald), plus `Last published: <date>`.
+- Toolbar buttons:
+  - **Save as Draft** — persists cells; window status → `draft`. Academic Schedule tab treats this window as unavailable for generation.
+  - **Publish** — sets window status → `published` and stamps `publishedAt`. Only published windows feed the Academic Schedule.
+  - **Unpublish / Revert to Draft** — with confirm.
+- Add a `windowStatus: 'draft' | 'published'` field on `AcademicWindow`.
 
-### 6. Academic windows & "Previously covered up to"
-- Multiple windows allowed; only the **last (active)** window is editable; previous windows are read-only snapshots.
-- "Previously covered up to" = sum of topic-period progress drawn from prior windows' published cells. Updates automatically when a new window is opened.
-- Edge: opening a new window with overlapping dates → reject in `setActiveWindow`; resolution: shift start to previous end + 1.
+## Phase 3.5 — Change tracking (feeds Phase 4 notice)
 
-### 7. Step 2 — Period Allocation
-- **Per-program → per-subject → per-track** budgeting.
-- **Tracks**: how chapters group into tracks (`SectionTrack.chapterIds`); empty = all chapters in subject.
-- Faculty per track (filtered by Step 1 pool).
-- `allottedPeriods` per track rolls up to subject → program → section.
-- **Budget math**: `Σ track.allottedPeriods` must ≤ `cap.totalPeriods`. Over-allocation tinted rose in budget strip but **not blocked** (so users can reshuffle).
-- **Subject status**: draft → locked → published. Locked subjects are read-only here.
-- **Edge cases**: over-allocation, zero-allotment track, faculty unassigned, track with no chapters (excluded from Timetable palette).
+- On every published-window mutation (cell paint/clear/swap/regenerate palette), append to `window.changeLog[]`:
+  `{ id, at, actor, type: 'cell.delete' | 'cell.swap' | 'cell.paint' | 'track.disable' | 'allocation.change', summary, affectedDates[] }`.
+- Cap log at last 50 entries per window; expose a "Clear acknowledged" action from Academic Schedule.
 
-### 8. Step 3 — Weekly Timetable
-- Recurring weekly grid (weekday × periodIndex); painted with `(programId, subjectId, trackId)` allocations.
-- **One cell = one allocation** invariant (`SectionCell` uniqueness on `SlotKey`); `CellOccupiedError` is thrown unless `force: true`.
-- Cell chips: program code (CBSE/JEE), subject color, track label (T1/T2). Show track chip whenever a track exists.
-- **Drag-to-swap** between painted cells; swap preserves `locked: true` on both.
-- Palette filtered by Step 1 faculty pool + Step 2 enabled tracks; tracks with 0 allotted periods are hidden.
-- Multiple weeks supported when sub-program slices change across weeks.
-- **Edge cases**:
-  - Painting onto an occupied cell → `CellOccupiedError`. Resolution: prompt "Replace?" or use drag-swap.
-  - Faculty double-booking across programs in the same slot → highlighted amber, soft-warn.
-  - Cells on holiday dates → visually struck through, not deleted.
-  - Resizing periods/day from Step 1 after painting → cells past new `periodsPerDay` are quarantined (kept in store, hidden in grid, restored if user expands again).
+## Phase 4 — Academic Schedule tab (Step 4 relocated) + Gating
 
-### 9. Step 4 — Preview
-- Resolves the recurring weekly template against the academic window → concrete dated `ScheduleSlot[]` via `generateFromTimetable`.
-- Month / week views, color-coded by subject; CBSE/JEE chip and T1/T2 chip rendered.
-- Holidays appear as off-day overlays; locked slots survive regeneration.
-- Drag-to-swap in week view (marks both slots `locked: true`).
-- **Edge cases**: regeneration after Step 2/3 edits preserves user-locked cells, recomputes the rest; preview empty if Allocation = 0; off-days outnumber working days → empty preview with hint.
+Reuse existing preview/generation UI (`SectionPreviewStep` internals) with these additions:
 
-### 10. Calculations reference
-- `totalPeriods = workingDays × periodsPerDay`
-- `workingDays = buildWorkingDays(start, end, workingDays, holidaySet).length`
-- `weeks = ceil(workingDays / workingDays.length)`
-- Per-period times computed via `computePeriodTimes(dayStartTime, periodLengthMins, breaks, periodOverrides)`.
-- Allocation %: `min(100, round(allocated/budget × 100))`; over = `allocated − budget`.
+**Publish gating**
+- If selected window is `draft`, show empty state: "Weekly timetable for this window is a draft. Publish it to generate the academic schedule." with a jump-link to the Timetable tab.
 
-### 11. Free-navigation rules
-- Stepper allows jumping to any step at any time; nothing is gated.
-- Each step renders best-effort given current state (Allocation empty? Timetable shows palette but disables paint; Preview shows hint).
+**Term-completeness gating (per window, sequential)**
+- A window is **complete** when every working period in every working week of the window is either filled or explicitly marked as free.
+- Rule: You can generate for window *N* only if all earlier windows in the section are `published` AND complete. If window 1 is partially filled (published but incomplete), generation runs for what is filled in window 1; window 2 stays locked with reason banner: "Term 1 is incomplete — finish Term 1 before generating Term 2."
+- Show a per-window completeness meter (e.g. 62% of periods filled) and blocking reason.
 
-### 12. Cross-step side effects (matrix)
-A table mapping: change in Step X → effect in Steps Y/Z + auto-recompute behavior.
+**Change notice section (top of tab)**
+- If any change from `changeLog` occurred after `lastGeneratedAt`, render a yellow notice panel listing:
+  - What changed (e.g. "Mon Period 2 deleted on 12 Nov")
+  - Which generated dates it affects
+  - CTA: **Re-generate** / **Acknowledge**.
+- Persists until user regenerates or acknowledges.
 
-### 13. Edge-case catalog (consolidated)
-Single table: scenario → where it manifests → user-facing symptom → resolution / store behavior.
+**Generation**
+- **Generate / Re-generate schedule** button; stamps `lastGeneratedAt`.
+- Output list stays scoped to selected (section + window).
 
-### 14. Glossary
-Terms reused project-wide: Section, Program, Sub-program (CBSE/JEE), Track (T1/T2), Window, Cell, Slot, Allotted periods, Budget, Allocation, Faculty pool.
+## Phase 5 — Dev Notes (UI-only, non-production)
 
-### 15. File map
-Quick pointer table from concept → source file/line region for the dev team.
+- Add a small `<DevNoteIcon />` component (Lucide `Info` in a dashed ring) placed inline next to:
+  - Timetable header (explains Draft vs Publish, palette merging, swap semantics).
+  - Academic Schedule header (explains sequential term gating, change-notice logic, regeneration rules).
+  - Any other spot flagged during build.
+- Click opens a `<Popover>` / `<Dialog>` with markdown-rendered notes stored under `src/dev-notes/*.md`.
+- Guarded by `import.meta.env.DEV` flag OR a `VITE_SHOW_DEV_NOTES` env — hidden in production builds. Component returns `null` when flag is off, so removing the flag strips it from the bundle.
+- Add a central `docs/DEV_NOTES_INDEX.md` listing every dev note and where it appears.
 
-## Out of scope
-- No code changes.
-- No screenshots (text-only doc); ASCII diagrams where helpful (stepper, grid cell anatomy).
-- Doc lives under `docs/` and is plain Markdown so it can be shared as-is or pasted into Notion/Confluence.
+## Phase 6 — Compare mode (optional side-by-side)
+
+- **Compare** toggle button in workspace toolbar (both tabs).
+- When on, a second Section picker appears; layout splits 50/50 vertically.
+- Timetable rendering in compare mode:
+  - Reduce cell chip density (hide sub-program chip when only one program; abbreviate track to letter; drop faculty line).
+  - Show horizontal scroll inside each pane if width < threshold.
+  - Sync week navigation across panes (checkbox: "Sync week").
+- Compare mode is **read-only** — editing/publishing is disabled; a banner instructs users to exit compare to edit.
+- Automatically disable Compare below 1200px viewport with an inline message.
+- Include a Dev Note explaining density trade-offs.
+
+## Phase 7 — Polish & regressions
+
+- Update `docs/SECTIONS_UI.md`: new architecture diagram, draft/publish lifecycle, gating rules, dev-notes system, compare mode.
+- Playwright smoke: section picker default, publish flow, gating banner appears when Term 1 incomplete, change notice appears after post-publish edit.
+- Verify no regressions on Setup/Allocation, sub-program switching, and drag-swap.
+
+---
+
+## Technical Notes (for devs)
+
+- New types in `src/types/instituteProgram.ts` (or `section.ts`):
+  - `AcademicWindow.status: 'draft' | 'published'`
+  - `AcademicWindow.publishedAt?: string`
+  - `AcademicWindow.lastGeneratedAt?: string`
+  - `AcademicWindow.changeLog: ChangeLogEntry[]`
+- New workspace state hook `useScheduleWorkspace` (section id, window id, tab, compare-on, compare-section-id) persisted to `localStorage`.
+- Reuse existing components — no rewrite of Timetable/Preview logic; only wrap them with the workspace shell and gating checks.
+- Dev-note component: `src/components/dev/DevNote.tsx`, tree-shaken via `if (!import.meta.env.DEV && !import.meta.env.VITE_SHOW_DEV_NOTES) return null`.
+
+## Open assumptions (flag if wrong)
+- "Complete term" = every working period filled OR marked free (no partial credit for "some subjects done").
+- Draft edits still autosave — Publish is an explicit promotion, not a save.
+- Compare mode is read-only for v1.

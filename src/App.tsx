@@ -95,6 +95,8 @@ import ProgramPreviewPage from './pages/institute/programs/ProgramPreviewPage';
 import ProgramSchedulePage from './pages/institute/programs/ProgramSchedulePage';
 import InstituteHolidaysPage from './pages/institute/programs/InstituteHolidaysPage';
 import SectionSchedulePage from './pages/institute/sections/SectionSchedulePage';
+import ScheduleWorkspacePage from './pages/institute/ScheduleWorkspacePage';
+
 
 
 function TeacherLayoutWrapper() {
@@ -217,6 +219,8 @@ function App() {
           <Route path="programs/:programId/preview" element={<ProgramPreviewPage />} />
           <Route path="programs/:programId/schedule" element={<ProgramSchedulePage />} />
           <Route path="sections/:sectionId/schedule" element={<SectionSchedulePage />} />
+          <Route path="schedule-workspace" element={<ScheduleWorkspacePage />} />
+
 
           {/* Legacy timetable → sections */}
           <Route path="timetable" element={<Navigate to="/institute/programs" replace />} />

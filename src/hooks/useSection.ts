@@ -2,14 +2,18 @@ import { useSyncExternalStore } from 'react';
 import {
   CellAllocation,
   CellOccupiedError,
+  ChangeLogEntry,
+  ChangeLogType,
   Section,
   SectionConfig,
   SlotKey,
   SubjectStatus,
+  WindowStatus,
   slotKeyEq,
   subjectStatusKey,
 } from '@/types/section';
 import { MOCK_SECTIONS } from '@/data/mockSections';
+
 
 /** Session-only in-memory store mirroring useInstitutePrograms. */
 
@@ -256,3 +260,75 @@ export function setSubjectStatus(
     subjectStatus: { ...s.subjectStatus, [subjectStatusKey(programId, subjectId)]: status },
   }));
 }
+
+/* ──────────────── Academic window lifecycle ──────────────── */
+
+function mapWindow(
+  sectionId: string,
+  windowId: string,
+  mut: (w: Section['windows'][number]) => Section['windows'][number],
+) {
+  updateSection(sectionId, (s) => ({
+    ...s,
+    windows: s.windows.map((w) => (w.id === windowId ? mut(w) : w)),
+  }));
+}
+
+export function publishWindow(sectionId: string, windowId: string) {
+  mapWindow(sectionId, windowId, (w) => ({
+    ...w,
+    status: 'published',
+    publishedAt: new Date().toISOString(),
+  }));
+}
+
+export function unpublishWindow(sectionId: string, windowId: string) {
+  mapWindow(sectionId, windowId, (w) => ({
+    ...w,
+    status: 'draft',
+  }));
+}
+
+export function markWindowGenerated(sectionId: string, windowId: string) {
+  mapWindow(sectionId, windowId, (w) => ({
+    ...w,
+    lastGeneratedAt: new Date().toISOString(),
+    // Acknowledging clears unread changelog badges.
+    changeLog: (w.changeLog ?? []).map((e) => ({ ...e, acknowledged: true })),
+  }));
+}
+
+export function acknowledgeWindowChanges(sectionId: string, windowId: string) {
+  mapWindow(sectionId, windowId, (w) => ({
+    ...w,
+    changeLog: (w.changeLog ?? []).map((e) => ({ ...e, acknowledged: true })),
+  }));
+}
+
+export function appendChangeLog(
+  sectionId: string,
+  windowId: string,
+  type: ChangeLogType,
+  summary: string,
+  affectedDates: string[] = [],
+) {
+  const entry: ChangeLogEntry = {
+    id: `chg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    at: new Date().toISOString(),
+    actor: 'You',
+    type,
+    summary,
+    affectedDates,
+    acknowledged: false,
+  };
+  mapWindow(sectionId, windowId, (w) => ({
+    ...w,
+    changeLog: [entry, ...(w.changeLog ?? [])].slice(0, 50),
+  }));
+}
+
+export function setWindowStatus(sectionId: string, windowId: string, status: WindowStatus) {
+  if (status === 'published') publishWindow(sectionId, windowId);
+  else unpublishWindow(sectionId, windowId);
+}
+
