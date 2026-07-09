@@ -840,7 +840,7 @@ const TimetableCell: React.FC<{
       onDragEnd={onDragEnd}
       onClick={armed && !readOnly ? onClick : undefined}
       className={cn(
-        'w-full h-full min-h-[76px] rounded-lg border text-left p-1.5 transition-all group',
+        'w-full h-full min-h-[64px] rounded-md border text-left p-1 transition-all group',
         pal.surface, pal.border,
         !readOnly && 'hover:shadow-md cursor-grab active:cursor-grabbing',
       )}
