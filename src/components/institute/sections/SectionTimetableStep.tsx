@@ -251,13 +251,18 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext,
             <div>
               {section.cells.length} of {totalAllocated(section)} allocated periods placed across all weeks
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onBack}>Back</Button>
-              <Button size="sm" onClick={onNext} className="bg-indigo-600 hover:bg-indigo-700">
-                Continue to Preview <Sparkles className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </div>
+            {!hideFooter && (
+              <div className="flex items-center gap-2">
+                {onBack && <Button variant="outline" size="sm" onClick={onBack}>Back</Button>}
+                {onNext && (
+                  <Button size="sm" onClick={onNext} className="bg-indigo-600 hover:bg-indigo-700">
+                    Continue to Preview <Sparkles className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
+
         </section>
       </div>
 
