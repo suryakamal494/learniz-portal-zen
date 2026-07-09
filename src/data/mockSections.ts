@@ -49,13 +49,46 @@ const MATH_CHAPTERS = (prog: string) => [
   ]},
 ];
 
+// Seed a handful of cells so Term 1 shows "partially filled" and the workspace
+// change-notice + gating flows are demoable without user interaction.
+const SEED_CELLS_TERM1 = [
+  { weekStartDate: '2026-06-29', weekday: 1 as const, periodIndex: 0, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-cbse-phy-1' } },
+  { weekStartDate: '2026-06-29', weekday: 1 as const, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-cbse-phy-2' } },
+  { weekStartDate: '2026-06-29', weekday: 1 as const, periodIndex: 2, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-phy',  trackId: 'tr-jee-phy-1'  } },
+  { weekStartDate: '2026-06-29', weekday: 2 as const, periodIndex: 0, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-cbse-chm-1' } },
+  { weekStartDate: '2026-06-29', weekday: 2 as const, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-cbse-mth-1' } },
+];
+
 export const MOCK_SECTIONS: Section[] = [
   {
     id: 'sec-cls11-morning',
     name: 'Class 11 Morning',
     className: 'Class 11',
     windows: [
-      { id: 'win-1', startDate: '2026-07-01', endDate: '2026-09-30' },
+      {
+        id: 'win-t1',
+        label: 'Term 1 · Foundation',
+        startDate: '2026-07-01',
+        endDate: '2026-09-30',
+        status: 'draft',
+        changeLog: [],
+      },
+      {
+        id: 'win-t2',
+        label: 'Term 2 · Board Prep',
+        startDate: '2026-10-01',
+        endDate: '2026-12-31',
+        status: 'draft',
+        changeLog: [],
+      },
+      {
+        id: 'win-t3',
+        label: 'Term 3 · Revision Sprint',
+        startDate: '2027-01-05',
+        endDate: '2027-03-31',
+        status: 'draft',
+        changeLog: [],
+      },
     ],
     facultyPool: MOCK_FACULTY.slice(0, 10).map((f) => f.id),
     config: {
@@ -79,22 +112,22 @@ export const MOCK_SECTIONS: Section[] = [
             id: 'sub-cbse-phy', name: 'Physics', color: 'blue',
             chapters: PHY_CHAPTERS('cbse'),
             tracks: [
-              { id: 'tr-cbse-phy-1', name: 'T1', facultyId: 'fac-1', chapterIds: [], allottedPeriods: 0 },
-              { id: 'tr-cbse-phy-2', name: 'T2', facultyId: 'fac-2', chapterIds: [], allottedPeriods: 0 },
+              { id: 'tr-cbse-phy-1', name: 'T1', facultyId: 'fac-1', chapterIds: [], allottedPeriods: 40 },
+              { id: 'tr-cbse-phy-2', name: 'T2', facultyId: 'fac-2', chapterIds: [], allottedPeriods: 30 },
             ],
           },
           {
             id: 'sub-cbse-chm', name: 'Chemistry', color: 'emerald',
             chapters: CHEM_CHAPTERS('cbse'),
             tracks: [
-              { id: 'tr-cbse-chm-1', name: 'T1', facultyId: 'fac-3', chapterIds: [], allottedPeriods: 0 },
+              { id: 'tr-cbse-chm-1', name: 'T1', facultyId: 'fac-3', chapterIds: [], allottedPeriods: 35 },
             ],
           },
           {
             id: 'sub-cbse-mth', name: 'Mathematics', color: 'violet',
             chapters: MATH_CHAPTERS('cbse'),
             tracks: [
-              { id: 'tr-cbse-mth-1', name: 'T1', facultyId: 'fac-5', chapterIds: [], allottedPeriods: 0 },
+              { id: 'tr-cbse-mth-1', name: 'T1', facultyId: 'fac-5', chapterIds: [], allottedPeriods: 40 },
             ],
           },
         ],
@@ -108,21 +141,72 @@ export const MOCK_SECTIONS: Section[] = [
             id: 'sub-jee-phy', name: 'Physics', color: 'sky',
             chapters: PHY_CHAPTERS('jee'),
             tracks: [
-              { id: 'tr-jee-phy-1', name: 'T1', facultyId: 'fac-2', chapterIds: [], allottedPeriods: 0 },
+              { id: 'tr-jee-phy-1', name: 'T1', facultyId: 'fac-2', chapterIds: [], allottedPeriods: 25 },
             ],
           },
           {
             id: 'sub-jee-chm', name: 'Chemistry', color: 'teal',
             chapters: CHEM_CHAPTERS('jee'),
             tracks: [
-              { id: 'tr-jee-chm-1', name: 'T1', facultyId: 'fac-4', chapterIds: [], allottedPeriods: 0 },
+              { id: 'tr-jee-chm-1', name: 'T1', facultyId: 'fac-4', chapterIds: [], allottedPeriods: 20 },
             ],
           },
           {
             id: 'sub-jee-mth', name: 'Mathematics', color: 'fuchsia',
             chapters: MATH_CHAPTERS('jee'),
             tracks: [
-              { id: 'tr-jee-mth-1', name: 'T1', facultyId: 'fac-6', chapterIds: [], allottedPeriods: 0 },
+              { id: 'tr-jee-mth-1', name: 'T1', facultyId: 'fac-6', chapterIds: [], allottedPeriods: 20 },
+            ],
+          },
+        ],
+      },
+    ],
+    cells: SEED_CELLS_TERM1,
+    subjectStatus: {},
+  },
+  {
+    id: 'sec-cls11-evening',
+    name: 'Class 11 Evening',
+    className: 'Class 11',
+    windows: [
+      {
+        id: 'win-e-t1',
+        label: 'Term 1 · Foundation',
+        startDate: '2026-07-01',
+        endDate: '2026-09-30',
+        status: 'draft',
+        changeLog: [],
+      },
+    ],
+    facultyPool: MOCK_FACULTY.slice(2, 12).map((f) => f.id),
+    config: {
+      workingDays: [1, 2, 3, 4, 5],
+      periodsPerDay: 5,
+      periodLengthMins: 45,
+      dayStartTime: '14:00',
+      breaks: [
+        { id: 'brk-e-a', afterPeriod: 2, name: 'Tea break', durationMins: 15 },
+      ],
+      holidays: [],
+    },
+    programs: [
+      {
+        id: 'prog-cbse',
+        name: 'CBSE Class 11',
+        code: 'CBSE',
+        subjects: [
+          {
+            id: 'sub-cbse-phy', name: 'Physics', color: 'blue',
+            chapters: PHY_CHAPTERS('cbse'),
+            tracks: [
+              { id: 'tr-e-cbse-phy-1', name: 'T1', facultyId: 'fac-3', chapterIds: [], allottedPeriods: 30 },
+            ],
+          },
+          {
+            id: 'sub-cbse-mth', name: 'Mathematics', color: 'violet',
+            chapters: MATH_CHAPTERS('cbse'),
+            tracks: [
+              { id: 'tr-e-cbse-mth-1', name: 'T1', facultyId: 'fac-5', chapterIds: [], allottedPeriods: 30 },
             ],
           },
         ],
@@ -132,3 +216,4 @@ export const MOCK_SECTIONS: Section[] = [
     subjectStatus: {},
   },
 ];
+
