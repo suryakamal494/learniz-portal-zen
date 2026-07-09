@@ -54,8 +54,10 @@ const moduleGroups: { label: string; items: NavItem[] }[] = [
     label: 'Sections',
     items: [
       { title: 'Sections', url: '/institute/programs', icon: CalendarRange },
+      { title: 'Schedule Workspace', url: '/institute/schedule-workspace', icon: Calendar },
     ],
   },
+
   {
     label: 'Exam Module',
     items: [
