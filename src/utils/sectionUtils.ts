@@ -93,4 +93,18 @@ export function formatRange(window: AcademicWindow): string {
   return `${fmt(window.startDate)} → ${fmt(window.endDate)}`;
 }
 
+/** How much of a window's capacity is filled by cells inside its date range. */
+export function windowCompleteness(
+  section: Section,
+  window: AcademicWindow,
+  instituteHolidays: Holiday[] = [],
+): { filled: number; capacity: number; pct: number; complete: boolean } {
+  const cap = computeSectionCapacity(section.config, window, instituteHolidays);
+  const weekStartsInWindow = new Set(listWeekStarts(window));
+  const filled = section.cells.filter((c) => weekStartsInWindow.has(c.weekStartDate)).length;
+  const pct = cap.totalPeriods === 0 ? 0 : Math.min(100, Math.round((filled / cap.totalPeriods) * 100));
+  return { filled, capacity: cap.totalPeriods, pct, complete: filled >= cap.totalPeriods && cap.totalPeriods > 0 };
+}
+
 export { toISO };
+
