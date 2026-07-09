@@ -106,5 +106,50 @@ export function windowCompleteness(
   return { filled, capacity: cap.totalPeriods, pct, complete: filled >= cap.totalPeriods && cap.totalPeriods > 0 };
 }
 
+/** Working days in a specific week that fall within the window. */
+export function weekWorkingDayCount(
+  window: AcademicWindow,
+  weekStart: string,
+  workingDays: WeekDay[],
+  instituteHolidays: Holiday[] = [],
+  sectionHolidays: Holiday[] = [],
+): number {
+  const holidaySet = new Set([
+    ...instituteHolidays.map((h) => h.date),
+    ...sectionHolidays.map((h) => h.date),
+  ]);
+  let count = 0;
+  for (let i = 0; i < 7; i++) {
+    const iso = addDays(weekStart, i);
+    if (iso < window.startDate || iso > window.endDate) continue;
+    const d = parseISO(iso).getDay() as WeekDay;
+    if (!workingDays.includes(d)) continue;
+    if (holidaySet.has(iso)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+/** Cells filled + capacity for a specific week. */
+export function weekStats(
+  section: Section,
+  window: AcademicWindow,
+  weekStart: string,
+  instituteHolidays: Holiday[] = [],
+): { filled: number; capacity: number; pct: number } {
+  const workingDaysInWeek = weekWorkingDayCount(
+    window,
+    weekStart,
+    section.config.workingDays,
+    instituteHolidays,
+    section.config.holidays,
+  );
+  const capacity = workingDaysInWeek * (section.config.periodsPerDay || 0);
+  const filled = section.cells.filter((c) => c.weekStartDate === weekStart).length;
+  const pct = capacity === 0 ? 0 : Math.min(100, Math.round((filled / capacity) * 100));
+  return { filled, capacity, pct };
+}
+
 export { toISO };
+
 
