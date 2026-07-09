@@ -486,78 +486,85 @@ export const SectionTimetableStep: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* PALETTE */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="px-4 py-3 border-b border-slate-100">
-          <div className="text-sm font-semibold text-slate-900">Subject / track palette</div>
-          <div className="text-xs text-slate-500">
-            Pick a track, then click grid cells. Occupied cells ask before replacing.
+      {/* PALETTE + GRID — 20/80 split on desktop, stacked on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(200px,20%)_1fr] gap-3 items-start">
+        {/* Subject cards rail */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-3">
+          <div className="px-3 py-2 border-b border-slate-100">
+            <div className="text-sm font-semibold text-slate-900">Subject cards</div>
+            <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+              Pick one, then click cells.
+            </div>
+          </div>
+          <div className="p-2 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
+            {palette.map((entry) => {
+              const pal = sectionPalette(entry.subjectColor);
+              const isArmed =
+                armed?.programId === entry.programId &&
+                armed?.subjectId === entry.subjectId &&
+                armed?.trackId === entry.trackId;
+              const placed = placedCounts[entry.trackId] ?? 0;
+              return (
+                <button
+                  key={entry.key}
+                  onClick={() => setArmed(isArmed
+                    ? null
+                    : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
+                  disabled={readOnly}
+                  className={cn(
+                    'text-left rounded-lg border p-1.5 transition-all shrink-0 lg:shrink w-44 lg:w-full',
+                    isArmed
+                      ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
+                      : cn(pal.border, pal.surface, 'hover:shadow-sm'),
+                    readOnly && 'opacity-70 cursor-not-allowed',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <div className={cn('text-xs font-semibold truncate', pal.text)}>
+                      {entry.subjectName}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {showProgram && (
+                        <span className="bg-indigo-100 text-indigo-800 text-[9px] px-1 rounded font-bold">
+                          {entry.programCode}
+                        </span>
+                      )}
+                      {entry.subjectHasMultipleTracks && (
+                        <span className="bg-amber-100 text-amber-800 text-[9px] px-1 rounded font-bold">
+                          {entry.trackName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 tabular-nums mt-0.5">
+                    {placed} / {entry.target || '\u2014'}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {palette.map((entry) => {
-            const pal = sectionPalette(entry.subjectColor);
-            const isArmed =
-              armed?.programId === entry.programId &&
-              armed?.subjectId === entry.subjectId &&
-              armed?.trackId === entry.trackId;
-            const placed = placedCounts[entry.trackId] ?? 0;
-            return (
-              <button
-                key={entry.key}
-                onClick={() => setArmed(isArmed
-                  ? null
-                  : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
-                disabled={readOnly}
-                className={cn(
-                  'text-left rounded-xl border p-3 transition-all',
-                  isArmed
-                    ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
-                    : cn(pal.border, pal.surface, 'hover:shadow-md'),
-                  readOnly && 'opacity-70 cursor-not-allowed',
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className={cn('text-sm font-semibold truncate', pal.text)}>
-                    {entry.subjectName}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {showProgram && (
-                      <Badge className="bg-indigo-100 hover:bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0 font-bold">
-                        {entry.programCode}
-                      </Badge>
-                    )}
-                    {entry.subjectHasMultipleTracks && (
-                      <Badge className="bg-amber-100 hover:bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0 font-bold">
-                        {entry.trackName}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-1 text-[11px] text-slate-600 tabular-nums">
-                  {placed} / {entry.target || '\u2014'} placed
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* GRID */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[760px]">
+        {/* GRID */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden min-w-0">
+          <table className="w-full border-collapse table-fixed">
+            <colgroup>
+              <col style={{ width: 56 }} />
+              {section.config.workingDays.map((d) => (
+                <col key={d} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
-                <th className="w-20 sticky left-0 z-10 bg-slate-50 border-b border-r border-slate-200 px-2 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold text-left">
-                  Period
+                <th className="bg-slate-50 border-b border-r border-slate-200 px-1 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold text-left">
+                  P
                 </th>
                 {section.config.workingDays.map((d) => {
                   const label = WEEKDAY_LABELS.find((w) => w.d === d);
                   return (
-                    <th key={d} className="border-b border-slate-200 px-2 py-2 text-xs font-semibold text-slate-700 bg-slate-50">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="uppercase text-[11px] tracking-wider">{label?.short}</span>
+                    <th key={d} className="border-b border-slate-200 px-1 py-2 text-xs font-semibold text-slate-700 bg-slate-50 min-w-0">
+                      <div className="flex items-center justify-between gap-1 min-w-0">
+                        <span className="uppercase text-[11px] tracking-wider truncate">{label?.short}</span>
                         {!readOnly && (
                           <PlanDayMenu
                             palette={palette}
@@ -575,23 +582,23 @@ export const SectionTimetableStep: React.FC<Props> = ({
               {Array.from({ length: section.config.periodsPerDay }).map((_, p) => (
                 <React.Fragment key={p}>
                   <tr>
-                    <td className="sticky left-0 z-10 bg-white border-b border-r border-slate-200 px-2 py-2 align-top">
-                      <div className="flex items-start justify-between gap-1">
-                        <div>
-                          <div className="text-xs font-bold text-slate-900">P{p + 1}</div>
-                          <div className="text-[10px] text-slate-500 tabular-nums">
-                            {periodTimes[p]?.startTime}–{periodTimes[p]?.endTime}
-                          </div>
+                    <td className="bg-white border-b border-r border-slate-200 px-1 py-1.5 align-top">
+                      <div className="flex flex-col items-start gap-0.5">
+                        <div className="flex items-center gap-0.5 w-full">
+                          <div className="text-[11px] font-bold text-slate-900">P{p + 1}</div>
+                          {!readOnly && (
+                            <FillRowMenu
+                              palette={palette}
+                              facultyPool={section.facultyPool}
+                              facultyById={facultyById}
+                              onApply={(key, fac, overwrite) => handleRowFill(p, key, fac, overwrite)}
+                              showProgram={showProgram}
+                            />
+                          )}
                         </div>
-                        {!readOnly && (
-                          <FillRowMenu
-                            palette={palette}
-                            facultyPool={section.facultyPool}
-                            facultyById={facultyById}
-                            onApply={(key, fac, overwrite) => handleRowFill(p, key, fac, overwrite)}
-                            showProgram={showProgram}
-                          />
-                        )}
+                        <div className="text-[9px] text-slate-500 tabular-nums leading-tight">
+                          {periodTimes[p]?.startTime}
+                        </div>
                       </div>
                     </td>
                     {section.config.workingDays.map((d) => {
@@ -601,7 +608,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
                         <td
                           key={d}
                           className={cn(
-                            'border-b border-r border-slate-100 p-1.5 align-top h-24',
+                            'border-b border-r border-slate-100 p-1 align-top h-20 min-w-0',
                             dragOverKey === k && 'bg-indigo-50',
                           )}
                           onDragOver={(e) => { if (dragKey && !readOnly) { e.preventDefault(); setDragOverKey(k); } }}
@@ -615,6 +622,13 @@ export const SectionTimetableStep: React.FC<Props> = ({
                             readOnly={readOnly}
                             slot={{ weekStartDate: weekStart, weekday: d, periodIndex: p }}
                             onClick={() => handleCellClick(d as number, p)}
+                            onPickFromPalette={(entry) => {
+                              tryPlace(
+                                { weekStartDate: weekStart, weekday: d as never, periodIndex: p },
+                                { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId },
+                              );
+                            }}
+                            palette={palette}
                             facultyById={facultyById}
                             showProgram={showProgram}
                             onDragStart={() => setDragKey(k)}
@@ -628,13 +642,13 @@ export const SectionTimetableStep: React.FC<Props> = ({
                     ?.filter((b) => b.afterPeriod === p + 1)
                     .map((brk) => (
                       <tr key={brk.id}>
-                        <td className="sticky left-0 z-10 bg-amber-50 border-b border-r border-slate-200 px-2 py-1">
-                          <div className="text-[10px] font-semibold text-amber-700">{brk.name}</div>
-                          <div className="text-[10px] text-amber-600 tabular-nums">{brk.durationMins}m</div>
+                        <td className="bg-amber-50 border-b border-r border-slate-200 px-1 py-0.5">
+                          <div className="text-[9px] font-semibold text-amber-700 truncate">{brk.name}</div>
+                          <div className="text-[9px] text-amber-600 tabular-nums">{brk.durationMins}m</div>
                         </td>
                         <td
                           colSpan={section.config.workingDays.length}
-                          className="bg-amber-50 border-b border-slate-200 px-2 py-1 text-[10px] text-amber-700 italic"
+                          className="bg-amber-50 border-b border-slate-200 px-2 py-0.5 text-[10px] text-amber-700 italic"
                         >
                           Break
                         </td>
