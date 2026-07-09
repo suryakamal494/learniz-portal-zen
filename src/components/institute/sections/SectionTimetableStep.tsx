@@ -759,25 +759,69 @@ const TimetableCell: React.FC<{
   readOnly?: boolean;
   slot: SlotKey;
   onClick: () => void;
+  onPickFromPalette: (entry: PaletteEntry) => void;
+  palette: PaletteEntry[];
   facultyById: Record<string, { id: string; name: string } | undefined>;
   showProgram: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
-}> = ({ section, cell, armed, readOnly, slot, onClick, facultyById, showProgram, onDragStart, onDragEnd }) => {
+}> = ({ section, cell, armed, readOnly, slot, onClick, onPickFromPalette, palette, facultyById, showProgram, onDragStart, onDragEnd }) => {
   if (!cell) {
-    return (
+    const emptyBtn = (
       <button
-        onClick={onClick}
-        disabled={readOnly || !armed}
+        onClick={armed ? onClick : undefined}
+        disabled={readOnly}
         className={cn(
-          'w-full h-full min-h-[76px] rounded-lg border-2 border-dashed transition-all',
+          'w-full h-full min-h-[64px] rounded-md border border-dashed transition-all flex items-center justify-center',
           armed && !readOnly
             ? 'border-indigo-300 bg-indigo-50/50 hover:bg-indigo-100/50 hover:border-indigo-500 cursor-copy'
-            : 'border-slate-200',
+            : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30',
         )}
       >
-        <Plus className="h-4 w-4 text-slate-300 mx-auto" />
+        <Plus className="h-3.5 w-3.5 text-slate-300" />
       </button>
+    );
+    if (armed || readOnly) return emptyBtn;
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{emptyBtn}</PopoverTrigger>
+        <PopoverContent className="w-64 p-2" align="start">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold px-1 pb-1">
+            Pick a subject
+          </div>
+          <div className="max-h-64 overflow-y-auto space-y-0.5">
+            {palette.map((entry) => {
+              const pal = sectionPalette(entry.subjectColor);
+              return (
+                <button
+                  key={entry.key}
+                  onClick={() => onPickFromPalette(entry)}
+                  className={cn(
+                    'w-full text-left rounded-md border px-2 py-1.5 flex items-center justify-between gap-2 hover:shadow-sm',
+                    pal.border, pal.surface,
+                  )}
+                >
+                  <span className={cn('text-xs font-semibold truncate', pal.text)}>
+                    {entry.subjectName}
+                  </span>
+                  <span className="flex items-center gap-0.5 shrink-0">
+                    {showProgram && (
+                      <span className="bg-indigo-100 text-indigo-800 text-[9px] px-1 rounded font-bold">
+                        {entry.programCode}
+                      </span>
+                    )}
+                    {entry.subjectHasMultipleTracks && (
+                      <span className="bg-amber-100 text-amber-800 text-[9px] px-1 rounded font-bold">
+                        {entry.trackName}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   }
   const { programId, subjectId, trackId, facultyId } = cell.allocation;
