@@ -121,14 +121,16 @@ export const TimetableWorkspaceTab: React.FC<Props> = ({ section, window, readOn
       </Card>
 
       {/* Reuse existing Step 3 UI verbatim — noop callbacks since workspace owns nav. */}
-      <div className={cn(readOnly && 'pointer-events-none opacity-90')}>
+      <div>
         <SectionTimetableStep
           section={section}
           onBack={() => { /* handled by workspace tab switcher */ }}
           onNext={() => { /* handled by workspace tab switcher */ }}
           hideFooter
+          readOnly={readOnly}
         />
       </div>
+
 
       <AlertDialog open={confirmUnpublish} onOpenChange={setConfirmUnpublish}>
         <AlertDialogContent>
