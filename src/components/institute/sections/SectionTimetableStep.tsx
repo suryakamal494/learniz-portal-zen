@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
-  ChevronDown, ChevronRight, MoreHorizontal, Sparkles, Trash2, Users, X,
+  ChevronLeft, ChevronRight, Copy, Eraser, GripVertical, MoreHorizontal, Plus,
+  Sparkles, Trash2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -11,71 +14,143 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  CellAllocation, CellOccupiedError, Section, SlotKey, slotKeyEq,
+  CellAllocation, CellOccupiedError, Section, SectionProgram, SectionSubject,
+  SectionTrack, SlotKey, slotKeyEq,
 } from '@/types/section';
 import {
-  clearCell, fillSlotsSkippingOccupied, setCellAllocation, setCellFaculty,
+  clearCell, clearWeek, copyWeekTo, fillSlotsSkippingOccupied, getCellsSnapshot,
+  restoreCells, setCellAllocation, setCellFaculty, swapCells,
 } from '@/hooks/useSection';
-import { useFaculty } from '@/hooks/useInstitutePrograms';
+import { useFaculty, useInstituteHolidays } from '@/hooks/useInstitutePrograms';
 import {
-  WEEKDAY_LABELS, computePeriodTimes, listWeekStarts, placedByTrack, totalAllocated,
+  WEEKDAY_LABELS, computePeriodTimes, listWeekStarts, placedByTrack, weekStats,
 } from '@/utils/sectionUtils';
-import { sectionPalette, trackPattern } from '@/lib/sectionColors';
+import { sectionPalette } from '@/lib/sectionColors';
+import { DevNote } from '@/components/dev/DevNote';
 import { cn } from '@/lib/utils';
 
 interface Props {
   section: Section;
   onBack?: () => void;
   onNext?: () => void;
-  /** Hide the built-in back/continue footer when embedded inside the workspace. */
   hideFooter?: boolean;
+  readOnly?: boolean;
 }
 
-export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext, hideFooter }) => {
+/** One flat palette entry: program + subject + track. */
+interface PaletteEntry {
+  key: string;
+  programId: string;
+  programCode: string;
+  subjectId: string;
+  subjectName: string;
+  subjectColor: SectionSubject['color'];
+  trackId: string;
+  trackName: string;
+  facultyId: string;
+  target: number;
+  subjectHasMultipleTracks: boolean;
+}
+
+function buildPalette(section: Section): PaletteEntry[] {
+  return section.programs.flatMap((p) =>
+    p.subjects.flatMap((s) =>
+      s.tracks.map((t) => ({
+        key: `${p.id}::${s.id}::${t.id}`,
+        programId: p.id,
+        programCode: p.code,
+        subjectId: s.id,
+        subjectName: s.name,
+        subjectColor: s.color,
+        trackId: t.id,
+        trackName: t.name,
+        facultyId: t.facultyId,
+        target: t.allottedPeriods || 0,
+        subjectHasMultipleTracks: s.tracks.length > 1,
+      })),
+    ),
+  );
+}
+
+export const SectionTimetableStep: React.FC<Props> = ({
+  section, onBack, onNext, hideFooter, readOnly,
+}) => {
   const facultyList = useFaculty();
-  const weekStarts = useMemo(() => listWeekStarts(section.windows[section.windows.length - 1]), [section.windows]);
+  const instituteHolidays = useInstituteHolidays();
+  const window = section.windows[section.windows.length - 1];
+  const weekStarts = useMemo(() => listWeekStarts(window), [window]);
   const [weekIdx, setWeekIdx] = useState(0);
   const weekStart = weekStarts[weekIdx] ?? weekStarts[0];
 
-
-  // Currently "armed" allocation — clicking a cell paints this in.
   const [armed, setArmed] = useState<CellAllocation | null>(null);
-
-  // Conflict dialog state.
   const [conflict, setConflict] = useState<{
-    slot: SlotKey;
-    incoming: CellAllocation;
-    existing: CellAllocation;
+    slot: SlotKey; incoming: CellAllocation; existing: CellAllocation;
   } | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmCopy, setConfirmCopy] = useState<{ mode: CopyMode; targets: string[] } | null>(null);
+
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  const snapshotRef = useRef<Section['cells'] | null>(null);
+
+  const palette = useMemo(() => buildPalette(section), [section]);
+  const placedCounts = useMemo(() => placedByTrack(section), [section]);
+  const facultyById = useMemo(
+    () => Object.fromEntries(facultyList.map((f) => [f.id, f])),
+    [facultyList],
+  );
+  const showProgram = section.programs.length > 1;
 
   const periodTimes = useMemo(
     () => computePeriodTimes({
       ...section.config,
-      startDate: section.windows[0]?.startDate ?? '',
+      startDate: window?.startDate ?? '',
       defaultFaculty: {},
     } as never),
-    [section.config, section.windows],
+    [section.config, window],
   );
 
-  const placedCounts = useMemo(() => placedByTrack(section), [section]);
-  const facultyById = useMemo(() => Object.fromEntries(facultyList.map((f) => [f.id, f])), [facultyList]);
-  const showProgram = section.programs.length > 1;
+  const stats = useMemo(
+    () => weekStats(section, window, weekStart, instituteHolidays),
+    [section, window, weekStart, instituteHolidays],
+  );
+  const authoredWeeks = useMemo(() => {
+    const set = new Set<string>();
+    section.cells.forEach((c) => { if (c.allocation) set.add(c.weekStartDate); });
+    return set;
+  }, [section.cells]);
 
   const cellAt = (weekday: number, periodIndex: number) =>
     section.cells.find((c) =>
       slotKeyEq(c, { weekStartDate: weekStart, weekday: weekday as never, periodIndex }),
     );
 
+  const snapshotAndToast = (msg: string) => {
+    snapshotRef.current = getCellsSnapshot(section.id);
+    toast(msg, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          if (snapshotRef.current) {
+            restoreCells(section.id, snapshotRef.current);
+            snapshotRef.current = null;
+            toast.success('Reverted');
+          }
+        },
+      },
+    });
+  };
+
   const tryPlace = (slot: SlotKey, allocation: CellAllocation) => {
     try {
       setCellAllocation(section.id, slot, allocation);
-      toast.success(`Placed in ${WEEKDAY_LABELS.find((w) => w.d === slot.weekday)?.short} · P${slot.periodIndex + 1}`);
     } catch (e) {
       if (e instanceof CellOccupiedError) {
         setConflict({ slot, incoming: allocation, existing: e.existing });
@@ -84,201 +159,512 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext,
   };
 
   const handleCellClick = (weekday: number, periodIndex: number) => {
-    if (!armed) {
-      toast('Pick a subject + track from the palette first', { icon: '👈' });
-      return;
-    }
-    const slot: SlotKey = { weekStartDate: weekStart, weekday: weekday as never, periodIndex };
-    tryPlace(slot, armed);
+    if (readOnly) return;
+    if (!armed) return;
+    tryPlace(
+      { weekStartDate: weekStart, weekday: weekday as never, periodIndex },
+      armed,
+    );
   };
 
-  const handleRowFill = (weekday: number) => {
-    if (!armed) {
-      toast('Arm a subject first');
-      return;
+  const handleColumnFill = (
+    weekday: number,
+    entryKey: string,
+    facultyOverride: string | undefined,
+    overwrite: boolean,
+  ) => {
+    const entry = palette.find((p) => p.key === entryKey);
+    if (!entry) return;
+    const alloc: CellAllocation = {
+      programId: entry.programId,
+      subjectId: entry.subjectId,
+      trackId: entry.trackId,
+      facultyId: facultyOverride,
+    };
+    const slots: SlotKey[] = Array.from(
+      { length: section.config.periodsPerDay },
+      (_, p) => ({ weekStartDate: weekStart, weekday: weekday as never, periodIndex: p }),
+    );
+    const snap = getCellsSnapshot(section.id);
+    if (overwrite) {
+      slots.forEach((s) => setCellAllocation(section.id, s, alloc, { force: true }));
+      snapshotRef.current = snap;
+      const dayName = WEEKDAY_LABELS.find((w) => w.d === weekday)?.long ?? '';
+      toast(`Filled ${slots.length} periods on ${dayName}`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            if (snapshotRef.current) {
+              restoreCells(section.id, snapshotRef.current);
+              snapshotRef.current = null;
+              toast.success('Reverted');
+            }
+          },
+        },
+      });
+    } else {
+      const { filled, skipped } = fillSlotsSkippingOccupied(section.id, slots, alloc);
+      snapshotRef.current = snap;
+      toast(`Filled ${filled} · skipped ${skipped}`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            if (snapshotRef.current) {
+              restoreCells(section.id, snapshotRef.current);
+              snapshotRef.current = null;
+              toast.success('Reverted');
+            }
+          },
+        },
+      });
     }
-    const slots: SlotKey[] = Array.from({ length: section.config.periodsPerDay }, (_, p) => ({
-      weekStartDate: weekStart, weekday: weekday as never, periodIndex: p,
-    }));
-    const { filled, skipped } = fillSlotsSkippingOccupied(section.id, slots, armed);
-    toast.success(`Filled ${filled} of ${slots.length}${skipped ? ` · ${skipped} already taken` : ''}`);
   };
 
-  const handleColumnFill = (periodIndex: number) => {
-    if (!armed) { toast('Arm a subject first'); return; }
+  const handleRowFill = (
+    periodIndex: number,
+    entryKey: string | null,
+    facultyOverride: string | undefined,
+    overwrite: boolean,
+  ) => {
+    const snap = getCellsSnapshot(section.id);
+    if (entryKey === null) {
+      // Clear this period across the week.
+      section.config.workingDays.forEach((d) => {
+        clearCell(section.id, { weekStartDate: weekStart, weekday: d, periodIndex });
+      });
+      snapshotRef.current = snap;
+      toast(`P${periodIndex + 1} cleared across the week`, {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            if (snapshotRef.current) {
+              restoreCells(section.id, snapshotRef.current);
+              snapshotRef.current = null;
+              toast.success('Reverted');
+            }
+          },
+        },
+      });
+      return;
+    }
+    const entry = palette.find((p) => p.key === entryKey);
+    if (!entry) return;
+    const alloc: CellAllocation = {
+      programId: entry.programId,
+      subjectId: entry.subjectId,
+      trackId: entry.trackId,
+      facultyId: facultyOverride,
+    };
     const slots: SlotKey[] = section.config.workingDays.map((d) => ({
       weekStartDate: weekStart, weekday: d, periodIndex,
     }));
-    const { filled, skipped } = fillSlotsSkippingOccupied(section.id, slots, armed);
-    toast.success(`Filled ${filled} of ${slots.length}${skipped ? ` · ${skipped} already taken` : ''}`);
+    if (overwrite) {
+      slots.forEach((s) => setCellAllocation(section.id, s, alloc, { force: true }));
+      snapshotRef.current = snap;
+      toast(`Filled ${slots.length} cells in P${periodIndex + 1}`, {
+        action: { label: 'Undo', onClick: () => {
+          if (snapshotRef.current) { restoreCells(section.id, snapshotRef.current); snapshotRef.current = null; toast.success('Reverted'); }
+        }},
+      });
+    } else {
+      const { filled, skipped } = fillSlotsSkippingOccupied(section.id, slots, alloc);
+      snapshotRef.current = snap;
+      toast(`Filled ${filled} · skipped ${skipped}`, {
+        action: { label: 'Undo', onClick: () => {
+          if (snapshotRef.current) { restoreCells(section.id, snapshotRef.current); snapshotRef.current = null; toast.success('Reverted'); }
+        }},
+      });
+    }
   };
 
-  const armedLabel = useMemo(() => {
-    if (!armed) return null;
-    const p = section.programs.find((p) => p.id === armed.programId);
-    const su = p?.subjects.find((s) => s.id === armed.subjectId);
-    const t = su?.tracks.find((tr) => tr.id === armed.trackId);
-    return { program: p, subject: su, track: t };
-  }, [armed, section.programs]);
+  const handlePlanDay = (
+    weekday: number,
+    orderedKeys: string[],
+    opts: { overwrite: boolean; repeat: boolean },
+  ) => {
+    if (orderedKeys.length === 0) return;
+    const snap = getCellsSnapshot(section.id);
+    let cursor = 0;
+    let placed = 0;
+    for (let p = 0; p < section.config.periodsPerDay; p++) {
+      const slot: SlotKey = { weekStartDate: weekStart, weekday: weekday as never, periodIndex: p };
+      const filled = section.cells.find((c) => slotKeyEq(c, slot));
+      if (filled && !opts.overwrite) continue;
+      if (cursor >= orderedKeys.length) {
+        if (opts.repeat) cursor = 0;
+        else break;
+      }
+      const entry = palette.find((e) => e.key === orderedKeys[cursor]);
+      cursor += 1;
+      if (!entry) continue;
+      const alloc: CellAllocation = {
+        programId: entry.programId,
+        subjectId: entry.subjectId,
+        trackId: entry.trackId,
+      };
+      setCellAllocation(section.id, slot, alloc, { force: true });
+      placed += 1;
+    }
+    snapshotRef.current = snap;
+    const dayName = WEEKDAY_LABELS.find((w) => w.d === weekday)?.long ?? '';
+    toast(`Planned ${placed} period(s) for ${dayName}`, {
+      action: { label: 'Undo', onClick: () => {
+        if (snapshotRef.current) { restoreCells(section.id, snapshotRef.current); snapshotRef.current = null; toast.success('Reverted'); }
+      }},
+    });
+  };
+
+  const doCopyWeek = (mode: CopyMode) => {
+    const targets = copyTargets(weekStarts, weekIdx, mode);
+    if (targets.length === 0) {
+      toast.info('No target weeks');
+      return;
+    }
+    setConfirmCopy({ mode, targets });
+  };
+
+  const performCopy = () => {
+    if (!confirmCopy) return;
+    const snap = getCellsSnapshot(section.id);
+    const added = copyWeekTo(section.id, weekStart, confirmCopy.targets);
+    snapshotRef.current = snap;
+    toast(`Copied to ${confirmCopy.targets.length} week(s) · ${added} cells`, {
+      action: { label: 'Undo', onClick: () => {
+        if (snapshotRef.current) { restoreCells(section.id, snapshotRef.current); snapshotRef.current = null; toast.success('Reverted'); }
+      }},
+    });
+    setConfirmCopy(null);
+  };
+
+  const performClearWeek = () => {
+    const snap = getCellsSnapshot(section.id);
+    const n = clearWeek(section.id, weekStart);
+    snapshotRef.current = snap;
+    toast(`Cleared ${n} cells`, {
+      action: { label: 'Undo', onClick: () => {
+        if (snapshotRef.current) { restoreCells(section.id, snapshotRef.current); snapshotRef.current = null; toast.success('Reverted'); }
+      }},
+    });
+    setConfirmClear(false);
+  };
+
+  /* ── drag-swap ── */
+  const cellKey = (wd: number, pi: number) => `${wd}#${pi}`;
+  const parseCellKey = (k: string): [number, number] => {
+    const [wd, pi] = k.split('#').map(Number);
+    return [wd, pi];
+  };
+  const handleDrop = (dstKey: string) => {
+    if (!dragKey || dragKey === dstKey || readOnly) { setDragKey(null); setDragOverKey(null); return; }
+    const [sWd, sPi] = parseCellKey(dragKey);
+    const [dWd, dPi] = parseCellKey(dstKey);
+    swapCells(
+      section.id,
+      { weekStartDate: weekStart, weekday: sWd as never, periodIndex: sPi },
+      { weekStartDate: weekStart, weekday: dWd as never, periodIndex: dPi },
+    );
+    setDragKey(null); setDragOverKey(null);
+    toast.success('Swapped');
+  };
 
   return (
-    <TooltipProvider delayDuration={150}>
-      <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4">
-        {/* ── PALETTE ────────────────────────────────────────────── */}
-        <aside className="xl:sticky xl:top-2 self-start space-y-3">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-              <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Palette</div>
-              <div className="text-sm font-semibold text-slate-900">Subjects · Tracks</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">Tap one to arm it, then click cells to place</div>
+    <div className="space-y-3">
+      {/* HEADER: title + week nav */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="text-base font-semibold text-slate-900">Weekly timetable</div>
+              <DevNote title="How the timetable works">
+                <p>Pick a subject/track card in the palette, then click a grid cell to place it.</p>
+                <p>Use the ⋮ menu on any day header for <b>Plan this day</b>, and on any period row for <b>Fill this period across the week</b>.</p>
+                <p>Drag one cell onto another to <b>swap</b>; drag onto an empty cell to <b>move</b>.</p>
+              </DevNote>
             </div>
-            <div className="max-h-[calc(100vh-260px)] overflow-y-auto p-2 space-y-3">
-              {section.programs.map((program) => (
-                <ProgramPaletteGroup
-                  key={program.id}
-                  program={program}
-                  armed={armed}
-                  onArm={setArmed}
-                  placedCounts={placedCounts}
-                />
-              ))}
+            <div className="text-xs text-slate-500 mt-0.5">
+              Pick a subject for each period. Use the row tool to repeat across the week, the column tool to plan a day, then copy the week to others.
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              onClick={() => setWeekIdx(Math.max(0, weekIdx - 1))}
+              disabled={weekIdx === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-xs text-slate-600 tabular-nums whitespace-nowrap">
+              Week <b>{weekIdx + 1}</b> of {weekStarts.length}
+              <span className="text-slate-400"> · starts {weekStart}</span>
+            </div>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              onClick={() => setWeekIdx(Math.min(weekStarts.length - 1, weekIdx + 1))}
+              disabled={weekIdx >= weekStarts.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-          {armedLabel?.subject && (
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
-              <div className="text-[10px] uppercase tracking-wider text-indigo-600 font-semibold">Armed</div>
-              <div className="mt-1 flex items-center justify-between gap-2">
-                <div className="text-sm font-semibold text-slate-900 truncate">
-                  {showProgram && <span>{armedLabel.program?.code} · </span>}
-                  {armedLabel.subject.name}
-                  {armedLabel.subject.tracks.length > 1 && <span> · {armedLabel.track?.name}</span>}
-                </div>
+        {/* Week chip bar */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {weekStarts.map((ws, i) => {
+              const active = i === weekIdx;
+              const hasCells = authoredWeeks.has(ws);
+              return (
                 <button
-                  onClick={() => setArmed(null)}
-                  className="p-1 rounded hover:bg-white text-slate-500 hover:text-slate-900"
-                  aria-label="Disarm"
+                  key={ws}
+                  onClick={() => setWeekIdx(i)}
+                  className={cn(
+                    'shrink-0 px-2.5 py-1 rounded-md text-[11px] font-semibold tabular-nums transition-all border',
+                    active
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                      : hasCells
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:border-emerald-400'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400',
+                  )}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  W{i + 1}
+                  {hasCells && !active && <span className="ml-1">✓</span>}
+                  {active && hasCells && <span className="ml-1">✓</span>}
                 </button>
-              </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Progress + bulk actions */}
+        <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xs font-semibold text-indigo-700">
+                {stats.filled} / {stats.capacity} cells filled
+              </span>
+              <span className="text-[10px] text-slate-500">({stats.pct}%)</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden max-w-md">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
+                style={{ width: `${stats.pct}%` }}
+              />
+            </div>
+          </div>
+          {!readOnly && (
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <Copy className="h-3.5 w-3.5 mr-1" /> Copy this week to…
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-[10px]">Overwrites target weeks</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => doCopyWeek('next')}>Next week</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => doCopyWeek('next4')}>Next 4 weeks</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => doCopyWeek('remaining')}>All remaining weeks</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => doCopyWeek('all')}>All other weeks</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-rose-700 border-rose-200 hover:bg-rose-50"
+                onClick={() => setConfirmClear(true)}
+                disabled={stats.filled === 0}
+              >
+                <Eraser className="h-3.5 w-3.5 mr-1" /> Clear this week
+              </Button>
             </div>
           )}
-        </aside>
+        </div>
+      </div>
 
-        {/* ── GRID ──────────────────────────────────────────────── */}
-        <section className="min-w-0 space-y-3">
-          {/* Week chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            {weekStarts.map((ws, i) => (
+      {/* PALETTE */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="text-sm font-semibold text-slate-900">Subject / track palette</div>
+          <div className="text-xs text-slate-500">
+            Pick a track, then click grid cells. Occupied cells ask before replacing.
+          </div>
+        </div>
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+          {palette.map((entry) => {
+            const pal = sectionPalette(entry.subjectColor);
+            const isArmed =
+              armed?.programId === entry.programId &&
+              armed?.subjectId === entry.subjectId &&
+              armed?.trackId === entry.trackId;
+            const placed = placedCounts[entry.trackId] ?? 0;
+            return (
               <button
-                key={ws}
-                onClick={() => setWeekIdx(i)}
+                key={entry.key}
+                onClick={() => setArmed(isArmed
+                  ? null
+                  : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
+                disabled={readOnly}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
-                  i === weekIdx
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300',
+                  'text-left rounded-xl border p-3 transition-all',
+                  isArmed
+                    ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
+                    : cn(pal.border, pal.surface, 'hover:shadow-md'),
+                  readOnly && 'opacity-70 cursor-not-allowed',
                 )}
               >
-                Week {i + 1}
+                <div className="flex items-center justify-between gap-2">
+                  <div className={cn('text-sm font-semibold truncate', pal.text)}>
+                    {entry.subjectName}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {showProgram && (
+                      <Badge className="bg-indigo-100 hover:bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0 font-bold">
+                        {entry.programCode}
+                      </Badge>
+                    )}
+                    {entry.subjectHasMultipleTracks && (
+                      <Badge className="bg-amber-100 hover:bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0 font-bold">
+                        {entry.trackName}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-1 text-[11px] text-slate-600 tabular-nums">
+                  {placed} / {entry.target || '\u2014'} placed
+                </div>
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
+      </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse min-w-[640px]">
-                <thead>
-                  <tr>
-                    <th className="w-16 sticky left-0 z-10 bg-slate-50 border-b border-r border-slate-200 px-2 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                      Period
+      {/* GRID */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse min-w-[760px]">
+            <thead>
+              <tr>
+                <th className="w-20 sticky left-0 z-10 bg-slate-50 border-b border-r border-slate-200 px-2 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold text-left">
+                  Period
+                </th>
+                {section.config.workingDays.map((d) => {
+                  const label = WEEKDAY_LABELS.find((w) => w.d === d);
+                  return (
+                    <th key={d} className="border-b border-slate-200 px-2 py-2 text-xs font-semibold text-slate-700 bg-slate-50">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="uppercase text-[11px] tracking-wider">{label?.short}</span>
+                        {!readOnly && (
+                          <PlanDayMenu
+                            palette={palette}
+                            onApply={(keys, opts) => handlePlanDay(d as number, keys, opts)}
+                            showProgram={showProgram}
+                          />
+                        )}
+                      </div>
                     </th>
-                    {section.config.workingDays.map((d) => {
-                      const label = WEEKDAY_LABELS.find((w) => w.d === d);
-                      return (
-                        <th key={d} className="border-b border-slate-200 px-2 py-2 text-xs font-semibold text-slate-700 bg-slate-50">
-                          <div className="flex items-center justify-between gap-1">
-                            <span>{label?.short}</span>
-                            <RowMenu onFillRow={() => handleRowFill(d)} />
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: section.config.periodsPerDay }).map((_, p) => (
+                <React.Fragment key={p}>
+                  <tr>
+                    <td className="sticky left-0 z-10 bg-white border-b border-r border-slate-200 px-2 py-2 align-top">
+                      <div className="flex items-start justify-between gap-1">
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">P{p + 1}</div>
+                          <div className="text-[10px] text-slate-500 tabular-nums">
+                            {periodTimes[p]?.startTime}–{periodTimes[p]?.endTime}
                           </div>
-                        </th>
+                        </div>
+                        {!readOnly && (
+                          <FillRowMenu
+                            palette={palette}
+                            facultyPool={section.facultyPool}
+                            facultyById={facultyById}
+                            onApply={(key, fac, overwrite) => handleRowFill(p, key, fac, overwrite)}
+                            showProgram={showProgram}
+                          />
+                        )}
+                      </div>
+                    </td>
+                    {section.config.workingDays.map((d) => {
+                      const cell = cellAt(d as number, p);
+                      const k = cellKey(d as number, p);
+                      return (
+                        <td
+                          key={d}
+                          className={cn(
+                            'border-b border-r border-slate-100 p-1.5 align-top h-24',
+                            dragOverKey === k && 'bg-indigo-50',
+                          )}
+                          onDragOver={(e) => { if (dragKey && !readOnly) { e.preventDefault(); setDragOverKey(k); } }}
+                          onDragLeave={() => setDragOverKey((cur) => (cur === k ? null : cur))}
+                          onDrop={(e) => { e.preventDefault(); handleDrop(k); }}
+                        >
+                          <TimetableCell
+                            section={section}
+                            cell={cell}
+                            armed={armed}
+                            readOnly={readOnly}
+                            slot={{ weekStartDate: weekStart, weekday: d, periodIndex: p }}
+                            onClick={() => handleCellClick(d as number, p)}
+                            facultyById={facultyById}
+                            showProgram={showProgram}
+                            onDragStart={() => setDragKey(k)}
+                            onDragEnd={() => { setDragKey(null); setDragOverKey(null); }}
+                          />
+                        </td>
                       );
                     })}
                   </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: section.config.periodsPerDay }).map((_, p) => (
-                    <tr key={p}>
-                      <td className="sticky left-0 z-10 bg-white border-b border-r border-slate-200 px-2 py-2 align-top">
-                        <div className="text-xs font-semibold text-slate-900">P{p + 1}</div>
-                        <div className="text-[10px] text-slate-500 tabular-nums">
-                          {periodTimes[p]?.startTime}
-                        </div>
-                        <button
-                          onClick={() => handleColumnFill(p)}
-                          className="mt-1 text-[9px] text-slate-400 hover:text-indigo-600 uppercase font-semibold"
-                          title="Fill column"
+                  {section.config.breaks
+                    ?.filter((b) => b.afterPeriod === p + 1)
+                    .map((brk) => (
+                      <tr key={brk.id}>
+                        <td className="sticky left-0 z-10 bg-amber-50 border-b border-r border-slate-200 px-2 py-1">
+                          <div className="text-[10px] font-semibold text-amber-700">{brk.name}</div>
+                          <div className="text-[10px] text-amber-600 tabular-nums">{brk.durationMins}m</div>
+                        </td>
+                        <td
+                          colSpan={section.config.workingDays.length}
+                          className="bg-amber-50 border-b border-slate-200 px-2 py-1 text-[10px] text-amber-700 italic"
                         >
-                          fill col
-                        </button>
-                      </td>
-                      {section.config.workingDays.map((d) => {
-                        const cell = cellAt(d as number, p);
-                        return (
-                          <td key={d} className="border-b border-r border-slate-100 p-1.5 align-top h-20">
-                            <TimetableCell
-                              section={section}
-                              cell={cell}
-                              armed={armed}
-                              slot={{ weekStartDate: weekStart, weekday: d, periodIndex: p }}
-                              onClick={() => handleCellClick(d as number, p)}
-                              facultyById={facultyById}
-                              showProgram={showProgram}
-                            />
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Summary footer */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-            <div>
-              {section.cells.length} of {totalAllocated(section)} allocated periods placed across all weeks
-            </div>
-            {!hideFooter && (
-              <div className="flex items-center gap-2">
-                {onBack && <Button variant="outline" size="sm" onClick={onBack}>Back</Button>}
-                {onNext && (
-                  <Button size="sm" onClick={onNext} className="bg-indigo-600 hover:bg-indigo-700">
-                    Continue to Preview <Sparkles className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-
-        </section>
+                          Break
+                        </td>
+                      </tr>
+                    ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ── CONFLICT DIALOG ─────────────────────────────────────── */}
+      {!hideFooter && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          {onBack && <Button variant="outline" size="sm" onClick={onBack}>Back</Button>}
+          {onNext && (
+            <Button size="sm" onClick={onNext} className="bg-indigo-600 hover:bg-indigo-700">
+              Continue to Preview <Sparkles className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Conflict dialog */}
       <AlertDialog open={!!conflict} onOpenChange={(o) => !o && setConflict(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Replace allocation?</AlertDialogTitle>
             <AlertDialogDescription>
-              {conflict && (
-                <ConflictBody
-                  section={section}
-                  incoming={conflict.incoming}
-                  existing={conflict.existing}
-                />
-              )}
+              This slot already holds an allocation. Replacing will free the previous one.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -297,94 +683,86 @@ export const SectionTimetableStep: React.FC<Props> = ({ section, onBack, onNext,
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </TooltipProvider>
-  );
-};
 
-/* ──────────────── Sub-components ──────────────── */
+      {/* Clear-week dialog */}
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear this week?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Removes all {stats.filled} placed cells in week starting {weekStart}. You can undo from the toast.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={performClearWeek}>
+              Clear week
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-const ProgramPaletteGroup: React.FC<{
-  program: Section['programs'][number];
-  armed: CellAllocation | null;
-  onArm: (a: CellAllocation | null) => void;
-  placedCounts: Record<string, number>;
-}> = ({ program, armed, onArm, placedCounts }) => {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="rounded-xl bg-slate-50/70 border border-slate-200/60 overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-100"
-      >
-        <div className="flex items-center gap-2">
-          {open ? <ChevronDown className="h-3.5 w-3.5 text-slate-500" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-500" />}
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">{program.code}</span>
-        </div>
-        <span className="text-[10px] text-slate-500">{program.subjects.length} subj</span>
-      </button>
-      {open && (
-        <div className="px-2 pb-2 space-y-1.5">
-          {program.subjects.map((su) => (
-            <div key={su.id} className="space-y-1">
-              <div className="px-1 text-[11px] font-semibold text-slate-600">{su.name}</div>
-              {su.tracks.map((tr, tIdx) => {
-                const pal = sectionPalette(su.color);
-                const isArmed = armed?.programId === program.id && armed?.subjectId === su.id && armed?.trackId === tr.id;
-                const placed = placedCounts[tr.id] ?? 0;
-                const target = tr.allottedPeriods || 0;
-                return (
-                  <button
-                    key={tr.id}
-                    onClick={() => onArm(isArmed ? null : { programId: program.id, subjectId: su.id, trackId: tr.id })}
-                    className={cn(
-                      'w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all border',
-                      isArmed
-                        ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow-sm'
-                        : 'border-transparent bg-white hover:border-slate-300',
-                    )}
-                  >
-                    <span
-                      className={cn('h-5 w-5 rounded shrink-0', pal.solid)}
-                      style={trackPattern(tIdx)}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-slate-900 truncate">{tr.name}</div>
-                      <div className="text-[10px] text-slate-500 tabular-nums">
-                        {placed}/{target || '—'} placed
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Copy-week dialog */}
+      <AlertDialog open={!!confirmCopy} onOpenChange={(o) => !o && setConfirmCopy(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Copy this week to {confirmCopy?.targets.length} week(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will overwrite any existing cells in the target weeks. You can undo from the toast.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-indigo-600 hover:bg-indigo-700" onClick={performCopy}>
+              Copy
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
+
+/* ──────────────── Copy helpers ──────────────── */
+
+type CopyMode = 'next' | 'next4' | 'remaining' | 'all';
+
+function copyTargets(weekStarts: string[], srcIdx: number, mode: CopyMode): string[] {
+  switch (mode) {
+    case 'next': return weekStarts[srcIdx + 1] ? [weekStarts[srcIdx + 1]] : [];
+    case 'next4': return weekStarts.slice(srcIdx + 1, srcIdx + 5);
+    case 'remaining': return weekStarts.slice(srcIdx + 1);
+    case 'all': return weekStarts.filter((_, i) => i !== srcIdx);
+  }
+}
+
+/* ──────────────── Cell ──────────────── */
 
 const TimetableCell: React.FC<{
   section: Section;
   cell: ReturnType<Section['cells']['find']>;
   armed: CellAllocation | null;
+  readOnly?: boolean;
   slot: SlotKey;
   onClick: () => void;
   facultyById: Record<string, { id: string; name: string } | undefined>;
   showProgram: boolean;
-}> = ({ section, cell, armed, slot, onClick, facultyById, showProgram }) => {
+  onDragStart: () => void;
+  onDragEnd: () => void;
+}> = ({ section, cell, armed, readOnly, slot, onClick, facultyById, showProgram, onDragStart, onDragEnd }) => {
   if (!cell) {
     return (
       <button
         onClick={onClick}
+        disabled={readOnly || !armed}
         className={cn(
-          'w-full h-full min-h-[68px] rounded-lg border-2 border-dashed transition-all',
-          armed
-            ? 'border-indigo-300 bg-indigo-50/50 hover:bg-indigo-100/50 hover:border-indigo-500'
-            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+          'w-full h-full min-h-[76px] rounded-lg border-2 border-dashed transition-all',
+          armed && !readOnly
+            ? 'border-indigo-300 bg-indigo-50/50 hover:bg-indigo-100/50 hover:border-indigo-500 cursor-copy'
+            : 'border-slate-200',
         )}
       >
-        <span className="text-lg text-slate-300">＋</span>
+        <Plus className="h-4 w-4 text-slate-300 mx-auto" />
       </button>
     );
   }
@@ -392,144 +770,254 @@ const TimetableCell: React.FC<{
   const program = section.programs.find((p) => p.id === programId);
   const subject = program?.subjects.find((s) => s.id === subjectId);
   const track = subject?.tracks.find((t) => t.id === trackId);
-  const trackIdx = subject?.tracks.findIndex((t) => t.id === trackId) ?? 0;
   if (!program || !subject || !track) return null;
   const pal = sectionPalette(subject.color);
   const fac = facultyById[facultyId ?? track.facultyId];
+  const showTrack = subject.tracks.length > 1;
 
-  // When something is armed, clicks should trigger placement (and thus the
-  // conflict-replace dialog when the cell is filled). When NOTHING is armed,
-  // clicking a filled cell opens the faculty/clear popover.
-  const cellButton = (
-    <button
-      onClick={armed ? onClick : undefined}
+  const inner = (
+    <div
+      draggable={!readOnly}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={armed && !readOnly ? onClick : undefined}
       className={cn(
-        'w-full h-full min-h-[68px] rounded-lg border text-left p-2 transition-all hover:shadow-md',
+        'w-full h-full min-h-[76px] rounded-lg border text-left p-1.5 transition-all group',
         pal.surface, pal.border,
-        armed && 'cursor-copy ring-1 ring-indigo-200/0 hover:ring-2 hover:ring-indigo-300',
+        !readOnly && 'hover:shadow-md cursor-grab active:cursor-grabbing',
       )}
     >
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className={cn('h-3 w-3 rounded shrink-0', pal.solid)} style={trackPattern(trackIdx)} />
+      <div className="flex items-center gap-1 mb-1">
         {showProgram && (
-          <span className={cn('text-[10px] font-bold uppercase tracking-wide', pal.text)}>
+          <span className="text-[9px] font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-indigo-100 text-indigo-800">
             {program.code}
           </span>
         )}
-        {subject.tracks.length > 1 && (
-          <span className="text-[10px] text-slate-500 font-medium ml-auto">{track.name}</span>
+        {showTrack && (
+          <span className="text-[9px] font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-amber-100 text-amber-800 ml-auto">
+            {track.name}
+          </span>
+        )}
+        {!readOnly && (
+          <GripVertical className={cn('h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100', !showTrack && 'ml-auto')} />
         )}
       </div>
-      <div className="text-xs font-semibold text-slate-900 truncate">{subject.name}</div>
+      <div className={cn('text-xs font-bold truncate', pal.text)}>{subject.name}</div>
       <div className="text-[10px] text-slate-600 truncate mt-0.5">
         {fac ? shortName(fac.name) : 'no faculty'}
       </div>
-    </button>
+    </div>
   );
 
-  if (armed) return cellButton;
+  if (armed || readOnly) return inner;
 
   return (
     <Popover>
-      <PopoverTrigger asChild>{cellButton}</PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
-        <div className={cn('px-3 py-2 bg-gradient-to-r text-white', pal.headerGradient)}>
-          {showProgram && <div className="text-[10px] uppercase tracking-wider opacity-80">{program.code}</div>}
-          <div className="text-sm font-bold">{subject.name}{subject.tracks.length > 1 ? ` · ${track.name}` : ''}</div>
+      <PopoverTrigger asChild>{inner}</PopoverTrigger>
+      <PopoverContent className="w-64 p-3 space-y-2" align="start">
+        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+          {showProgram && `${program.code} · `}{subject.name}{showTrack && ` · ${track.name}`}
         </div>
-        <div className="p-3 space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Faculty</div>
-          <CellFacultyPicker
-            section={section}
-            currentFaculty={facultyId ?? track.facultyId}
-            facultyById={facultyById}
-            onPick={(fid) => setCellFaculty(section.id, slot, fid === track.facultyId ? undefined : fid)}
-          />
-          <button
-            onClick={() => { clearCell(section.id, slot); toast('Cell cleared'); }}
-            className="w-full inline-flex items-center justify-center gap-1.5 mt-2 px-2 py-1.5 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md"
+        <div className="space-y-1">
+          <label className="text-[10px] font-semibold text-slate-600">Faculty</label>
+          <Select
+            value={facultyId ?? track.facultyId}
+            onValueChange={(v) => setCellFaculty(section.id, slot, v === track.facultyId ? undefined : v)}
           >
-            <Trash2 className="h-3 w-3" /> Clear cell
-          </button>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {section.facultyPool.map((fid) => {
+                const f = facultyById[fid];
+                if (!f) return null;
+                return <SelectItem key={fid} value={fid} className="text-xs">{shortName(f.name)}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
         </div>
+        <button
+          onClick={() => { clearCell(section.id, slot); toast('Cell cleared'); }}
+          className="w-full inline-flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-md"
+        >
+          <Trash2 className="h-3 w-3" /> Clear cell
+        </button>
       </PopoverContent>
     </Popover>
   );
 };
 
-const CellFacultyPicker: React.FC<{
-  section: Section;
-  currentFaculty: string;
-  facultyById: Record<string, { id: string; name: string } | undefined>;
-  onPick: (id: string) => void;
-}> = ({ section, currentFaculty, facultyById, onPick }) => {
+/* ──────────────── Plan-day (column) menu ──────────────── */
+
+const PlanDayMenu: React.FC<{
+  palette: PaletteEntry[];
+  onApply: (orderedKeys: string[], opts: { overwrite: boolean; repeat: boolean }) => void;
+  showProgram: boolean;
+}> = ({ palette, onApply, showProgram }) => {
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [overwrite, setOverwrite] = useState(false);
+  const [repeat, setRepeat] = useState(true);
+
+  const add = (k: string) => setPicked((p) => [...p, k]);
+  const remove = (i: number) => setPicked((p) => p.filter((_, idx) => idx !== i));
+  const move = (i: number, dir: -1 | 1) => {
+    setPicked((p) => {
+      const next = [...p];
+      const j = i + dir;
+      if (j < 0 || j >= next.length) return next;
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  };
+
   return (
-    <div className="space-y-1 max-h-44 overflow-y-auto">
-      {section.facultyPool.map((fid) => {
-        const f = facultyById[fid];
-        if (!f) return null;
-        const isCurrent = fid === currentFaculty;
-        return (
-          <button
-            key={fid}
-            onClick={() => onPick(fid)}
-            className={cn(
-              'w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left',
-              isCurrent ? 'bg-indigo-100 text-indigo-900' : 'hover:bg-slate-100 text-slate-700',
-            )}
-          >
-            <Users className="h-3 w-3" />
-            <span className="flex-1 truncate">{shortName(f.name)}</span>
-            {isCurrent && <span className="text-[10px]">✓</span>}
-          </button>
-        );
-      })}
-    </div>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPicked([]); }}>
+      <PopoverTrigger asChild>
+        <button className="p-0.5 rounded hover:bg-slate-200 text-slate-500" aria-label="Plan this day">
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-3" align="start">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-bold text-slate-900">Plan this day</div>
+          <DevNote title="Plan-day rules">
+            <p>Cells are filled top-down through the day's periods in the order you list.</p>
+            <p><b>Overwrite</b>: replace already-filled periods.</p>
+            <p><b>Repeat</b>: loop the list to fill remaining periods.</p>
+          </DevNote>
+        </div>
+        <div className="space-y-1">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Order</div>
+          {picked.length === 0 && (
+            <div className="text-[11px] text-slate-400 italic">Add subjects below</div>
+          )}
+          {picked.map((k, i) => {
+            const e = palette.find((p) => p.key === k);
+            if (!e) return null;
+            return (
+              <div key={`${k}-${i}`} className="flex items-center gap-1 px-1.5 py-1 bg-slate-50 rounded text-[11px]">
+                <span className="w-4 text-slate-400">{i + 1}.</span>
+                <span className="flex-1 truncate">
+                  {e.subjectName}
+                  {showProgram && <span className="text-slate-500"> · {e.programCode}</span>}
+                  {e.subjectHasMultipleTracks && <span className="text-slate-500"> · {e.trackName}</span>}
+                </span>
+                <button onClick={() => move(i, -1)} className="text-slate-400 hover:text-slate-700 px-1">↑</button>
+                <button onClick={() => move(i, 1)} className="text-slate-400 hover:text-slate-700 px-1">↓</button>
+                <button onClick={() => remove(i)} className="text-rose-500 hover:text-rose-700 px-1"><X className="h-3 w-3" /></button>
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-1">
+          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Add subject</div>
+          <Select onValueChange={(v) => add(v)}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick…" /></SelectTrigger>
+            <SelectContent>
+              {palette.map((e) => (
+                <SelectItem key={e.key} value={e.key} className="text-xs">
+                  {e.subjectName}
+                  {showProgram && ` · ${e.programCode}`}
+                  {e.subjectHasMultipleTracks && ` · ${e.trackName}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-[11px] text-slate-700">
+            <Checkbox checked={overwrite} onCheckedChange={(v) => setOverwrite(!!v)} /> Overwrite filled periods
+          </label>
+          <label className="flex items-center gap-2 text-[11px] text-slate-700">
+            <Checkbox checked={repeat} onCheckedChange={(v) => setRepeat(!!v)} /> Repeat to fill remaining
+          </label>
+        </div>
+        <Button
+          size="sm"
+          className="w-full bg-indigo-600 hover:bg-indigo-700"
+          disabled={picked.length === 0}
+          onClick={() => { onApply(picked, { overwrite, repeat }); setOpen(false); setPicked([]); }}
+        >
+          Apply
+        </Button>
+      </PopoverContent>
+    </Popover>
   );
 };
 
-const RowMenu: React.FC<{ onFillRow: () => void }> = ({ onFillRow }) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button className="p-0.5 rounded hover:bg-slate-200 text-slate-500" aria-label="Row menu">
-        <MoreHorizontal className="h-3.5 w-3.5" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <DropdownMenuLabel className="text-[10px]">Bulk actions</DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={onFillRow} className="text-xs">
-        Fill row with armed allocation
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+/* ──────────────── Fill-row (period) menu ──────────────── */
 
-const ConflictBody: React.FC<{
-  section: Section;
-  incoming: CellAllocation;
-  existing: CellAllocation;
-}> = ({ section, incoming, existing }) => {
-  const label = (a: CellAllocation) => {
-    const p = section.programs.find((p) => p.id === a.programId);
-    const su = p?.subjects.find((s) => s.id === a.subjectId);
-    const tr = su?.tracks.find((t) => t.id === a.trackId);
-    return `${p?.code} · ${su?.name} · ${tr?.name}`;
-  };
+const FillRowMenu: React.FC<{
+  palette: PaletteEntry[];
+  facultyPool: string[];
+  facultyById: Record<string, { id: string; name: string } | undefined>;
+  onApply: (key: string | null, faculty: string | undefined, overwrite: boolean) => void;
+  showProgram: boolean;
+}> = ({ palette, facultyPool, facultyById, onApply, showProgram }) => {
+  const [open, setOpen] = useState(false);
+  const [pick, setPick] = useState<string>('');
+  const [fac, setFac] = useState<string>('');
+  const [overwrite, setOverwrite] = useState(false);
+
   return (
-    <div className="space-y-3 text-sm">
-      <div className="rounded-lg bg-rose-50 border border-rose-200 p-3">
-        <div className="text-[10px] uppercase tracking-wider text-rose-600 font-semibold">Currently holds</div>
-        <div className="text-slate-900 font-semibold">{label(existing)}</div>
-      </div>
-      <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3">
-        <div className="text-[10px] uppercase tracking-wider text-indigo-600 font-semibold">Will be replaced with</div>
-        <div className="text-slate-900 font-semibold">{label(incoming)}</div>
-      </div>
-      <div className="text-xs text-slate-500">
-        Each slot can hold only one allocation across all programs. Replacing will free this slot for the previous track.
-      </div>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="p-0.5 rounded hover:bg-slate-200 text-slate-500" aria-label="Row menu">
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3 space-y-2" align="start">
+        <div className="text-xs font-bold text-slate-900">Fill this period across the week</div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Subject / track</label>
+          <Select value={pick} onValueChange={setPick}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick…" /></SelectTrigger>
+            <SelectContent>
+              {palette.map((e) => (
+                <SelectItem key={e.key} value={e.key} className="text-xs">
+                  {e.subjectName}
+                  {showProgram && ` · ${e.programCode}`}
+                  {e.subjectHasMultipleTracks && ` · ${e.trackName}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Faculty override</label>
+          <Select value={fac} onValueChange={setFac}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Default from track" /></SelectTrigger>
+            <SelectContent>
+              {facultyPool.map((fid) => {
+                const f = facultyById[fid];
+                if (!f) return null;
+                return <SelectItem key={fid} value={fid} className="text-xs">{shortName(f.name)}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+        <label className="flex items-center gap-2 text-[11px] text-slate-700">
+          <Checkbox checked={overwrite} onCheckedChange={(v) => setOverwrite(!!v)} /> Overwrite occupied cells
+        </label>
+        <div className="flex items-center gap-2 pt-1">
+          <Button
+            size="sm"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+            disabled={!pick}
+            onClick={() => { onApply(pick, fac || undefined, overwrite); setOpen(false); setPick(''); setFac(''); setOverwrite(false); }}
+          >
+            Apply
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-rose-700 border-rose-200 hover:bg-rose-50"
+            onClick={() => { onApply(null, undefined, false); setOpen(false); }}
+          >
+            Clear
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
