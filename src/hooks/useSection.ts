@@ -2,14 +2,18 @@ import { useSyncExternalStore } from 'react';
 import {
   CellAllocation,
   CellOccupiedError,
+  ChangeLogEntry,
+  ChangeLogType,
   Section,
   SectionConfig,
   SlotKey,
   SubjectStatus,
+  WindowStatus,
   slotKeyEq,
   subjectStatusKey,
 } from '@/types/section';
 import { MOCK_SECTIONS } from '@/data/mockSections';
+
 
 /** Session-only in-memory store mirroring useInstitutePrograms. */
 
