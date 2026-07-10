@@ -50,7 +50,7 @@ export function useScheduleWorkspace() {
 
   const initialTab = (searchParams.get('tab') as WorkspaceTab) ?? 'timetable';
   const [tab, setTabState] = useState<WorkspaceTab>(
-    initialTab === 'schedule' ? 'schedule' : 'timetable',
+    initialTab === 'schedule' || initialTab === 'day' ? initialTab : 'timetable',
   );
 
   const [compareOn, setCompareOn] = useState<boolean>(!!persisted.compareOn);
