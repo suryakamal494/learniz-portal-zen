@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSections } from '@/hooks/useSection';
 
-export type WorkspaceTab = 'timetable' | 'schedule';
+export type WorkspaceTab = 'timetable' | 'day' | 'schedule';
 
 const LS_KEY = 'schedule-workspace-state:v1';
 
