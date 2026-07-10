@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, CalendarDays, CalendarRange, ChevronRight, Columns2, Grid3x3, Layers, Sparkles,
+  ArrowLeft, CalendarDays, ChevronRight, Columns2, Layers, Sparkles, X,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
