@@ -590,8 +590,18 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
                               </TooltipContent>
                             </Tooltip>
                           )}
+                          {row.isEditable && (
+                            <div onClick={(e) => e.stopPropagation()} className="mt-1">
+                              <AutofillPopover
+                                section={row.section}
+                                facultyById={facultyById}
+                                onFill={(keys, mode) => autofillRow(row.section, keys, mode)}
+                              />
+                            </div>
+                          )}
                         </div>
                       </td>
+
 
                       {Array.from({ length: maxPeriods }).map((_, p) => {
                         if (p >= row.periodsPerDay) {
