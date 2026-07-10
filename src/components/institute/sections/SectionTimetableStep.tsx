@@ -448,8 +448,11 @@ export const SectionTimetableStep: React.FC<Props> = ({
         <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xs font-semibold text-indigo-700">
-                {stats.filled} / {stats.capacity} cells filled
+              <span className="text-xs font-semibold text-indigo-700 tabular-nums">
+                {stats.filled}
+                <span className="text-slate-400"> / </span>
+                {stats.capacity}
+                <span className="text-slate-500 font-normal"> cells filled this week</span>
               </span>
               <span className="text-[10px] text-slate-500">({stats.pct}%)</span>
             </div>
