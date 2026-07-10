@@ -103,6 +103,10 @@ export const SectionTimetableStep: React.FC<Props> = ({
 
   const palette = useMemo(() => buildPalette(section), [section]);
   const placedCounts = useMemo(() => placedByTrack(section, window), [section, window]);
+  const placedThisWeek = useMemo(
+    () => placedByTrackInWeek(section, weekStart),
+    [section, weekStart],
+  );
   const facultyById = useMemo(
     () => Object.fromEntries(facultyList.map((f) => [f.id, f])),
     [facultyList],
