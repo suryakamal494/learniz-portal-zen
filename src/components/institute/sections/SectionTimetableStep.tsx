@@ -493,7 +493,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
           <div className="px-3 py-2 border-b border-slate-100">
             <div className="text-sm font-semibold text-slate-900">Subject cards</div>
             <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
-              Pick one, then click cells.
+              Filled / Needed in this window. Pick one, then click cells.
             </div>
           </div>
           <div className="p-2 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
