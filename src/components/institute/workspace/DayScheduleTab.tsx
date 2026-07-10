@@ -211,6 +211,40 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
     toast('Cell cleared');
   };
 
+  /** Fill an entire section row (this weekday) round-robin across selected subject entries. */
+  const autofillRow = (
+    section: Section,
+    selectedKeys: string[],
+    mode: 'empty' | 'overwrite',
+  ) => {
+    const palette = buildPalette(section);
+    const picks = selectedKeys
+      .map((k) => palette.find((p) => p.key === k))
+      .filter((p): p is PaletteEntry => !!p);
+    if (picks.length === 0) return;
+    const periods = section.config.periodsPerDay;
+    let placed = 0;
+    let skipped = 0;
+    for (let p = 0; p < periods; p++) {
+      const slot: SlotKey = { weekStartDate: weekStart, weekday, periodIndex: p };
+      const existing = section.cells.find((c) => slotKeyEq(c, slot));
+      if (existing && mode === 'empty') { skipped++; continue; }
+      const pick = picks[p % picks.length];
+      setCellAllocation(
+        section.id,
+        slot,
+        { programId: pick.programId, subjectId: pick.subjectId, trackId: pick.trackId },
+        { force: true },
+      );
+      placed++;
+    }
+    toast.success(
+      `${section.name} · ${placed} period${placed === 1 ? '' : 's'} filled` +
+        (skipped ? ` · ${skipped} kept` : ''),
+    );
+  };
+
+
   const handleDrop = (dstSectionId: string, dstPeriod: number) => {
     if (!dragKey) return;
     const [srcSectionId, srcPeriodStr] = dragKey.split('#');
