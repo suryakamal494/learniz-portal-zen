@@ -29,9 +29,11 @@ interface Props {
   onNext?: () => void;
 }
 
-export const SectionAllocationStep: React.FC<Props> = ({ section, onBack, onNext }) => {
+export const SectionAllocationStep: React.FC<Props> = ({ section, onBack }) => {
   const faculty = useFaculty();
   const win = section.windows[section.windows.length - 1];
+  const isPublished = (win?.status ?? 'draft') === 'published';
+  const publishedAt = win?.publishedAt;
   const cap = useMemo(() => computeSectionCapacity(section.config, win), [section.config, win]);
   const allocated = totalAllocated(section);
   const remaining = cap.totalPeriods - allocated;
