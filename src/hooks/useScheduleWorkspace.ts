@@ -27,12 +27,19 @@ function writePersisted(p: Persisted) {
 }
 
 export function useScheduleWorkspace() {
-  const sections = useSections();
+  const allSections = useSections();
+  // Only sections that have at least one *published* window surface here.
+  const sections = allSections
+    .map((s) => ({ ...s, windows: s.windows.filter((w) => (w.status ?? 'draft') === 'published') }))
+    .filter((s) => s.windows.length > 0);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const persisted = readPersisted();
 
   const initialSectionId =
-    searchParams.get('sectionId') ??
+    (searchParams.get('sectionId') && sections.some((s) => s.id === searchParams.get('sectionId'))
+      ? searchParams.get('sectionId')!
+      : undefined) ??
     (persisted.sectionId && sections.some((s) => s.id === persisted.sectionId)
       ? persisted.sectionId
       : sections[0]?.id);
@@ -41,7 +48,9 @@ export function useScheduleWorkspace() {
   const section = sections.find((s) => s.id === sectionId);
 
   const initialWindowId =
-    searchParams.get('windowId') ??
+    (searchParams.get('windowId') && section?.windows.some((w) => w.id === searchParams.get('windowId'))
+      ? searchParams.get('windowId')!
+      : undefined) ??
     (persisted.windowId && section?.windows.some((w) => w.id === persisted.windowId)
       ? persisted.windowId
       : section?.windows[section.windows.length - 1]?.id);
@@ -58,7 +67,12 @@ export function useScheduleWorkspace() {
     persisted.compareSectionId,
   );
 
-  // Ensure window is valid whenever section changes.
+  // Ensure section + window remain valid as publish state changes.
+  useEffect(() => {
+    if (sectionId && !sections.some((s) => s.id === sectionId)) {
+      setSectionIdState(sections[0]?.id);
+    }
+  }, [sections, sectionId]);
   useEffect(() => {
     if (!section) return;
     if (!section.windows.some((w) => w.id === windowId)) {
