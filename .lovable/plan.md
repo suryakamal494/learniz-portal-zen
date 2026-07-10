@@ -1,61 +1,56 @@
+## Why the current placement is illogical
 
-## Goals
+The top toolbar exposes two selectors — **Section** and **Academic Window** — and everything below is supposed to operate on that (section, window) pair. Today:
 
-Three UI/UX fixes to the Weekly Timetable's **Day view** (`src/components/institute/workspace/DayScheduleTab.tsx`) plus a small tweak to `TimetableWorkspaceTab.tsx`.
+- **Weekly Timetable** tab → uses (section, window). ✅ Toolbar matches.
+- **Academic Schedule** tab → uses (section, window). ✅ Toolbar matches.
+- **Day view**, buried as a sub-toggle inside the Weekly Timetable tab → spans **all sections** of the institute for one weekday of one week. It only needs the **window** (plus a "focus" section, at most). ❌ The Section picker at the top silently changes meaning when you flip this sub-toggle.
 
----
+So the flaw isn't cosmetic — the Week/Day toggle changes what the toolbar *means*, while pretending to be a minor view switch nested two levels deep. That's the mismatch.
 
-## 1. Compact the "Placing into" subject-card rail
+## The logical rearrangement
 
-The left rail currently uses a wide `minmax(220px, 22%)` column with vertically stacked cards (subject on top, faculty underneath). It dominates the viewport (see image 1).
+Group modes by their data dependencies. Three peer tabs replace the current two-tab + nested-toggle structure:
 
-Changes:
-- Shrink the rail column to `minmax(180px, 16%)` (approx. 180–200px wide).
-- Rebuild each subject card as a **single line**: color chip + subject name (truncate) + optional program / track badges on the right. Move faculty into a tooltip on hover instead of a second row.
-- Tighten padding (`p-1.5` → `p-1`), reduce inter-card gap (`gap-1.5` → `gap-1`), and drop card border radius one step (`rounded-lg` → `rounded-md`).
-- Keep the DevNote and "Placing into / section / window" header but pack it into a single 2-line block.
+```text
+[ Weekly Timetable ]  [ Day Timetable ]  [ Academic Schedule ]
+      (section+window)    (window only)       (section+window)
+```
 
-Result: minimum 5 subject rows visible without scroll on a 900px-tall viewport; rail no longer eats horizontal space from the grid.
+Rules that fall out of this grouping:
 
----
+1. **Weekly Timetable** and **Academic Schedule** keep the current toolbar: Section + Window pickers, both required. (Per your answer, these stay as separate tabs, not merged.)
+2. **Day Timetable** hides the Section picker (or demotes it to an optional "Focus section" highlight chip). Window picker stays. Compare-sections control also hides — it's Week-only.
+3. Academic Schedule stays **week-scoped only**, per your answer. No day-mode schedule view.
+4. All three tabs still write into the same underlying cell store, so edits sync exactly like today.
 
-## 2. Draft/Publish button placement
+## Files to change
 
-- **Week view**: keep the existing status card in `TimetableWorkspaceTab.tsx` unchanged (Save-as-Draft + Publish / Re-publish + Revert).
-- **Day view**: add a compact status strip at the top of `DayScheduleTab` showing only **Save as Draft** (calls the existing toast — writes already persist via `useSection`, this button just confirms/announces). No Publish button here.
+- `src/hooks/useScheduleWorkspace.ts`
+  - `WorkspaceTab` becomes `'timetable' | 'day' | 'schedule'`.
+  - URL param `tab` accepts the new value; drop the separate `ttView` local state.
+- `src/pages/institute/ScheduleWorkspacePage.tsx`
+  - Remove the Week/Day segmented toggle from inside the Timetable tab.
+  - Add a third `TabsTrigger` for **Day Timetable** (own accent color, e.g. amber/orange, distinct from indigo Week and emerald Schedule).
+  - When `tab === 'day'`: hide the Section `<Select>` and the Compare controls; keep Window. Optionally show a small "Focus: {section.name}" chip that can be cleared.
+  - Route `TabsContent`:
+    - `timetable` → existing `TimetableWorkspaceTab` (+ compare grid).
+    - `day` → existing `DayScheduleTab` (no wrapping toggle bar).
+    - `schedule` → existing `AcademicScheduleTab`.
+- `src/components/institute/workspace/DayScheduleTab.tsx`
+  - Accept an optional `focusSectionId` (already does) and treat Section as optional; no other logic change.
+- Persisted state (`schedule-workspace-state:v1`) migrates naturally — old `tab` values `timetable|schedule` still valid; add `day`.
 
-The parent `TimetableWorkspaceTab` currently renders its own status card that contains Publish. When Day view is active (controlled from `ScheduleWorkspacePage`), we hide the Publish/Re-publish actions in that status card and show only draft-scope info + the Day-view save strip. Week view retains full controls.
+## Out of scope
 
-Implementation: pass a `view: 'week' | 'day'` prop into `TimetableWorkspaceTab` (already available in `ScheduleWorkspacePage`) and conditionally hide publish actions when `view === 'day'`. Day view renders its own tiny "Save as Draft" pill inside `DayScheduleTab`.
+- No changes to Timetable ↔ Schedule relationship (they stay separate tabs per your answer).
+- No changes to draft/publish rules, autofill, drag-swap, or mock data.
+- No new Day-mode schedule view.
 
----
+## QA checklist
 
-## 3. Per-row **Autofill subjects** action
-
-Each section row in the Day-view grid gets a new small button in its row header (next to the section name / status badges).
-
-Interaction:
-1. Click **Autofill** → popover opens with a multi-select checklist of every `PaletteEntry` for that row's section (built via the same `buildPalette(section)` used for the rail).
-2. Each entry shows: subject name, program code chip, track chip, faculty name — same info as the rail card.
-3. Options at the bottom: **Fill empty periods only** (default on) / **Overwrite everything**. Distribution order = "round-robin across selected subjects, left→right across P1..Pn".
-4. Confirm button "Fill row" → writes cells for that section's `(weekStart, weekday, P0..Pn-1)` via `setCellAllocation(..., { force: overwrite })`. Skips periods already filled when "empty only" is chosen.
-5. Disabled when row is not editable (no active window / not a working day).
-
-The same button appears on every editable row. No global "fill all rows" — user asked per-row.
-
-Empty-selection state: button stays disabled until at least one subject is checked.
-
----
-
-## Technical Details
-
-Files touched:
-- `src/components/institute/workspace/DayScheduleTab.tsx` — rail compaction, per-row Autofill popover, Save-as-Draft strip, single-line card layout, distribution helper.
-- `src/components/institute/workspace/TimetableWorkspaceTab.tsx` — accept `view` prop, hide Publish/Re-publish when Day view is active.
-- `src/pages/institute/ScheduleWorkspacePage.tsx` — pass current view down to `TimetableWorkspaceTab`.
-
-No data-model or hook changes. Autofill reuses `setCellAllocation`; existing `CellOccupiedError` path handles overwrite.
-
-New sub-component (inline in `DayScheduleTab.tsx`) `AutofillPopover` — self-contained, holds its own selected-ids state and overwrite toggle.
-
-DevNote on the Autofill button explains: "Round-robin distribution across selected subjects. Manually-edited cells are still overwritten only if 'Overwrite everything' is on."
+- Deep link `?tab=day&windowId=…` opens Day tab with Section picker hidden.
+- Switching from Day → Week restores the Section picker with the previously selected section.
+- Compare mode control is invisible in Day tab; re-enabling it in Week tab still works.
+- Edits made in Day tab appear immediately when switching to Week tab for the same section+window.
+- Academic Schedule tab is unchanged.
