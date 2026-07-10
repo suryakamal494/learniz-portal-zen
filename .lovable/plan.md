@@ -1,94 +1,61 @@
-## Problem statement
 
-Schools plan timetables in two directions:
-- **Week direction** (current): pick one section, fill Mon–Sat × P1–P7 for the whole academic window.
-- **Day direction** (new): pick one weekday (e.g. Monday) for **one specific week**, and fill it across **every section** in the institute at once.
+## Goals
 
-Both are two views on the **same underlying data**. A cell placed in Day view must appear in Week view and vice versa. Save as Draft / Publish are properties of the **(section, window)** pair, not of the view.
+Three UI/UX fixes to the Weekly Timetable's **Day view** (`src/components/institute/workspace/DayScheduleTab.tsx`) plus a small tweak to `TimetableWorkspaceTab.tsx`.
 
-## Solution shape
+---
 
-Add a **View toggle (Week | Day)** at the top of the Weekly Timetable workspace. The two views share:
-- The same `SectionCell[]` store (`useSection`).
-- The same window draft/publish status per section.
-- The same drag-swap and cell-action layer.
+## 1. Compact the "Placing into" subject-card rail
 
-They differ only in axes:
+The left rail currently uses a wide `minmax(220px, 22%)` column with vertically stacked cards (subject on top, faculty underneath). It dominates the viewport (see image 1).
 
-```text
-Week view: rows = periods, cols = weekdays          (scope = 1 section, whole window)
-Day view : rows = sections, cols = periods          (scope = all sections, ONE weekday, ONE week)
-```
+Changes:
+- Shrink the rail column to `minmax(180px, 16%)` (approx. 180–200px wide).
+- Rebuild each subject card as a **single line**: color chip + subject name (truncate) + optional program / track badges on the right. Move faculty into a tooltip on hover instead of a second row.
+- Tighten padding (`p-1.5` → `p-1`), reduce inter-card gap (`gap-1.5` → `gap-1`), and drop card border radius one step (`rounded-lg` → `rounded-md`).
+- Keep the DevNote and "Placing into / section / window" header but pack it into a single 2-line block.
 
-### Day-view scope rule (resolves cross-section publish conflicts)
+Result: minimum 5 subject rows visible without scroll on a 900px-tall viewport; rail no longer eats horizontal space from the grid.
 
-Day view is **always scoped to one specific week + one specific weekday**. It never spans the whole academic window. Flow:
+---
 
-1. Enter Day view → user picks **Week** (W1…Wn across institute calendar) and **Weekday** (Mon…Sat).
-2. Grid renders one row per section in the institute, filtered/greyed based on that section's active window:
-   - Section has an **active window** that covers the picked week → row is **editable**.
-   - Section has **no active window** for that week (term hasn't started, is between terms, or all windows locked) → row is rendered **greyed out** with a tag ("No active window · Term 2 starts Nov 3"). No cells accepted.
-3. Edits in Day view write into that section's currently-active window using the standard `setCellAllocation` API. Draft/publish status is inherited from the section+window — nothing new to reconcile.
-4. Once the user finishes a day, they switch to Week view to fan the day out across the window via the existing **Copy to weeks…** action.
+## 2. Draft/Publish button placement
 
-This keeps Draft/Publish semantics identical in both views because a cell always belongs to exactly one `(section, window, weekStart, weekday, periodIndex)` tuple.
+- **Week view**: keep the existing status card in `TimetableWorkspaceTab.tsx` unchanged (Save-as-Draft + Publish / Re-publish + Revert).
+- **Day view**: add a compact status strip at the top of `DayScheduleTab` showing only **Save as Draft** (calls the existing toast — writes already persist via `useSection`, this button just confirms/announces). No Publish button here.
 
-### Drag-swap rule (both views)
+The parent `TimetableWorkspaceTab` currently renders its own status card that contains Publish. When Day view is active (controlled from `ScheduleWorkspacePage`), we hide the Publish/Re-publish actions in that status card and show only draft-scope info + the Day-view save strip. Week view retains full controls.
 
-Swap is allowed when the **allocation identity matches** between source and target cell. Identity = `programId + subjectId + trackId + facultyId`. Concretely:
+Implementation: pass a `view: 'week' | 'day'` prop into `TimetableWorkspaceTab` (already available in `ScheduleWorkspacePage`) and conditionally hide publish actions when `view === 'day'`. Day view renders its own tiny "Save as Draft" pill inside `DayScheduleTab`.
 
-- Within the same section (Week view or Day view row): swap allowed whenever both cells hold the same `(program, subject, track, faculty)` OR one cell is empty.
-- Across sections (Day view only, row ↔ row): swap allowed **only if both cells share the same allocation identity** — e.g. Physics T1 · Faculty A can swap with another Physics T1 · Faculty A slot, but not with Physics T1 · Faculty B (different faculty = different card, per user rule).
-- Empty target: always allowed if the target section's window is active.
+---
 
-Rejected swaps show a toast: "Can't swap — different subject/track/faculty".
+## 3. Per-row **Autofill subjects** action
 
-## Phased implementation
+Each section row in the Day-view grid gets a new small button in its row header (next to the section name / status badges).
 
-### Phase 1 — View toggle + shell
-- Add `view: 'week' | 'day'` state in `SectionTimetableStep.tsx` (or lift into `ScheduleWorkspacePage` if cleaner).
-- Toggle pill (matches the Weekly/Academic tab styling) placed left of the week-chip bar.
-- Week view stays exactly as-is when toggle = week.
+Interaction:
+1. Click **Autofill** → popover opens with a multi-select checklist of every `PaletteEntry` for that row's section (built via the same `buildPalette(section)` used for the rail).
+2. Each entry shows: subject name, program code chip, track chip, faculty name — same info as the rail card.
+3. Options at the bottom: **Fill empty periods only** (default on) / **Overwrite everything**. Distribution order = "round-robin across selected subjects, left→right across P1..Pn".
+4. Confirm button "Fill row" → writes cells for that section's `(weekStart, weekday, P0..Pn-1)` via `setCellAllocation(..., { force: overwrite })`. Skips periods already filled when "empty only" is chosen.
+5. Disabled when row is not editable (no active window / not a working day).
 
-### Phase 2 — Day view scope pickers
-- When toggle flips to Day, render a two-control bar: **Week selector** (chip strip like current W1…Wn based on the institute calendar span) + **Weekday selector** (Mon–Sat pills).
-- Persist last picked week+weekday in URL query (`?dayWeek=…&dayDow=…`) so refresh/back works.
+The same button appears on every editable row. No global "fill all rows" — user asked per-row.
 
-### Phase 3 — DayViewGrid component
-- New `src/components/institute/sections/DayViewGrid.tsx`.
-- Rows = all sections from `mockSections` (or institute roster helper). Columns = periods 1..maxPeriodsPerDay across sections (use the max; shorter sections show — in trailing cols).
-- Per row, resolve the section's **active window** for the picked week. If none, render the row greyed with an inline tag and disable drop targets.
-- Cell renderer reuses the existing chip component from Week view (Program badge · Subject color · Track chip · Teacher initials · ✎ manual flag).
-- Sticky first column = section name + class + active-window label.
+Empty-selection state: button stays disabled until at least one subject is checked.
 
-### Phase 4 — Shared cell-action layer
-- Extract the current cell popover / picker / drag handlers from `SectionTimetableStep.tsx` into a small shared module `sectionCellActions.ts` (or a hook `useCellActions`) that both grids consume. No behaviour change for Week view.
-- Enforce the drag-swap identity rule described above in this shared layer.
+---
 
-### Phase 5 — Subject-card rail behaviour in Day view
-- Rail on the left still shows subject cards, but scoped to the **currently focused section row** (click a row header to focus; default = first editable row).
-- Metrics (this-week / window-total) recompute for the focused section+window — reuses existing helpers.
+## Technical Details
 
-### Phase 6 — Mock data & sanity
-- Confirm at least 3 sections have overlapping active windows covering the same week so Day view has content out of the box (Class 11 Morning, Class 12 PCM Excellence, and one more). Add a fourth section with a **gap week** to demonstrate the greyed row state.
-- Verify Day-view edits round-trip to Week view for the same section.
+Files touched:
+- `src/components/institute/workspace/DayScheduleTab.tsx` — rail compaction, per-row Autofill popover, Save-as-Draft strip, single-line card layout, distribution helper.
+- `src/components/institute/workspace/TimetableWorkspaceTab.tsx` — accept `view` prop, hide Publish/Re-publish when Day view is active.
+- `src/pages/institute/ScheduleWorkspacePage.tsx` — pass current view down to `TimetableWorkspaceTab`.
 
-### Phase 7 — Dev notes (mandatory)
-Add `DevNote` popovers on:
-- The View toggle → explains "same data, two directions", and that Save-as-Draft is per (section, window) not per view.
-- The Day-view week/weekday pickers → explains scope restriction (one week only) and rationale (avoids cross-window publish conflicts).
-- Greyed section rows → explains the "no active window for this week" rule.
-- Any cell where a cross-row swap is rejected → dev-note tooltip listing the identity keys (`program|subject|track|faculty`) and why the swap was blocked. This is the spec the backend integration will mirror.
+No data-model or hook changes. Autofill reuses `setCellAllocation`; existing `CellOccupiedError` path handles overwrite.
 
-## Technical notes (for devs)
+New sub-component (inline in `DayScheduleTab.tsx`) `AutofillPopover` — self-contained, holds its own selected-ids state and overwrite toggle.
 
-- **No new persistence model.** Day view is a pure render + input transformation over existing `SectionCell[]` across sections. The store already keys cells by `(section, weekStart, weekday, periodIndex)`, so writes from Day view are ordinary `setCellAllocation` calls on the target section.
-- **Draft/Publish stays per (section, window).** A day edited in Day view for Section A stays in Section A's draft; publishing Section A doesn't touch Section B. No merged publish state to reconcile.
-- **Swap identity key** = `${programId}|${subjectId}|${trackId}|${facultyId}`. Enforce in the shared cell-actions module so both views behave identically and the backend contract is unambiguous.
-- **Greying logic**: a section row is editable in Day view iff there exists a window in `section.windows` whose `[startDate, endDate]` contains the picked week's Monday AND whose status ≠ `locked`.
-- **Copy-to-weeks** stays a Week-view action; Day view intentionally has no multi-week fan-out to keep its scope narrow.
-
-## Out of scope
-
-- Cross-section bulk copy (e.g. "copy Monday from Class 11 Morning to Class 11 Evening"). Can be added later once Day view stabilises.
-- Changing Academic Schedule tab.
+DevNote on the Autofill button explains: "Round-robin distribution across selected subjects. Manually-edited cells are still overwritten only if 'Overwrite everything' is on."

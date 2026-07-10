@@ -1,9 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, Plus, Save, Trash2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
@@ -208,6 +211,40 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
     toast('Cell cleared');
   };
 
+  /** Fill an entire section row (this weekday) round-robin across selected subject entries. */
+  const autofillRow = (
+    section: Section,
+    selectedKeys: string[],
+    mode: 'empty' | 'overwrite',
+  ) => {
+    const palette = buildPalette(section);
+    const picks = selectedKeys
+      .map((k) => palette.find((p) => p.key === k))
+      .filter((p): p is PaletteEntry => !!p);
+    if (picks.length === 0) return;
+    const periods = section.config.periodsPerDay;
+    let placed = 0;
+    let skipped = 0;
+    for (let p = 0; p < periods; p++) {
+      const slot: SlotKey = { weekStartDate: weekStart, weekday, periodIndex: p };
+      const existing = section.cells.find((c) => slotKeyEq(c, slot));
+      if (existing && mode === 'empty') { skipped++; continue; }
+      const pick = picks[p % picks.length];
+      setCellAllocation(
+        section.id,
+        slot,
+        { programId: pick.programId, subjectId: pick.subjectId, trackId: pick.trackId },
+        { force: true },
+      );
+      placed++;
+    }
+    toast.success(
+      `${section.name} · ${placed} period${placed === 1 ? '' : 's'} filled` +
+        (skipped ? ` · ${skipped} kept` : ''),
+    );
+  };
+
+
   const handleDrop = (dstSectionId: string, dstPeriod: number) => {
     if (!dragKey) return;
     const [srcSectionId, srcPeriodStr] = dragKey.split('#');
@@ -353,32 +390,46 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
             <Badge variant="outline" className="text-[10px]">
               {rows.filter((r) => r.isEditable).length} / {rows.length} sections editable
             </Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => toast.success('Draft auto-saved for all edits in this week')}
+            >
+              <Save className="h-3.5 w-3.5 mr-1" /> Save as Draft
+            </Button>
+            <DevNote title="Publish lives in Week view">
+              <p>Day view only supports <b>Save as Draft</b>. Every edit is already persisted per
+              (section, window) — this button just confirms.</p>
+              <p><b>Publish</b> happens in <b>Week view</b>, where you can see the whole week for one
+              section before promoting the timetable.</p>
+            </DevNote>
           </div>
         </CardContent>
       </Card>
 
       {/* Body: focused-section palette rail + day grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,22%)_1fr] gap-3 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(170px,15%)_1fr] gap-3 items-start">
         {/* Palette rail for the focused section */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-3">
-          <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
+          <div className="px-2.5 py-1.5 border-b border-slate-100 flex items-start justify-between gap-1">
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Placing into</div>
-              <div className="text-sm font-semibold text-slate-900 truncate">
+              <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Placing into</div>
+              <div className="text-[11px] font-semibold text-slate-900 truncate leading-tight">
                 {focusedRow?.section.name ?? '—'}
               </div>
-              <div className="text-[10px] text-slate-500 truncate">
+              <div className="text-[9px] text-slate-500 truncate">
                 {focusedRow?.window?.label ?? (focusedRow?.window ? `${focusedRow.window.startDate} → ${focusedRow.window.endDate}` : 'No active window')}
               </div>
             </div>
             <DevNote title="Palette scope">
               <p>Day view can only place cards from <b>one section at a time</b>. Click a section's row header on the right to focus it here.</p>
-              <p>To place across another section, click that section's row header first.</p>
+              <p>Use the per-row <b>Autofill</b> button to fill an entire section row at once.</p>
             </DevNote>
           </div>
-          <div className="p-2 flex flex-col gap-1.5 max-h-[calc(100vh-260px)] overflow-y-auto">
+          <div className="p-1 flex flex-col gap-1 max-h-[calc(100vh-260px)] overflow-y-auto">
             {focusedPalette.length === 0 && (
-              <div className="text-[11px] text-slate-400 italic px-2 py-3">
+              <div className="text-[10px] text-slate-400 italic px-2 py-3">
                 Focus an editable section row to see its subject cards.
               </div>
             )}
@@ -389,46 +440,49 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
                 armed?.subjectId === entry.subjectId &&
                 armed?.trackId === entry.trackId;
               return (
-                <button
-                  key={entry.key}
-                  onClick={() => setArmed(isArmed
-                    ? null
-                    : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
-                  className={cn(
-                    'text-left rounded-lg border p-1.5 transition-all',
-                    isArmed
-                      ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
-                      : cn(pal.border, pal.surface, 'hover:shadow-sm'),
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-1 min-w-0">
-                    <div className={cn('text-xs font-semibold truncate', pal.text)}>
-                      {entry.subjectName}
-                    </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {entry.showProgram && (
-                        <span className="bg-indigo-100 text-indigo-800 text-[9px] px-1 rounded font-bold">
-                          {entry.programCode}
-                        </span>
+                <Tooltip key={entry.key}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setArmed(isArmed
+                        ? null
+                        : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
+                      className={cn(
+                        'text-left rounded-md border px-1.5 py-1 transition-all flex items-center gap-1 min-w-0',
+                        isArmed
+                          ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
+                          : cn(pal.border, pal.surface, 'hover:shadow-sm'),
                       )}
-                      {entry.subjectHasMultipleTracks && (
-                        <span className="bg-amber-100 text-amber-800 text-[9px] px-1 rounded font-bold">
-                          {entry.trackName}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-[9px] text-slate-500 mt-0.5 truncate">
-                    {facultyById[entry.facultyId]?.name ?? 'no faculty'}
-                  </div>
-                </button>
+                    >
+                      <span className={cn('text-[11px] font-semibold truncate flex-1 min-w-0', pal.text)}>
+                        {entry.subjectName}
+                      </span>
+                      <span className="flex items-center gap-0.5 shrink-0">
+                        {entry.showProgram && (
+                          <span className="bg-indigo-100 text-indigo-800 text-[8px] px-1 rounded font-bold leading-tight">
+                            {entry.programCode}
+                          </span>
+                        )}
+                        {entry.subjectHasMultipleTracks && (
+                          <span className="bg-amber-100 text-amber-800 text-[8px] px-1 rounded font-bold leading-tight">
+                            {entry.trackName}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-[11px]">
+                    {entry.subjectName}
+                    {entry.subjectHasMultipleTracks && ` · ${entry.trackName}`}
+                    <div className="text-slate-400">{facultyById[entry.facultyId]?.name ?? 'no faculty'}</div>
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
             {armed && (
               <Button
                 size="sm"
                 variant="outline"
-                className="mt-1"
+                className="mt-1 h-7 text-[11px]"
                 onClick={() => setArmed(null)}
               >
                 Disarm
@@ -536,8 +590,18 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
                               </TooltipContent>
                             </Tooltip>
                           )}
+                          {row.isEditable && (
+                            <div onClick={(e) => e.stopPropagation()} className="mt-1">
+                              <AutofillPopover
+                                section={row.section}
+                                facultyById={facultyById}
+                                onFill={(keys, mode) => autofillRow(row.section, keys, mode)}
+                              />
+                            </div>
+                          )}
                         </div>
                       </td>
+
 
                       {Array.from({ length: maxPeriods }).map((_, p) => {
                         if (p >= row.periodsPerDay) {
@@ -740,3 +804,120 @@ const DayCell: React.FC<{
     </Popover>
   );
 };
+
+/* ─────────────── AutofillPopover ─────────────── */
+
+const AutofillPopover: React.FC<{
+  section: Section;
+  facultyById: Record<string, { id: string; name: string } | undefined>;
+  onFill: (selectedKeys: string[], mode: 'empty' | 'overwrite') => void;
+}> = ({ section, facultyById, onFill }) => {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [mode, setMode] = useState<'empty' | 'overwrite'>('empty');
+  const entries = useMemo(() => buildPalette(section), [section]);
+
+  const toggle = (key: string) =>
+    setSelected((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]));
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setSelected([]); setMode('empty'); } }}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 px-1.5 text-[10px] font-semibold gap-1"
+        >
+          <Wand2 className="h-3 w-3" /> Autofill
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-2" align="start">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+              Autofill row
+            </div>
+            <div className="text-xs font-semibold text-slate-900 truncate">{section.name}</div>
+          </div>
+          <DevNote title="Autofill logic">
+            <p>Selected subjects are placed <b>round-robin</b> across periods P1..Pn (left→right).</p>
+            <p><b>Fill empty only</b>: skips cells that already have a subject.</p>
+            <p><b>Overwrite everything</b>: replaces every cell in this row (including manually-edited ones).</p>
+          </DevNote>
+        </div>
+        <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
+          {entries.map((e) => {
+            const pal = sectionPalette(e.subjectColor);
+            const isSel = selected.includes(e.key);
+            return (
+              <label
+                key={e.key}
+                className={cn(
+                  'flex items-center gap-2 rounded-md border px-2 py-1.5 cursor-pointer transition-all',
+                  isSel ? 'border-indigo-500 bg-indigo-50' : cn(pal.border, pal.surface),
+                )}
+              >
+                <Checkbox
+                  checked={isSel}
+                  onCheckedChange={() => toggle(e.key)}
+                  className="h-3.5 w-3.5"
+                />
+                <span className={cn('text-xs font-semibold truncate flex-1 min-w-0', pal.text)}>
+                  {e.subjectName}
+                </span>
+                <span className="flex items-center gap-0.5 shrink-0">
+                  {e.showProgram && (
+                    <span className="bg-indigo-100 text-indigo-800 text-[8px] px-1 rounded font-bold">
+                      {e.programCode}
+                    </span>
+                  )}
+                  {e.subjectHasMultipleTracks && (
+                    <span className="bg-amber-100 text-amber-800 text-[8px] px-1 rounded font-bold">
+                      {e.trackName}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[9px] text-slate-500 truncate max-w-[70px]">
+                  {facultyById[e.facultyId]?.name.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '') ?? '—'}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <RadioGroup value={mode} onValueChange={(v) => setMode(v as 'empty' | 'overwrite')} className="gap-1">
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="empty" id={`fill-empty-${section.id}`} className="h-3.5 w-3.5" />
+            <Label htmlFor={`fill-empty-${section.id}`} className="text-[11px] cursor-pointer">
+              Fill empty periods only
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="overwrite" id={`fill-over-${section.id}`} className="h-3.5 w-3.5" />
+            <Label htmlFor={`fill-over-${section.id}`} className="text-[11px] cursor-pointer">
+              Overwrite everything
+            </Label>
+          </div>
+        </RadioGroup>
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 h-7 text-[11px]"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 h-7 text-[11px] bg-indigo-600 hover:bg-indigo-700"
+            disabled={selected.length === 0}
+            onClick={() => { onFill(selected, mode); setOpen(false); setSelected([]); }}
+          >
+            Fill row
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
