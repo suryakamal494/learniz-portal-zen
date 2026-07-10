@@ -28,6 +28,8 @@ const ScheduleWorkspacePage: React.FC = () => {
     compareSectionId, setCompareSectionId,
   } = useScheduleWorkspace();
 
+  const [ttView, setTtView] = useState<'week' | 'day'>('week');
+
   const [viewportOK, setViewportOK] = useState(
     typeof globalThis.window !== 'undefined'
       ? globalThis.window.innerWidth >= MIN_COMPARE_WIDTH
