@@ -132,10 +132,17 @@ export interface CellAllocation {
   trackId: string;
   /** Optional faculty override; falls back to the track's faculty. */
   facultyId?: string;
+  /** Filled by the academic schedule generator — which chapter+topic this cell teaches. */
+  chapterId?: string;
+  chapterName?: string;
+  topicId?: string;
+  topicName?: string;
 }
 
 export interface SectionCell extends SlotKey {
   allocation: CellAllocation;
+  /** True if a teacher hand-edited chapter/topic; generator will not overwrite. */
+  manuallyEdited?: boolean;
 }
 
 export type SubjectStatus = 'draft' | 'locked' | 'published';
