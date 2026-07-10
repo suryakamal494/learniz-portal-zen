@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSections } from '@/hooks/useSection';
 
-export type WorkspaceTab = 'timetable' | 'schedule';
+export type WorkspaceTab = 'timetable' | 'day' | 'schedule';
 
 const LS_KEY = 'schedule-workspace-state:v1';
 
@@ -50,7 +50,7 @@ export function useScheduleWorkspace() {
 
   const initialTab = (searchParams.get('tab') as WorkspaceTab) ?? 'timetable';
   const [tab, setTabState] = useState<WorkspaceTab>(
-    initialTab === 'schedule' ? 'schedule' : 'timetable',
+    initialTab === 'schedule' || initialTab === 'day' ? initialTab : 'timetable',
   );
 
   const [compareOn, setCompareOn] = useState<boolean>(!!persisted.compareOn);
