@@ -29,7 +29,8 @@ import {
 } from '@/hooks/useSection';
 import { useFaculty, useInstituteHolidays } from '@/hooks/useInstitutePrograms';
 import {
-  WEEKDAY_LABELS, computePeriodTimes, listWeekStarts, placedByTrack, weekStats,
+  WEEKDAY_LABELS, computePeriodTimes, listWeekStarts, placedByTrack,
+  placedByTrackInWeek, weekStats,
 } from '@/utils/sectionUtils';
 import { sectionPalette } from '@/lib/sectionColors';
 import { DevNote } from '@/components/dev/DevNote';
