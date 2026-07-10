@@ -25,7 +25,8 @@ import { cn } from '@/lib/utils';
 interface Props {
   section: Section;
   onBack: () => void;
-  onNext: () => void;
+  /** Kept for API compatibility — no longer wired to a button here (Timetable moved to Schedule Workspace). */
+  onNext?: () => void;
 }
 
 export const SectionAllocationStep: React.FC<Props> = ({ section, onBack, onNext }) => {
