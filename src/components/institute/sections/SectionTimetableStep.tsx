@@ -589,14 +589,16 @@ export const SectionTimetableStep: React.FC<Props> = ({
                   {target > 0 && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden cursor-help">
-                          <div
-                            className={cn(
-                              'h-full transition-all',
-                              windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
-                            )}
-                            style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
-                          />
+                        <div className="mt-1 h-3 flex items-center rounded-full bg-slate-100 overflow-hidden cursor-help">
+                          <div className="h-1 w-full rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-full transition-all',
+                                windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
+                              )}
+                              style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
+                            />
+                          </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="right" className="max-w-xs">
