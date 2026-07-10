@@ -452,12 +452,22 @@ export const SectionTimetableStep: React.FC<Props> = ({
         <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xs font-semibold text-indigo-700 tabular-nums">
-                {stats.filled}
-                <span className="text-slate-400"> / </span>
-                {stats.capacity}
-                <span className="text-slate-500 font-normal"> cells filled this week</span>
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-xs font-semibold text-indigo-700 tabular-nums cursor-help">
+                    {stats.filled}
+                    <span className="text-slate-400"> / </span>
+                    {stats.capacity}
+                    <span className="text-slate-500 font-normal"> cells filled this week</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-semibold">Week fill meter</p>
+                  <p className="text-slate-500">
+                    {stats.filled} of {stats.capacity} available period slots in the selected week are already assigned.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
               <span className="text-[10px] text-slate-500">({stats.pct}%)</span>
             </div>
             <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden max-w-md">
