@@ -13,6 +13,7 @@ import {
   subjectStatusKey,
 } from '@/types/section';
 import { MOCK_SECTIONS } from '@/data/mockSections';
+import { generateAcademicSchedule } from '@/utils/scheduleGenerator';
 
 
 /** Session-only in-memory store mirroring useInstitutePrograms. */
@@ -290,11 +291,20 @@ export function unpublishWindow(sectionId: string, windowId: string) {
 }
 
 export function markWindowGenerated(sectionId: string, windowId: string) {
-  mapWindow(sectionId, windowId, (w) => ({
-    ...w,
-    lastGeneratedAt: new Date().toISOString(),
-    // Acknowledging clears unread changelog badges.
-    changeLog: (w.changeLog ?? []).map((e) => ({ ...e, acknowledged: true })),
+  const sec = sections.find((s) => s.id === sectionId);
+  const win = sec?.windows.find((w) => w.id === windowId);
+  if (!sec || !win) return;
+  const { cells } = generateAcademicSchedule(sec, win);
+  updateSection(sectionId, (s) => ({
+    ...s,
+    cells,
+    windows: s.windows.map((w) =>
+      w.id !== windowId ? w : {
+        ...w,
+        lastGeneratedAt: new Date().toISOString(),
+        changeLog: (w.changeLog ?? []).map((e) => ({ ...e, acknowledged: true })),
+      },
+    ),
   }));
 }
 

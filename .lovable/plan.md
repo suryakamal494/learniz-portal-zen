@@ -1,67 +1,113 @@
-# Timetable Workspace — Revised Layout + UX
 
-## 1. Layout: 20 / 80 split, no grid scroll
+# Academic Schedule tab — dated grid + collapsible progress + auto chapter assignment
+
+## What you'll see (final UX)
 
 ```text
-┌───────────────────────────────────────────────────────────────┐
-│ Toolbar (section · window · compare)                          │
-├───────────────────────────────────────────────────────────────┤
-│ Week chip bar (W1..Wn) · progress · bulk actions              │
-├────────────────┬──────────────────────────────────────────────┤
-│ Subject cards  │  Timetable grid                              │
-│ (~20%, sticky) │  (~80%, fills width, no horizontal scroll)   │
-│                │                                              │
-│ compact 1-col  │  Day columns share remaining width equally   │
-│ scrollable Y   │  Cell content scales down to fit             │
-└────────────────┴──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Academic Schedule                                                       │
+│  Class 12 PCM · Term 1 · Foundation (14 Apr → 30 Aug 2025) · 120 days    │
+│  Last generated: 09 Jul 14:22 · 100% filled (240/240)  [ Regenerate ▾ ]  │
+├──────────────────────────────────────────────────────────────────────────┤
+│  [ T1 ✅ 100% ]  →  [ T2 🔒 locked ]  →  [ T3 🔒 locked ]                │
+├──────────────────────────────────────────────────────────────────────────┤
+│  ⚠ Timetable updated after last generation · 3 changes  [ Re-gen T1 ]    │
+├──────────────────────────────────────────────────────────────────────────┤
+│  ▸ Progress panel (collapsed)  · Physics 64% · Chem 71% · Maths 58% …    │
+├──────────────────────────────────────────────────────────────────────────┤
+│  W1 W2 W3 W4 W5 [W7] W8 … W24                                            │
+│  Week 7 · Mon 19 May → Sat 24 May 2025                                   │
+│                                                                          │
+│  PERIOD │  MON 19    TUE 20    WED 21    THU 22    FRI 23    SAT 24     │
+│  P1     │  ┌──────┐  ┌──────┐  …                                         │
+│  08:30  │  │CBSE  │  │CBSE  │                                            │
+│         │  │PHYS  │  │CHEM  │                                            │
+│         │  │Magnet│  │Redox │  ← chapter (auto)                          │
+│         │  │Para/ │  │Electr│  ← topic    (auto)                         │
+│         │  │A.Rao │  │P.Shar│                                            │
+│  P2 …                                                                    │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-- CSS: `grid-cols-[minmax(200px,20%)_1fr]` with `gap-4`.
-- Palette rail: `sticky top-4`, `max-h-[calc(100vh-160px)] overflow-y-auto`, 1-column stack of compact cards.
-- Grid pane: `min-w-0` so it never forces horizontal overflow.
-- Below `lg` (1024px): stack vertically — palette on top (horizontal chip strip, `overflow-x-auto`), grid below full-width. Split only activates on desktop.
+The **dated grid is the main view** (exactly the chip design from screenshot 2, dated across the real term). The **progress panel is a collapsible drawer** above it — closed by default, expands in place, doesn't cover the grid.
 
-### Preventing horizontal scroll on the grid
+**Locked terms** (T2, T3 before T1 is done) show a centered lock card instead of the grid: "Term 2 opens once Term 1 is 100% scheduled. Currently 87% (208/240)."
 
-Feasible with these constraints:
-- Grid uses CSS `grid-template-columns: 56px repeat(N, minmax(0, 1fr))` where N = working days (5 or 6). `minmax(0,1fr)` is the key — it lets columns shrink below their content's intrinsic width.
-- All cell content uses `min-w-0` + `truncate` so long subject names never push the column wider.
-- Chips (program/track) shrink to `text-[9px]` and use icon-only fallback under a width threshold (via a container query or a JS-measured breakpoint on the grid pane).
-- Period label column is fixed at 56px; day columns share the rest equally.
-- Expected day-column width at 1280px viewport: `(1280 × 0.8 − 56 − paddings) / 6 ≈ 145px` — plenty for the compact cell.
-- At 1028px (current viewport): `(1028 × 0.8 − 56) / 6 ≈ 128px` — still comfortable for the compact cell. Below ~900px total width we fall back to the stacked layout, so no horizontal scroll ever appears on the grid.
+---
 
-Vertical scroll: the grid itself does not scroll — the whole page scrolls if 7 period rows exceed viewport height (rare at ≥900px tall). No inner scrollbars on the grid.
+## Phased build
 
-## 2. Compact "Subject cards" palette (1-column rail)
+### Phase 1 — Data model & auto-generator (foundation)
 
-- Rename header → **"Subject cards"** (drop "track palette" wording).
-- Each card: `p-2`, ~56px tall, one row.
-  - Subject name (`text-sm font-semibold`, truncate)
-  - Program + track chips inline right (`text-[9px]`)
-  - Progress `5 / 40` in `text-[10px] text-slate-500` below
-- Selected state: 2px colored ring, no size change.
+Extend cells to carry chapter/topic; add a deterministic generator.
 
-## 3. Clickable "+" in empty cells
+- Add to `TimetableCell`: `chapterId?`, `chapterName?`, `topicName?`, `generatedAt?`, `manuallyEdited?`.
+- New `src/utils/scheduleGenerator.ts`:
+  - Input: section, window, term, sub-programs, tracks, weekly-timetable cells (from Step 3).
+  - Walks each `(subject, track)` chapter list in order; distributes topics across all dated slots for that track within the term, respecting `plannedHours`.
+  - Preserves any cell where `manuallyEdited=true` (teacher overrides survive regen).
+  - Marks `generatedAt` on every touched cell + writes a `ScheduleGenerationLog` entry (term, timestamp, cells touched, cells preserved).
+- Update `useSection.ts` with `generateSchedule(termId)` and `regenerateSchedule(termId)`.
+- Selector `getTermCompletion(section, window, termId)` → `{ filled, total, pct }`.
 
-Empty cell becomes a full-cell button:
-- **If a palette card is selected** → click paints immediately (existing flow).
-- **If nothing is selected** → click opens a small Popover listing palette entries (searchable if >8). Choosing one paints and closes.
-- Disabled in `readOnly` and locked windows.
+### Phase 2 — Term gating
 
-## 4. Richer mock data for Class 12 PCM — Excellence
+- `getTermStatus(section, window)` returns `{ t1: 'complete'|'in-progress', t2: 'locked'|'unlocked'|…, t3: … }`.
+- T2 unlocks only when T1 pct === 100; T3 only when T2 === 100.
+- Term progression strip component (three chips with ✅/🔒/in-progress states).
+- Locked-term empty state card with CTA "Go to Term 1".
 
-In `mockSections.ts`, expand `PCM_SEED` from 1 week → **weeks W1–W6** of Term 1:
-- W1: keep current 40/42 fill.
-- W2–W4: ~90% filled with varied distributions (rotate which JEE track lands in P6/P7, swap some Physics T1 ↔ T2).
-- W5–W6: ~60% filled (partial-progress demo).
-- W7+: empty (in-progress demo).
-- Ensures "Copy this week to…" has meaningful source weeks and the progress bar animates across weeks.
+### Phase 3 — Academic Schedule route & dated grid
 
-## Out of scope
-- No changes to Setup/Allocation steps, drag-swap, copy-week, plan-day tools, or Academic Schedule tab.
-- No data-model changes.
+- New route/tab hosting: `AcademicScheduleTab` inside Schedule Workspace, with a link from the Section preview too.
+- Header: section, term, window dates, last-generated timestamp, fill %, Regenerate button (confirm modal lists "X manually edited cells preserved").
+- Term progression strip (Phase 2).
+- Change-log notice if `timetableChangeLog` has entries newer than `lastGeneratedAt` for this term → "Timetable updated · N changes · [Re-generate]".
+- Week chip bar (W1…Wn for this term only), same look as Weekly Timetable.
+- **Dated grid**: reuse `SectionTimetableStep` cell chip styling; each cell shows Program • Subject • Track badge · **chapter** · *topic* · teacher. Read-only by default; inline edit chapter/topic/teacher per class (marks `manuallyEdited=true`).
+- Cells rendered from generated data for the selected week + term; empty state when term not yet generated ("Generate Term 1 schedule" CTA).
 
-## Files
-- `src/components/institute/sections/SectionTimetableStep.tsx` — layout grid, palette rail, empty-cell popover, cell shrinking.
-- `src/data/mockSections.ts` — expand `PCM_SEED` to W1–W6.
+### Phase 4 — Collapsible progress panel
+
+- Collapsed row: one line per subject with % filled and mini bar (`Physics 64% ██████░░`).
+- Expanded in place (not modal) — Radix Collapsible:
+
+  ```text
+  Subject/Chapter        Planned  Scheduled  Start    End      %
+  Physics · T1 (CBSE)
+    Kinematics             12       12 ✅    04 Aug   16 Aug   100
+    Laws of Motion         10       10 ✅    18 Aug   30 Aug   100
+    Work, Energy, Power    14        9 🟡    01 Sep   —         64
+    Rotational Motion      12        0 ⚪    —        —          0
+  ```
+- Weekly heatmap strip (W1…Wn shaded by fill %) — clicking a week jumps the grid.
+- Smooth expand/collapse, remembers state per session.
+
+### Phase 5 — Mock data
+
+Populate `sec-cls11-morning` and `sec-cls12-pcm` with realistic three-term data:
+
+- **T1 (Class 12 PCM)**: 100% generated, 8 manual edits, matches screenshot 2 (Magnetism & Matter · Para/Dia/Ferro, Redox & Electrode Potentials, etc.).
+- **T2 / T3**: locked. Toggle-friendly flag so QA can flip T1 to 87% and see T2's lock card.
+- Chapter/topic banks per subject/track (Physics CBSE T1: 8 chapters × ~4 topics; JEE Physics T1: 6 chapters × ~5 topics; Chem, Maths, Bio, Eng, Hindi, SoSt equivalents).
+- 3 `timetableChangeLog` entries dated after T1 generation to demo the "Timetable updated" notice.
+
+### Phase 6 — QA checklist
+
+- [ ] Term 1 generates 100% with correct chapter order.
+- [ ] Regenerate preserves manually edited cells.
+- [ ] Term 2 locked card renders; CTA jumps back to T1.
+- [ ] Change-log notice appears when Weekly Timetable is edited after generation.
+- [ ] Progress panel expand/collapse doesn't cause layout shift under the grid.
+- [ ] Week chip in progress heatmap navigates the dated grid.
+- [ ] Class 11 Morning and Class 12 PCM both have visible mock data across all three terms.
+- [ ] No horizontal scroll on the grid at 1280 px (existing constraint).
+- [ ] Dev Notes popover on header explains generator rules.
+
+---
+
+## Technical notes
+
+- **Files created**: `scheduleGenerator.ts`, `AcademicScheduleTab.tsx`, `TermProgressionStrip.tsx`, `ScheduleProgressPanel.tsx` (collapsible), `DatedTimetableGrid.tsx`, `ChapterProgressTable.tsx`, `WeeklyHeatmap.tsx`, `LockedTermCard.tsx`.
+- **Files modified**: `types/section.ts` (cell fields, ScheduleGenerationLog), `useSection.ts` (generate/regenerate actions), `mockSections.ts` (chapter banks + seeded generations), `sectionUtils.ts` (completion + term status selectors).
+- **Untouched**: Setup, Period Allocation, Weekly Timetable stay exactly as they are — this tab consumes their output.
