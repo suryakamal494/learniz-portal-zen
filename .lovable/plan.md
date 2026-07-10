@@ -1,56 +1,46 @@
-## Why the current placement is illogical
+## Goal
 
-The top toolbar exposes two selectors — **Section** and **Academic Window** — and everything below is supposed to operate on that (section, window) pair. Today:
+In the Section's Setup & Allocation page, hide (not delete) Steps 3 (Weekly Timetable) and 4 (Preview), and move draft/publish control into Step 2 (Period Allocation). Only windows that are **published** from Period Allocation should appear in the Schedule Workspace pickers.
 
-- **Weekly Timetable** tab → uses (section, window). ✅ Toolbar matches.
-- **Academic Schedule** tab → uses (section, window). ✅ Toolbar matches.
-- **Day view**, buried as a sub-toggle inside the Weekly Timetable tab → spans **all sections** of the institute for one weekday of one week. It only needs the **window** (plus a "focus" section, at most). ❌ The Section picker at the top silently changes meaning when you flip this sub-toggle.
+## Changes
 
-So the flaw isn't cosmetic — the Week/Day toggle changes what the toolbar *means*, while pretending to be a minor view switch nested two levels deep. That's the mismatch.
+### 1. `SectionSchedulePage.tsx` — collapse to 2 visible steps
+- Keep only `Setup` and `Period Allocation` in the stepper (already the case in code; the screenshot is a stale published preview). Verify no leftover Step 3/4 UI leaks.
+- Remove the "Next up → Open Weekly Timetable / Open Academic Schedule" CTA card at the bottom of Allocation. Timetable/Preview live in Schedule Workspace and are unlocked only after publish.
 
-## The logical rearrangement
+### 2. `SectionAllocationStep.tsx` — add Save as Draft + Publish
+- Add a sticky footer bar inside the allocation step with:
+  - **Save as Draft** button (secondary) — sets `window.status = 'draft'`, toast "Draft saved".
+  - **Publish** button (primary indigo) — sets `window.status = 'published'`, toast "Published — now visible in Schedule Workspace".
+  - Small status pill next to buttons: current `draft` / `published` state + last-saved timestamp.
+  - Publish disabled if `totalAllocated < totalPeriods * 0.5` (guardrail against publishing empty allocations) with tooltip explaining why.
+- Add a `DevNote` next to the buttons titled **"Draft vs Publish — why it matters"** explaining:
+  - Draft = free editing, invisible to Schedule Workspace.
+  - Publish = window becomes selectable in Schedule Workspace (timetable + academic schedule).
+  - Re-publishing after edits triggers change-log entries in Academic Schedule.
+- Wire status changes through a new `updateWindowStatus(sectionId, windowId, status)` helper in `useSection` / section store (mutates the mock section in memory so it survives the session).
 
-Group modes by their data dependencies. Three peer tabs replace the current two-tab + nested-toggle structure:
+### 3. `useScheduleWorkspace.ts` — filter to published windows only
+- Section dropdown: show only sections that have at least one `published` window.
+- Window dropdown: filter `section.windows` to `status === 'published'`.
+- Default `windowId` = last published window (not just last window).
+- Empty state in `ScheduleWorkspacePage` when no published windows exist: "No published academic windows yet. Publish one from Section → Period Allocation." with a link back.
 
-```text
-[ Weekly Timetable ]  [ Day Timetable ]  [ Academic Schedule ]
-      (section+window)    (window only)       (section+window)
-```
+### 4. `ScheduleWorkspacePage.tsx` — reflect the gating
+- Add a DevNote at the top of the toolbar explaining that only published windows appear here and edits still flow back to the source section.
+- Handle the empty-list case above.
 
-Rules that fall out of this grouping:
+### 5. Mock data sanity
+- Ensure at least one window per demo section is `published` (Class 11 Morning Term 1 already is). Leave the currently-`draft` windows as draft so the filter is visibly meaningful.
 
-1. **Weekly Timetable** and **Academic Schedule** keep the current toolbar: Section + Window pickers, both required. (Per your answer, these stay as separate tabs, not merged.)
-2. **Day Timetable** hides the Section picker (or demotes it to an optional "Focus section" highlight chip). Window picker stays. Compare-sections control also hides — it's Week-only.
-3. Academic Schedule stays **week-scoped only**, per your answer. No day-mode schedule view.
-4. All three tabs still write into the same underlying cell store, so edits sync exactly like today.
+## Technical notes
 
-## Files to change
-
-- `src/hooks/useScheduleWorkspace.ts`
-  - `WorkspaceTab` becomes `'timetable' | 'day' | 'schedule'`.
-  - URL param `tab` accepts the new value; drop the separate `ttView` local state.
-- `src/pages/institute/ScheduleWorkspacePage.tsx`
-  - Remove the Week/Day segmented toggle from inside the Timetable tab.
-  - Add a third `TabsTrigger` for **Day Timetable** (own accent color, e.g. amber/orange, distinct from indigo Week and emerald Schedule).
-  - When `tab === 'day'`: hide the Section `<Select>` and the Compare controls; keep Window. Optionally show a small "Focus: {section.name}" chip that can be cleared.
-  - Route `TabsContent`:
-    - `timetable` → existing `TimetableWorkspaceTab` (+ compare grid).
-    - `day` → existing `DayScheduleTab` (no wrapping toggle bar).
-    - `schedule` → existing `AcademicScheduleTab`.
-- `src/components/institute/workspace/DayScheduleTab.tsx`
-  - Accept an optional `focusSectionId` (already does) and treat Section as optional; no other logic change.
-- Persisted state (`schedule-workspace-state:v1`) migrates naturally — old `tab` values `timetable|schedule` still valid; add `day`.
+- Window status type already exists (`'draft' | 'published'`) on `SectionWindow`; no schema change needed.
+- Publish is per-window, per-section (matches existing Weekly Timetable publish semantics — no duplication).
+- No backend changes; all mock/in-memory as today.
+- DevNote component (`src/components/dev/DevNote.tsx`) is DEV-only and tree-shakes in prod, so notes won't affect the production UI.
 
 ## Out of scope
 
-- No changes to Timetable ↔ Schedule relationship (they stay separate tabs per your answer).
-- No changes to draft/publish rules, autofill, drag-swap, or mock data.
-- No new Day-mode schedule view.
-
-## QA checklist
-
-- Deep link `?tab=day&windowId=…` opens Day tab with Section picker hidden.
-- Switching from Day → Week restores the Section picker with the previously selected section.
-- Compare mode control is invisible in Day tab; re-enabling it in Week tab still works.
-- Edits made in Day tab appear immediately when switching to Week tab for the same section+window.
-- Academic Schedule tab is unchanged.
+- Deleting Step 3/4 components or their code — kept intact for potential re-enable.
+- Any change to Weekly Timetable's own publish flow in Schedule Workspace (stays as-is).

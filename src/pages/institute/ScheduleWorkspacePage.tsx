@@ -58,7 +58,34 @@ const ScheduleWorkspacePage: React.FC = () => {
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-slate-900 font-medium">Schedule Workspace</span>
+          <DevNote title="Only published windows show up here">
+            <p>The Section and Academic Window pickers are filtered to windows whose Period Allocation has been <b>published</b>.</p>
+            <p>Draft windows stay hidden until someone hits <i>Publish window</i> on the Section → Period Allocation page.</p>
+            <p>Un-publishing a window from Period Allocation removes it from these pickers immediately.</p>
+          </DevNote>
         </div>
+
+        {sections.length === 0 && (
+          <Card className="border-amber-300 bg-amber-50/60">
+            <CardContent className="p-6 text-sm text-amber-900 flex items-start gap-3">
+              <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-semibold text-amber-900">No published academic windows yet</div>
+                <p className="text-xs text-amber-800 mt-1">
+                  Open any section → Setup &amp; Allocation, complete Period Allocation, then hit
+                  <b> Publish window</b> at the bottom of that page. Published windows appear here automatically.
+                </p>
+                <Link
+                  to="/institute/programs"
+                  className="inline-block mt-3 text-xs font-semibold text-indigo-700 hover:text-indigo-900 underline"
+                >
+                  Go to Sections →
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
 
         {/* Toolbar */}
         <Card className="border-slate-200 shadow-sm">

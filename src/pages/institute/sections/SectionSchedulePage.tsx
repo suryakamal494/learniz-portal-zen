@@ -165,37 +165,10 @@ const SectionSchedulePage: React.FC = () => {
         <div>
           {step === 'setup' && <SectionSetupStep section={section} onNext={() => setStep('allocation')} />}
           {step === 'allocation' && (
-            <div className="space-y-4">
-              <SectionAllocationStep
-                section={section}
-                onBack={() => setStep('setup')}
-                onNext={() => openWorkspace('timetable')}
-              />
-              {/* Final CTAs — replace the old "Continue to Timetable/Preview" chain. */}
-              <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white shadow-sm">
-                <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-wider text-indigo-700 font-bold">
-                      Next up
-                    </div>
-                    <div className="text-sm font-semibold text-slate-900">
-                      Paint the weekly timetable or jump to schedule generation
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Both live in the shared Schedule Workspace so you can switch sections and windows freely.
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openWorkspace('schedule')}>
-                      Open Academic Schedule
-                    </Button>
-                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => openWorkspace('timetable')}>
-                      Open Weekly Timetable <Sparkles className="h-3.5 w-3.5 ml-1" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <SectionAllocationStep
+              section={section}
+              onBack={() => setStep('setup')}
+            />
           )}
         </div>
       </div>
