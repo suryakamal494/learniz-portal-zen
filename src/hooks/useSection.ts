@@ -290,11 +290,23 @@ export function unpublishWindow(sectionId: string, windowId: string) {
 }
 
 export function markWindowGenerated(sectionId: string, windowId: string) {
-  mapWindow(sectionId, windowId, (w) => ({
-    ...w,
-    lastGeneratedAt: new Date().toISOString(),
-    // Acknowledging clears unread changelog badges.
-    changeLog: (w.changeLog ?? []).map((e) => ({ ...e, acknowledged: true })),
+  const sec = sections.find((s) => s.id === sectionId);
+  const win = sec?.windows.find((w) => w.id === windowId);
+  if (!sec || !win) return;
+  // Lazy-load generator to avoid a circular import.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { generateAcademicSchedule } = require('@/utils/scheduleGenerator') as typeof import('@/utils/scheduleGenerator');
+  const { cells } = generateAcademicSchedule(sec, win);
+  updateSection(sectionId, (s) => ({
+    ...s,
+    cells,
+    windows: s.windows.map((w) =>
+      w.id !== windowId ? w : {
+        ...w,
+        lastGeneratedAt: new Date().toISOString(),
+        changeLog: (w.changeLog ?? []).map((e) => ({ ...e, acknowledged: true })),
+      },
+    ),
   }));
 }
 
