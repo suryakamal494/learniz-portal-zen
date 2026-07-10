@@ -101,7 +101,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
   const snapshotRef = useRef<Section['cells'] | null>(null);
 
   const palette = useMemo(() => buildPalette(section), [section]);
-  const placedCounts = useMemo(() => placedByTrack(section), [section]);
+  const placedCounts = useMemo(() => placedByTrack(section, window), [section, window]);
   const facultyById = useMemo(
     () => Object.fromEntries(facultyList.map((f) => [f.id, f])),
     [facultyList],
@@ -493,7 +493,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
           <div className="px-3 py-2 border-b border-slate-100">
             <div className="text-sm font-semibold text-slate-900">Subject cards</div>
             <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
-              Pick one, then click cells.
+              Filled / Needed in this window. Pick one, then click cells.
             </div>
           </div>
           <div className="p-2 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
@@ -536,9 +536,27 @@ export const SectionTimetableStep: React.FC<Props> = ({
                       )}
                     </div>
                   </div>
-                  <div className="text-[10px] text-slate-500 tabular-nums mt-0.5">
-                    {placed} / {entry.target || '\u2014'}
+                  <div className="mt-1 flex items-center justify-between gap-1.5">
+                    <span className="text-[10px] text-slate-600 tabular-nums">
+                      <span className={cn('font-semibold', placed >= (entry.target || 0) ? 'text-emerald-700' : 'text-slate-700')}>
+                        {placed}
+                      </span>
+                      <span className="text-slate-400"> / </span>
+                      <span>{entry.target || '\u2014'}</span>
+                      <span className="text-slate-400 ml-0.5">periods</span>
+                    </span>
                   </div>
+                  {entry.target > 0 && (
+                    <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className={cn(
+                          'h-full transition-all',
+                          placed >= entry.target ? 'bg-emerald-500' : 'bg-indigo-400',
+                        )}
+                        style={{ width: `${Math.min(100, (placed / entry.target) * 100)}%` }}
+                      />
+                    </div>
+                  )}
                 </button>
               );
             })}

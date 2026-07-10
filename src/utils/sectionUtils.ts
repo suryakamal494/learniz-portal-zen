@@ -44,10 +44,24 @@ export function totalAllocated(section: Section): number {
   return sum;
 }
 
-/** Count how many cells reference a given track. */
-export function placedByTrack(section: Section): Record<string, number> {
+/**
+ * Count how many cells reference a given track.
+ * When `window` is passed, only cells whose weekStartDate falls inside the
+ * window's date range are counted — so numbers match the "this window" scope
+ * users see in the subject-card rail.
+ */
+export function placedByTrack(
+  section: Section,
+  window?: AcademicWindow,
+): Record<string, number> {
   const out: Record<string, number> = {};
+  const startMs = window ? parseISO(window.startDate).getTime() : -Infinity;
+  const endMs = window ? parseISO(window.endDate).getTime() : Infinity;
   for (const c of section.cells) {
+    if (window) {
+      const wsMs = parseISO(c.weekStartDate).getTime();
+      if (wsMs < startMs || wsMs > endMs) continue;
+    }
     const k = c.allocation.trackId;
     out[k] = (out[k] ?? 0) + 1;
   }
