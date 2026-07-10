@@ -18,6 +18,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import {
   CellAllocation, CellOccupiedError, Section, SectionProgram, SectionSubject,
@@ -373,6 +376,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
   };
 
   return (
+    <TooltipProvider delayDuration={120}>
     <div className="space-y-3">
       {/* HEADER: title + week nav */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -448,12 +452,22 @@ export const SectionTimetableStep: React.FC<Props> = ({
         <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xs font-semibold text-indigo-700 tabular-nums">
-                {stats.filled}
-                <span className="text-slate-400"> / </span>
-                {stats.capacity}
-                <span className="text-slate-500 font-normal"> cells filled this week</span>
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-xs font-semibold text-indigo-700 tabular-nums cursor-help">
+                    {stats.filled}
+                    <span className="text-slate-400"> / </span>
+                    {stats.capacity}
+                    <span className="text-slate-500 font-normal"> cells filled this week</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-semibold">Week fill meter</p>
+                  <p className="text-slate-500">
+                    {stats.filled} of {stats.capacity} available period slots in the selected week are already assigned.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
               <span className="text-[10px] text-slate-500">({stats.pct}%)</span>
             </div>
             <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden max-w-md">
@@ -547,43 +561,75 @@ export const SectionTimetableStep: React.FC<Props> = ({
                     </div>
                   </div>
                   {/* Top: this-week placement / window target */}
-                  <div className="mt-1 flex items-baseline justify-between gap-1.5">
-                    <span className="text-[11px] tabular-nums">
-                      <span className={cn(
-                        'font-bold',
-                        target > 0 && thisWeek >= 0 ? pal.text : 'text-slate-700',
-                      )}>
-                        {thisWeek}
-                      </span>
-                      <span className="text-slate-400"> / </span>
-                      <span className="font-semibold text-slate-700">{target || '\u2014'}</span>
-                    </span>
-                    <span className="text-[9px] text-slate-500 uppercase tracking-wide">
-                      this wk
-                    </span>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-1 flex items-baseline justify-between gap-1.5 cursor-help">
+                        <span className="text-[11px] tabular-nums">
+                          <span className={cn(
+                            'font-bold',
+                            target > 0 && thisWeek >= 0 ? pal.text : 'text-slate-700',
+                          )}>
+                            {thisWeek}
+                          </span>
+                          <span className="text-slate-400"> / </span>
+                          <span className="font-semibold text-slate-700">{target || '\u2014'}</span>
+                        </span>
+                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">
+                          this wk
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="font-semibold">This week vs window target</p>
+                      <p className="text-slate-500">
+                        {thisWeek} periods placed in the selected week, out of {target || '—'} total periods required for this track across the whole active academic window.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                   {target > 0 && (
-                    <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full transition-all',
-                          windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
-                        )}
-                        style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
-                      />
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="mt-1 h-3 flex items-center rounded-full bg-slate-100 overflow-hidden cursor-help">
+                          <div className="h-1 w-full rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-full transition-all',
+                                windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
+                              )}
+                              style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p className="font-semibold">Window progress</p>
+                        <p className="text-slate-500">
+                          {windowPlaced} of {target} periods placed across the entire active window. Green means the track target is fully met.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {/* Bottom: window-total */}
-                  <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500">
-                    <span>Window total</span>
-                    <span className="tabular-nums">
-                      <span className={cn(
-                        'font-semibold',
-                        target > 0 && windowPlaced >= target ? 'text-emerald-700' : 'text-slate-700',
-                      )}>{windowPlaced}</span>
-                      <span> / {target || '\u2014'}</span>
-                    </span>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500 cursor-help">
+                        <span>Window total</span>
+                        <span className="tabular-nums">
+                          <span className={cn(
+                            'font-semibold',
+                            target > 0 && windowPlaced >= target ? 'text-emerald-700' : 'text-slate-700',
+                          )}>{windowPlaced}</span>
+                          <span> / {target || '\u2014'}</span>
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="font-semibold">Window total</p>
+                      <p className="text-slate-500">
+                        {windowPlaced} periods placed across the whole active academic window, against a target of {target || '—'} for this track.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </button>
               );
             })}
@@ -779,6 +825,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 };
 
