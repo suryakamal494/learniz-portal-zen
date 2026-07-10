@@ -13,6 +13,7 @@ import {
   subjectStatusKey,
 } from '@/types/section';
 import { MOCK_SECTIONS } from '@/data/mockSections';
+import { generateAcademicSchedule } from '@/utils/scheduleGenerator';
 
 
 /** Session-only in-memory store mirroring useInstitutePrograms. */
@@ -293,9 +294,6 @@ export function markWindowGenerated(sectionId: string, windowId: string) {
   const sec = sections.find((s) => s.id === sectionId);
   const win = sec?.windows.find((w) => w.id === windowId);
   if (!sec || !win) return;
-  // Lazy-load generator to avoid a circular import.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { generateAcademicSchedule } = require('@/utils/scheduleGenerator') as typeof import('@/utils/scheduleGenerator');
   const { cells } = generateAcademicSchedule(sec, win);
   updateSection(sectionId, (s) => ({
     ...s,
