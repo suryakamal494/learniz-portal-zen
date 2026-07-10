@@ -168,6 +168,82 @@ const PCM_SEED: SectionCell[] = [
   ...variantTemplate(18).map((c) => ({ ...c, weekStartDate: PCM_WEEK_6 })),
 ];
 
+/* ─── Seed timetable for Class 11 Morning (CBSE + JEE), 3 terms ─── */
+const CLS11M_TEMPLATE: Array<Omit<SectionCell, 'weekStartDate'>> = [
+  // P1
+  { weekday: 1, periodIndex: 0, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-1' } },
+  { weekday: 2, periodIndex: 0, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 3, periodIndex: 0, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 4, periodIndex: 0, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-phy',  trackId: 'tr-11m-jee-phy-1' } },
+  { weekday: 5, periodIndex: 0, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-2' } },
+  { weekday: 6, periodIndex: 0, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-mth',  trackId: 'tr-11m-jee-mth-1' } },
+  // P2
+  { weekday: 1, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 2, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-1' } },
+  { weekday: 3, periodIndex: 1, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-phy',  trackId: 'tr-11m-jee-phy-1' } },
+  { weekday: 4, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 5, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 6, periodIndex: 1, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-2' } },
+  // P3
+  { weekday: 1, periodIndex: 2, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 2, periodIndex: 2, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 3, periodIndex: 2, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-1' } },
+  { weekday: 4, periodIndex: 2, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-mth',  trackId: 'tr-11m-jee-mth-1' } },
+  { weekday: 5, periodIndex: 2, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 6, periodIndex: 2, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  // P4
+  { weekday: 1, periodIndex: 3, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-phy',  trackId: 'tr-11m-jee-phy-1' } },
+  { weekday: 2, periodIndex: 3, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-2' } },
+  { weekday: 3, periodIndex: 3, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 4, periodIndex: 3, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 5, periodIndex: 3, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-mth',  trackId: 'tr-11m-jee-mth-1' } },
+  { weekday: 6, periodIndex: 3, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-1' } },
+  // P5
+  { weekday: 1, periodIndex: 4, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-2' } },
+  { weekday: 2, periodIndex: 4, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 3, periodIndex: 4, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-mth',  trackId: 'tr-11m-jee-mth-1' } },
+  { weekday: 4, periodIndex: 4, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 5, periodIndex: 4, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-1' } },
+  { weekday: 6, periodIndex: 4, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-phy',  trackId: 'tr-11m-jee-phy-1' } },
+  // P6
+  { weekday: 1, periodIndex: 5, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  { weekday: 2, periodIndex: 5, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-phy',  trackId: 'tr-11m-jee-phy-1' } },
+  { weekday: 3, periodIndex: 5, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 4, periodIndex: 5, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-1' } },
+  { weekday: 5, periodIndex: 5, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 6, periodIndex: 5, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+  // P7
+  { weekday: 1, periodIndex: 6, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-mth', trackId: 'tr-11m-mth-1' } },
+  { weekday: 2, periodIndex: 6, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-phy', trackId: 'tr-11m-phy-2' } },
+  { weekday: 3, periodIndex: 6, allocation: { programId: 'prog-jee',  subjectId: 'sub-jee-mth',  trackId: 'tr-11m-jee-mth-1' } },
+  { weekday: 4, periodIndex: 6, allocation: { programId: 'prog-cbse', subjectId: 'sub-cbse-chm', trackId: 'tr-11m-chm-1' } },
+];
+
+function seedWeeks(
+  template: Array<Omit<SectionCell, 'weekStartDate'>>,
+  firstMonday: string,
+  weekCount: number,
+  fillPattern: number[], // periods dropped from end per week (cycles)
+): SectionCell[] {
+  const out: SectionCell[] = [];
+  for (let w = 0; w < weekCount; w++) {
+    const drop = fillPattern[w % fillPattern.length];
+    const monday = addDays(firstMonday, w * 7);
+    const slice = drop > 0 ? template.slice(0, template.length - drop) : template;
+    for (const c of slice) out.push({ ...c, weekStartDate: monday });
+  }
+  return out;
+}
+
+const CLS11M_SEED: SectionCell[] = [
+  // Term 1 · 2026-07-01 → 2026-09-30 (Monday of first ISO week = 2026-06-29), 14 weeks, mostly full
+  ...seedWeeks(CLS11M_TEMPLATE, '2026-06-29', 14, [0, 0, 2, 0, 3, 0, 0, 5, 0, 0, 4, 0, 6, 8]),
+  // Term 2 · 2026-10-01 → 2026-12-31 (Mon = 2026-09-28), 13 weeks
+  ...seedWeeks(CLS11M_TEMPLATE, '2026-09-28', 13, [0, 0, 3, 0, 4, 0, 6, 0, 5, 0, 7, 9, 12]),
+  // Term 3 · 2027-01-05 → 2027-03-31 (Mon = 2027-01-04), 12 weeks
+  ...seedWeeks(CLS11M_TEMPLATE, '2027-01-04', 12, [0, 0, 2, 0, 4, 0, 5, 0, 6, 8, 10, 14]),
+];
+
 const nowIso = new Date().toISOString();
 const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -425,7 +501,7 @@ export const MOCK_SECTIONS: Section[] = [
         ],
       },
     ],
-    cells: [],
+    cells: CLS11M_SEED,
     subjectStatus: {},
   },
 
