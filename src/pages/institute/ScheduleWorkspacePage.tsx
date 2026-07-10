@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, CalendarRange, ChevronRight, Columns2, Layers, Sparkles,
+  ArrowLeft, CalendarDays, CalendarRange, ChevronRight, Columns2, Grid3x3, Layers, Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useScheduleWorkspace } from '@/hooks/useScheduleWorkspace';
 import { TimetableWorkspaceTab } from '@/components/institute/workspace/TimetableWorkspaceTab';
+import { DayScheduleTab } from '@/components/institute/workspace/DayScheduleTab';
 import { AcademicScheduleTab } from '@/components/institute/workspace/AcademicScheduleTab';
 import { DevNote } from '@/components/dev/DevNote';
 import { formatRange } from '@/utils/sectionUtils';
