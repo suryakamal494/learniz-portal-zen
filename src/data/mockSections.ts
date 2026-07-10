@@ -501,7 +501,7 @@ export const MOCK_SECTIONS: Section[] = [
         ],
       },
     ],
-    cells: [],
+    cells: CLS11M_SEED,
     subjectStatus: {},
   },
 
