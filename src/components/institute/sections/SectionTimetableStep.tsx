@@ -376,6 +376,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
   };
 
   return (
+    <TooltipProvider delayDuration={120}>
     <div className="space-y-3">
       {/* HEADER: title + week nav */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
