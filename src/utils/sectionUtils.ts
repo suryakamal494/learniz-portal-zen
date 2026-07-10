@@ -68,6 +68,20 @@ export function placedByTrack(
   return out;
 }
 
+/** Count cells per track for a single week only. */
+export function placedByTrackInWeek(
+  section: Section,
+  weekStart: string,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const c of section.cells) {
+    if (c.weekStartDate !== weekStart) continue;
+    const k = c.allocation.trackId;
+    out[k] = (out[k] ?? 0) + 1;
+  }
+  return out;
+}
+
 /** Find subject + track + program triple by ids. */
 export function findAllocationLabel(
   section: Section,
