@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, CalendarRange, ChevronRight, Columns2, Layers, Sparkles,
+  ArrowLeft, CalendarDays, CalendarRange, ChevronRight, Columns2, Grid3x3, Layers, Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useScheduleWorkspace } from '@/hooks/useScheduleWorkspace';
 import { TimetableWorkspaceTab } from '@/components/institute/workspace/TimetableWorkspaceTab';
+import { DayScheduleTab } from '@/components/institute/workspace/DayScheduleTab';
 import { AcademicScheduleTab } from '@/components/institute/workspace/AcademicScheduleTab';
 import { DevNote } from '@/components/dev/DevNote';
 import { formatRange } from '@/utils/sectionUtils';
@@ -26,6 +27,8 @@ const ScheduleWorkspacePage: React.FC = () => {
     compareOn, setCompareOn,
     compareSectionId, setCompareSectionId,
   } = useScheduleWorkspace();
+
+  const [ttView, setTtView] = useState<'week' | 'day'>('week');
 
   const [viewportOK, setViewportOK] = useState(
     typeof globalThis.window !== 'undefined'
@@ -192,8 +195,54 @@ const ScheduleWorkspacePage: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="timetable" className="mt-4">
-              {compareActive ? (
+            <TabsContent value="timetable" className="mt-4 space-y-3">
+              {/* Week / Day view toggle */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm p-0.5">
+                  <button
+                    onClick={() => setTtView('week')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-semibold transition-all',
+                      ttView === 'week'
+                        ? 'bg-indigo-600 text-white shadow'
+                        : 'text-slate-600 hover:text-slate-900',
+                    )}
+                  >
+                    <Grid3x3 className="h-3.5 w-3.5" /> Week view
+                  </button>
+                  <button
+                    onClick={() => setTtView('day')}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-semibold transition-all',
+                      ttView === 'day'
+                        ? 'bg-indigo-600 text-white shadow'
+                        : 'text-slate-600 hover:text-slate-900',
+                    )}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" /> Day view
+                  </button>
+                </div>
+                <DevNote title="Week ↔ Day views share one store">
+                  <p><b>Week view</b>: one section, one full week (or the entire academic window via
+                  <i> Copy to weeks…</i>). Draft/publish per (section, window).</p>
+                  <p><b>Day view</b>: one weekday of one specific week, across <i>all sections</i> of
+                  the institute. Fix a single day here, then switch to Week view and fan it out with
+                  <i> Copy to weeks…</i>.</p>
+                  <p>Both views write into the <b>same underlying cell store</b> — anything you edit
+                  in Day view immediately reflects in Week view (and vice-versa), no reconciliation
+                  step needed.</p>
+                  <p>Compare mode is Week-view only.</p>
+                </DevNote>
+                {ttView === 'day' && compareOn && (
+                  <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                    Compare mode is disabled in Day view
+                  </span>
+                )}
+              </div>
+
+              {ttView === 'day' ? (
+                <DayScheduleTab sections={sections} focusSectionId={section.id} />
+              ) : compareActive ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">
