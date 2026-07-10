@@ -608,16 +608,26 @@ export const SectionTimetableStep: React.FC<Props> = ({
                     </Tooltip>
                   )}
                   {/* Bottom: window-total */}
-                  <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500">
-                    <span>Window total</span>
-                    <span className="tabular-nums">
-                      <span className={cn(
-                        'font-semibold',
-                        target > 0 && windowPlaced >= target ? 'text-emerald-700' : 'text-slate-700',
-                      )}>{windowPlaced}</span>
-                      <span> / {target || '\u2014'}</span>
-                    </span>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500 cursor-help">
+                        <span>Window total</span>
+                        <span className="tabular-nums">
+                          <span className={cn(
+                            'font-semibold',
+                            target > 0 && windowPlaced >= target ? 'text-emerald-700' : 'text-slate-700',
+                          )}>{windowPlaced}</span>
+                          <span> / {target || '\u2014'}</span>
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="font-semibold">Window total</p>
+                      <p className="text-slate-500">
+                        {windowPlaced} periods placed across the whole active academic window, against a target of {target || '—'} for this track.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </button>
               );
             })}
