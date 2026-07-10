@@ -561,21 +561,31 @@ export const SectionTimetableStep: React.FC<Props> = ({
                     </div>
                   </div>
                   {/* Top: this-week placement / window target */}
-                  <div className="mt-1 flex items-baseline justify-between gap-1.5">
-                    <span className="text-[11px] tabular-nums">
-                      <span className={cn(
-                        'font-bold',
-                        target > 0 && thisWeek >= 0 ? pal.text : 'text-slate-700',
-                      )}>
-                        {thisWeek}
-                      </span>
-                      <span className="text-slate-400"> / </span>
-                      <span className="font-semibold text-slate-700">{target || '\u2014'}</span>
-                    </span>
-                    <span className="text-[9px] text-slate-500 uppercase tracking-wide">
-                      this wk
-                    </span>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-1 flex items-baseline justify-between gap-1.5 cursor-help">
+                        <span className="text-[11px] tabular-nums">
+                          <span className={cn(
+                            'font-bold',
+                            target > 0 && thisWeek >= 0 ? pal.text : 'text-slate-700',
+                          )}>
+                            {thisWeek}
+                          </span>
+                          <span className="text-slate-400"> / </span>
+                          <span className="font-semibold text-slate-700">{target || '\u2014'}</span>
+                        </span>
+                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">
+                          this wk
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="font-semibold">This week vs window target</p>
+                      <p className="text-slate-500">
+                        {thisWeek} periods placed in the selected week, out of {target || '—'} total periods required for this track across the whole active academic window.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                   {target > 0 && (
                     <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
                       <div
