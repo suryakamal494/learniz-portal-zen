@@ -202,21 +202,99 @@ export const SectionAllocationStep: React.FC<Props> = ({ section, onBack }) => {
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-2 pt-2">
-        <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back
-        </Button>
-        <div className="flex items-center gap-2">
-          {blocker && <span className="text-xs text-rose-600 font-medium">{blocker}</span>}
-          <Button
-            onClick={onNext}
-            disabled={!!blocker}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300"
-          >
-            Continue to Timetable <ArrowRight className="h-4 w-4 ml-1" />
+      {/* Draft / Publish footer — publishing exposes this window in Schedule Workspace */}
+      <Card className={cn(
+        'sticky bottom-2 z-20 border shadow-md',
+        isPublished
+          ? 'border-emerald-300 bg-gradient-to-r from-emerald-50 via-white to-emerald-50'
+          : 'border-amber-300 bg-gradient-to-r from-amber-50 via-white to-amber-50',
+      )}>
+        <CardContent className="p-3 flex items-center gap-3 flex-wrap">
+          <Button variant="outline" size="sm" onClick={onBack}>
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back to Setup
           </Button>
-        </div>
-      </div>
+
+          <div className="flex items-center gap-2">
+            {isPublished ? (
+              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Published
+              </Badge>
+            ) : (
+              <Badge className="bg-amber-500 text-white hover:bg-amber-500 gap-1">
+                <CircleDot className="h-3 w-3" /> Draft
+              </Badge>
+            )}
+            {publishedAt && (
+              <span className="text-[11px] text-slate-500">
+                {isPublished ? 'published' : 'last published'} {new Date(publishedAt).toLocaleString()}
+              </span>
+            )}
+            <DevNote title="Draft vs Publish — why it matters">
+              <p><b>Draft</b> — free editing here. This window is <i>invisible</i> to the Schedule Workspace (Weekly Timetable, Day Timetable, Academic Schedule). Use draft while you're still shaping the allocation.</p>
+              <p><b>Publish</b> — the window becomes selectable in Schedule Workspace pickers and unlocks timetable painting + academic-schedule generation. Publish is per-window, per-section.</p>
+              <p>Re-publishing after edits appends an entry to that window's Academic Schedule change log so downstream views know something moved.</p>
+            </DevNote>
+          </div>
+
+          <div className="flex-1" />
+
+          {blocker && <span className="text-xs text-rose-600 font-medium">{blocker}</span>}
+
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!isPublished && !blocker && allocated === 0}
+                    onClick={() => {
+                      if (isPublished) {
+                        unpublishWindow(section.id, win.id);
+                        toast.success('Reverted to Draft — hidden from Schedule Workspace');
+                      } else {
+                        toast.success('Draft saved — all changes stored');
+                      }
+                    }}
+                  >
+                    <Save className="h-3.5 w-3.5 mr-1" />
+                    {isPublished ? 'Revert to Draft' : 'Save as Draft'}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs">
+                {isPublished
+                  ? 'Move this window back to draft. It will disappear from Schedule Workspace until you publish again.'
+                  : 'Keeps your allocation in-progress. Not visible to Schedule Workspace yet.'}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    size="sm"
+                    disabled={!!blocker}
+                    onClick={() => {
+                      publishWindow(section.id, win.id);
+                      toast.success('Published — now available in Schedule Workspace');
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300"
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1" />
+                    {isPublished ? 'Re-publish' : 'Publish window'}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs">
+                {blocker
+                  ? blocker
+                  : 'Makes this window selectable in the Schedule Workspace section/window pickers.'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </CardContent>
+      </Card>
     </div>
   );
 };
