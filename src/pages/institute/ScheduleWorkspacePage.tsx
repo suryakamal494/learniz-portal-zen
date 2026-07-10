@@ -119,27 +119,47 @@ const ScheduleWorkspacePage: React.FC = () => {
                 </Select>
               </div>
 
+              {isDayTab && section && (
+                <div className="flex items-end gap-2 pb-0.5">
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] gap-1 pl-2 pr-1 py-0.5 border-amber-300 bg-amber-50 text-amber-800"
+                  >
+                    Focus · {section.name}
+                    <button
+                      onClick={() => setSectionId('')}
+                      className="ml-1 rounded hover:bg-amber-100 p-0.5"
+                      aria-label="Clear focus"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                </div>
+              )}
+
               <div className="flex-1" />
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={compareOn ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCompareOn(!compareOn)}
-                  className={compareOn ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
-                >
-                  <Columns2 className="h-3.5 w-3.5 mr-1" />
-                  {compareOn ? 'Exit compare' : 'Compare sections'}
-                </Button>
-                <DevNote title="Compare mode">
-                  <p>Read-only side-by-side of two sections' timetables. Available only ≥{MIN_COMPARE_WIDTH}px.</p>
-                  <p>The right pane strips density (single-letter track chips, hides faculty line) so both grids fit.</p>
-                  <p>Editing/publishing are disabled while compare is on — exit compare to make changes.</p>
-                </DevNote>
-              </div>
+              {!isDayTab && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={compareOn ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCompareOn(!compareOn)}
+                    className={compareOn ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
+                  >
+                    <Columns2 className="h-3.5 w-3.5 mr-1" />
+                    {compareOn ? 'Exit compare' : 'Compare sections'}
+                  </Button>
+                  <DevNote title="Compare mode">
+                    <p>Read-only side-by-side of two sections' timetables. Available only ≥{MIN_COMPARE_WIDTH}px.</p>
+                    <p>The right pane strips density (single-letter track chips, hides faculty line) so both grids fit.</p>
+                    <p>Editing/publishing are disabled while compare is on — exit compare to make changes.</p>
+                  </DevNote>
+                </div>
+              )}
             </div>
 
-            {compareOn && !viewportOK && (
+            {!isDayTab && compareOn && !viewportOK && (
               <div className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                 Compare mode needs at least {MIN_COMPARE_WIDTH}px of viewport width. Widen the window or exit compare.
               </div>
