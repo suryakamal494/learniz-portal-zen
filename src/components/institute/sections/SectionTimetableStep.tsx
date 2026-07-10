@@ -101,7 +101,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
   const snapshotRef = useRef<Section['cells'] | null>(null);
 
   const palette = useMemo(() => buildPalette(section), [section]);
-  const placedCounts = useMemo(() => placedByTrack(section), [section]);
+  const placedCounts = useMemo(() => placedByTrack(section, window), [section, window]);
   const facultyById = useMemo(
     () => Object.fromEntries(facultyList.map((f) => [f.id, f])),
     [facultyList],
