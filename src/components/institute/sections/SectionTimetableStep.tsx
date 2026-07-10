@@ -783,6 +783,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 };
 
