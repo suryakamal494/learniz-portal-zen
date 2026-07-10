@@ -356,6 +356,20 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
             <Badge variant="outline" className="text-[10px]">
               {rows.filter((r) => r.isEditable).length} / {rows.length} sections editable
             </Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => toast.success('Draft auto-saved for all edits in this week')}
+            >
+              <Save className="h-3.5 w-3.5 mr-1" /> Save as Draft
+            </Button>
+            <DevNote title="Publish lives in Week view">
+              <p>Day view only supports <b>Save as Draft</b>. Every edit is already persisted per
+              (section, window) — this button just confirms.</p>
+              <p><b>Publish</b> happens in <b>Week view</b>, where you can see the whole week for one
+              section before promoting the timetable.</p>
+            </DevNote>
           </div>
         </CardContent>
       </Card>
