@@ -375,27 +375,27 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
       </Card>
 
       {/* Body: focused-section palette rail + day grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,22%)_1fr] gap-3 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(170px,15%)_1fr] gap-3 items-start">
         {/* Palette rail for the focused section */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-3">
-          <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
+          <div className="px-2.5 py-1.5 border-b border-slate-100 flex items-start justify-between gap-1">
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Placing into</div>
-              <div className="text-sm font-semibold text-slate-900 truncate">
+              <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Placing into</div>
+              <div className="text-[11px] font-semibold text-slate-900 truncate leading-tight">
                 {focusedRow?.section.name ?? '—'}
               </div>
-              <div className="text-[10px] text-slate-500 truncate">
+              <div className="text-[9px] text-slate-500 truncate">
                 {focusedRow?.window?.label ?? (focusedRow?.window ? `${focusedRow.window.startDate} → ${focusedRow.window.endDate}` : 'No active window')}
               </div>
             </div>
             <DevNote title="Palette scope">
               <p>Day view can only place cards from <b>one section at a time</b>. Click a section's row header on the right to focus it here.</p>
-              <p>To place across another section, click that section's row header first.</p>
+              <p>Use the per-row <b>Autofill</b> button to fill an entire section row at once.</p>
             </DevNote>
           </div>
-          <div className="p-2 flex flex-col gap-1.5 max-h-[calc(100vh-260px)] overflow-y-auto">
+          <div className="p-1 flex flex-col gap-1 max-h-[calc(100vh-260px)] overflow-y-auto">
             {focusedPalette.length === 0 && (
-              <div className="text-[11px] text-slate-400 italic px-2 py-3">
+              <div className="text-[10px] text-slate-400 italic px-2 py-3">
                 Focus an editable section row to see its subject cards.
               </div>
             )}
@@ -406,46 +406,49 @@ export const DayScheduleTab: React.FC<Props> = ({ sections, focusSectionId }) =>
                 armed?.subjectId === entry.subjectId &&
                 armed?.trackId === entry.trackId;
               return (
-                <button
-                  key={entry.key}
-                  onClick={() => setArmed(isArmed
-                    ? null
-                    : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
-                  className={cn(
-                    'text-left rounded-lg border p-1.5 transition-all',
-                    isArmed
-                      ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
-                      : cn(pal.border, pal.surface, 'hover:shadow-sm'),
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-1 min-w-0">
-                    <div className={cn('text-xs font-semibold truncate', pal.text)}>
-                      {entry.subjectName}
-                    </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {entry.showProgram && (
-                        <span className="bg-indigo-100 text-indigo-800 text-[9px] px-1 rounded font-bold">
-                          {entry.programCode}
-                        </span>
+                <Tooltip key={entry.key}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setArmed(isArmed
+                        ? null
+                        : { programId: entry.programId, subjectId: entry.subjectId, trackId: entry.trackId })}
+                      className={cn(
+                        'text-left rounded-md border px-1.5 py-1 transition-all flex items-center gap-1 min-w-0',
+                        isArmed
+                          ? 'border-indigo-500 ring-2 ring-indigo-200 bg-white shadow'
+                          : cn(pal.border, pal.surface, 'hover:shadow-sm'),
                       )}
-                      {entry.subjectHasMultipleTracks && (
-                        <span className="bg-amber-100 text-amber-800 text-[9px] px-1 rounded font-bold">
-                          {entry.trackName}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-[9px] text-slate-500 mt-0.5 truncate">
-                    {facultyById[entry.facultyId]?.name ?? 'no faculty'}
-                  </div>
-                </button>
+                    >
+                      <span className={cn('text-[11px] font-semibold truncate flex-1 min-w-0', pal.text)}>
+                        {entry.subjectName}
+                      </span>
+                      <span className="flex items-center gap-0.5 shrink-0">
+                        {entry.showProgram && (
+                          <span className="bg-indigo-100 text-indigo-800 text-[8px] px-1 rounded font-bold leading-tight">
+                            {entry.programCode}
+                          </span>
+                        )}
+                        {entry.subjectHasMultipleTracks && (
+                          <span className="bg-amber-100 text-amber-800 text-[8px] px-1 rounded font-bold leading-tight">
+                            {entry.trackName}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-[11px]">
+                    {entry.subjectName}
+                    {entry.subjectHasMultipleTracks && ` · ${entry.trackName}`}
+                    <div className="text-slate-400">{facultyById[entry.facultyId]?.name ?? 'no faculty'}</div>
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
             {armed && (
               <Button
                 size="sm"
                 variant="outline"
-                className="mt-1"
+                className="mt-1 h-7 text-[11px]"
                 onClick={() => setArmed(null)}
               >
                 Disarm
