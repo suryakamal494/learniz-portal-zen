@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import { Section } from '@/types/section';
 import {
-  addTrack, removeTrack, setTrackAllotment, setTrackFaculty,
+  addTrack, publishWindow, removeTrack, setTrackAllotment, setTrackFaculty, unpublishWindow,
 } from '@/hooks/useSection';
 import { useFaculty } from '@/hooks/useInstitutePrograms';
 import { computeSectionCapacity, totalAllocated } from '@/utils/sectionUtils';
