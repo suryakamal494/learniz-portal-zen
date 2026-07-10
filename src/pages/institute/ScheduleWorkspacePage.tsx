@@ -177,12 +177,18 @@ const ScheduleWorkspacePage: React.FC = () => {
           </Card>
         ) : (
           <Tabs value={tab} onValueChange={(v) => setTab(v as 'timetable' | 'schedule')}>
-            <TabsList>
-              <TabsTrigger value="timetable" className="flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5" /> Weekly Timetable
+            <TabsList className="h-11 p-1 bg-slate-100 border border-slate-200 rounded-lg gap-1">
+              <TabsTrigger
+                value="timetable"
+                className="flex items-center gap-1.5 h-9 px-4 rounded-md text-sm font-semibold text-slate-500 transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-indigo-400/40 hover:text-slate-800"
+              >
+                <Layers className="h-4 w-4" /> Weekly Timetable
               </TabsTrigger>
-              <TabsTrigger value="schedule" className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" /> Academic Schedule
+              <TabsTrigger
+                value="schedule"
+                className="flex items-center gap-1.5 h-9 px-4 rounded-md text-sm font-semibold text-slate-500 transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-emerald-400/40 hover:text-slate-800"
+              >
+                <Sparkles className="h-4 w-4" /> Academic Schedule
               </TabsTrigger>
             </TabsList>
 
