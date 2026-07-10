@@ -804,3 +804,120 @@ const DayCell: React.FC<{
     </Popover>
   );
 };
+
+/* ─────────────── AutofillPopover ─────────────── */
+
+const AutofillPopover: React.FC<{
+  section: Section;
+  facultyById: Record<string, { id: string; name: string } | undefined>;
+  onFill: (selectedKeys: string[], mode: 'empty' | 'overwrite') => void;
+}> = ({ section, facultyById, onFill }) => {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [mode, setMode] = useState<'empty' | 'overwrite'>('empty');
+  const entries = useMemo(() => buildPalette(section), [section]);
+
+  const toggle = (key: string) =>
+    setSelected((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]));
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setSelected([]); setMode('empty'); } }}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 px-1.5 text-[10px] font-semibold gap-1"
+        >
+          <Wand2 className="h-3 w-3" /> Autofill
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-2" align="start">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+              Autofill row
+            </div>
+            <div className="text-xs font-semibold text-slate-900 truncate">{section.name}</div>
+          </div>
+          <DevNote title="Autofill logic">
+            <p>Selected subjects are placed <b>round-robin</b> across periods P1..Pn (left→right).</p>
+            <p><b>Fill empty only</b>: skips cells that already have a subject.</p>
+            <p><b>Overwrite everything</b>: replaces every cell in this row (including manually-edited ones).</p>
+          </DevNote>
+        </div>
+        <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
+          {entries.map((e) => {
+            const pal = sectionPalette(e.subjectColor);
+            const isSel = selected.includes(e.key);
+            return (
+              <label
+                key={e.key}
+                className={cn(
+                  'flex items-center gap-2 rounded-md border px-2 py-1.5 cursor-pointer transition-all',
+                  isSel ? 'border-indigo-500 bg-indigo-50' : cn(pal.border, pal.surface),
+                )}
+              >
+                <Checkbox
+                  checked={isSel}
+                  onCheckedChange={() => toggle(e.key)}
+                  className="h-3.5 w-3.5"
+                />
+                <span className={cn('text-xs font-semibold truncate flex-1 min-w-0', pal.text)}>
+                  {e.subjectName}
+                </span>
+                <span className="flex items-center gap-0.5 shrink-0">
+                  {e.showProgram && (
+                    <span className="bg-indigo-100 text-indigo-800 text-[8px] px-1 rounded font-bold">
+                      {e.programCode}
+                    </span>
+                  )}
+                  {e.subjectHasMultipleTracks && (
+                    <span className="bg-amber-100 text-amber-800 text-[8px] px-1 rounded font-bold">
+                      {e.trackName}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[9px] text-slate-500 truncate max-w-[70px]">
+                  {facultyById[e.facultyId]?.name.replace(/^(Ms\.|Mr\.|Dr\.|Mrs\.)\s+/i, '') ?? '—'}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <RadioGroup value={mode} onValueChange={(v) => setMode(v as 'empty' | 'overwrite')} className="gap-1">
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="empty" id={`fill-empty-${section.id}`} className="h-3.5 w-3.5" />
+            <Label htmlFor={`fill-empty-${section.id}`} className="text-[11px] cursor-pointer">
+              Fill empty periods only
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="overwrite" id={`fill-over-${section.id}`} className="h-3.5 w-3.5" />
+            <Label htmlFor={`fill-over-${section.id}`} className="text-[11px] cursor-pointer">
+              Overwrite everything
+            </Label>
+          </div>
+        </RadioGroup>
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 h-7 text-[11px]"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 h-7 text-[11px] bg-indigo-600 hover:bg-indigo-700"
+            disabled={selected.length === 0}
+            onClick={() => { onFill(selected, mode); setOpen(false); setSelected([]); }}
+          >
+            Fill row
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
