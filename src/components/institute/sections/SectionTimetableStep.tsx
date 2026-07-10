@@ -587,15 +587,25 @@ export const SectionTimetableStep: React.FC<Props> = ({
                     </TooltipContent>
                   </Tooltip>
                   {target > 0 && (
-                    <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full transition-all',
-                          windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
-                        )}
-                        style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
-                      />
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden cursor-help">
+                          <div
+                            className={cn(
+                              'h-full transition-all',
+                              windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
+                            )}
+                            style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p className="font-semibold">Window progress</p>
+                        <p className="text-slate-500">
+                          {windowPlaced} of {target} periods placed across the entire active window. Green means the track target is fully met.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {/* Bottom: window-total */}
                   <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500">
