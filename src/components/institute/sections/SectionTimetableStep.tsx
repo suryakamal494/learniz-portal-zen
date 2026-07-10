@@ -501,7 +501,7 @@ export const SectionTimetableStep: React.FC<Props> = ({
           <div className="px-3 py-2 border-b border-slate-100">
             <div className="text-sm font-semibold text-slate-900">Subject cards</div>
             <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
-              Filled / Needed in this window. Pick one, then click cells.
+              This week&apos;s count / periods needed in this window.
             </div>
           </div>
           <div className="p-2 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
@@ -511,7 +511,9 @@ export const SectionTimetableStep: React.FC<Props> = ({
                 armed?.programId === entry.programId &&
                 armed?.subjectId === entry.subjectId &&
                 armed?.trackId === entry.trackId;
-              const placed = placedCounts[entry.trackId] ?? 0;
+              const thisWeek = placedThisWeek[entry.trackId] ?? 0;
+              const windowPlaced = placedCounts[entry.trackId] ?? 0;
+              const target = entry.target || 0;
               return (
                 <button
                   key={entry.key}
@@ -544,27 +546,44 @@ export const SectionTimetableStep: React.FC<Props> = ({
                       )}
                     </div>
                   </div>
-                  <div className="mt-1 flex items-center justify-between gap-1.5">
-                    <span className="text-[10px] text-slate-600 tabular-nums">
-                      <span className={cn('font-semibold', placed >= (entry.target || 0) ? 'text-emerald-700' : 'text-slate-700')}>
-                        {placed}
+                  {/* Top: this-week placement / window target */}
+                  <div className="mt-1 flex items-baseline justify-between gap-1.5">
+                    <span className="text-[11px] tabular-nums">
+                      <span className={cn(
+                        'font-bold',
+                        target > 0 && thisWeek >= 0 ? pal.text : 'text-slate-700',
+                      )}>
+                        {thisWeek}
                       </span>
                       <span className="text-slate-400"> / </span>
-                      <span>{entry.target || '\u2014'}</span>
-                      <span className="text-slate-400 ml-0.5">periods</span>
+                      <span className="font-semibold text-slate-700">{target || '\u2014'}</span>
+                    </span>
+                    <span className="text-[9px] text-slate-500 uppercase tracking-wide">
+                      this wk
                     </span>
                   </div>
-                  {entry.target > 0 && (
+                  {target > 0 && (
                     <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
                       <div
                         className={cn(
                           'h-full transition-all',
-                          placed >= entry.target ? 'bg-emerald-500' : 'bg-indigo-400',
+                          windowPlaced >= target ? 'bg-emerald-500' : 'bg-indigo-400',
                         )}
-                        style={{ width: `${Math.min(100, (placed / entry.target) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (windowPlaced / target) * 100)}%` }}
                       />
                     </div>
                   )}
+                  {/* Bottom: window-total */}
+                  <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500">
+                    <span>Window total</span>
+                    <span className="tabular-nums">
+                      <span className={cn(
+                        'font-semibold',
+                        target > 0 && windowPlaced >= target ? 'text-emerald-700' : 'text-slate-700',
+                      )}>{windowPlaced}</span>
+                      <span> / {target || '\u2014'}</span>
+                    </span>
+                  </div>
                 </button>
               );
             })}
