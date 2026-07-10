@@ -456,7 +456,12 @@ export const MOCK_SECTIONS: Section[] = [
     windows: [
       { id: 'win-11m-t1', label: 'Term 1 \u00b7 Foundation',
         startDate: '2026-07-01', endDate: '2026-09-30',
-        status: 'draft', changeLog: [] },
+        status: 'published', publishedAt: twoHoursAgo, lastGeneratedAt: oneHourAgo,
+        changeLog: [
+          { id: 'chg-11m-1', at: nowIso, actor: 'Priya Menon', type: 'cell.paint',
+            summary: 'Tue P3 \u00b7 CBSE Mathematics replaced JEE Physics',
+            affectedDates: ['2026-07-07', '2026-07-14'], acknowledged: false },
+        ] },
       { id: 'win-11m-t2', label: 'Term 2 \u00b7 Advanced',
         startDate: '2026-10-01', endDate: '2026-12-31',
         status: 'draft', changeLog: [] },
