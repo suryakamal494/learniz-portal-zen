@@ -64,24 +64,26 @@ const ScheduleWorkspacePage: React.FC = () => {
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-3 md:p-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                  Section
+              {!isDayTab && (
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                    Section
+                  </div>
+                  <Select value={section?.id ?? ''} onValueChange={setSectionId}>
+                    <SelectTrigger className="w-64 h-9 mt-1">
+                      <SelectValue placeholder="Pick a section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <span className="text-xs text-slate-500 mr-2">{s.className}</span>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={section?.id ?? ''} onValueChange={setSectionId}>
-                  <SelectTrigger className="w-64 h-9 mt-1">
-                    <SelectValue placeholder="Pick a section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sections.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <span className="text-xs text-slate-500 mr-2">{s.className}</span>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              )}
 
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
