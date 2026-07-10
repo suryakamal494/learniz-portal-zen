@@ -454,7 +454,10 @@ const DatedScheduleGrid: React.FC<{
     if (weeks.length > 0 && !weeks.includes(weekStart)) setWeekStart(weeks[0]);
   }, [weeks, weekStart]);
 
-  const periodTimes = useMemo(() => computePeriodTimes(section.config), [section.config]);
+  const periodTimes = useMemo(
+    () => computePeriodTimes({ ...section.config, startDate: window.startDate, defaultFaculty: {} } as never),
+    [section.config, window.startDate],
+  );
   const workingDays = section.config.workingDays;
 
   const cellsByKey = useMemo(() => {
